@@ -117,7 +117,7 @@ What exists in the code today:
 
 - **Hosting is postponed on purpose.** Ben is on limited Wi-Fi. (Which host is still open.)
 - **The repo is private.**
-- **The site is called "LX Tennis Setups".** Use exactly that text everywhere users see the name. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
+- **The site is called "LX Tennis Setups".** Write it exactly like that in text: page and tab titles, metadata, alt text, docs and messages. On the site itself, headings and the header brand may display it in all caps through CSS (`text-transform: uppercase`), as they do now. Ben likes that look. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
