@@ -40,13 +40,14 @@ Why: published online reviews often don't match how the group feels a frame or s
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank.
 5. **Scores are whole numbers from 1 to 10.** No half points.
-6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically.
-7. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
-8. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
-9. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
-10. **Specs the manufacturer doesn't publish are left out, not guessed.** For example, Yonex doesn't publish RA (stiffness) or swingweight, so the site doesn't show them.
-11. **Racquet photos are official manufacturer photos, all from the same angle.**
-12. **The racquet line-up is Ben's choice.** Today it's:
+6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place.
+7. **Reviews and setups are entered on the site through a shared entry form.** Ben and his friends use the same form; no one edits data files by hand to add a review.
+8. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
+9. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
+10. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
+11. **Specs the manufacturer doesn't publish are left out, not guessed.** For example, Yonex doesn't publish RA (stiffness) or swingweight, so the site doesn't show them.
+12. **Racquet photos are official manufacturer photos, all from the same angle.**
+13. **The racquet line-up is Ben's choice.** Today it's:
    - Yonex EZONE 98 (2022, 7th gen)
    - Yonex VCORE 98 (2023, 7th gen)
    - Yonex PERCEPT 97 (2023)
@@ -130,7 +131,7 @@ What exists in the code today:
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
-- **Who can add reviews before there are logins.** Ben enters everything via seed files, or a shared admin form?
+- **Entry form access.** How the shared form is protected (e.g. a shared password) and how a reviewer says who they are when submitting.
 - **Site visibility.** Who can see the site once it's hosted. If it goes public, the Yonex photos' copyright needs a decision.
 - **Auth.** How people log in, and when.
 - **Database.** Which one.
