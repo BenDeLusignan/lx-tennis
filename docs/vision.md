@@ -31,16 +31,16 @@ Why: published online reviews often don't match how the group feels a frame or s
 
 1. **A score belongs to a setup, not to a racquet or a string on its own.** A setup is:
    - the racquet;
-   - the string used, with its gauge;
-   - full bed (one string throughout) or hybrid (different strings in the mains and crosses; each string has its own gauge);
-   - the tension.
+   - **full bed** (one string throughout): the string used, its gauge and one tension; or
+   - **hybrid** (different strings in the mains and crosses): a string, gauge and tension for the **Mains**, and a string, gauge and tension for the **Crosses**;
+   - the date strung. Restringing the same combination on a new date makes a new setup.
 
-   (Whether the date strung is part of it, and whether a hybrid's mains and crosses can be strung at different tensions, is still open, see Open questions.)
+   When entering a setup, choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
 2. **One review per person per setup.**
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank.
 5. **Scores are whole numbers from 1 to 10.** No half points.
-6. **Tension works in both lb and kg.** The user chooses which unit to use.
+6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically.
 7. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
 8. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
 9. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
@@ -130,9 +130,6 @@ What exists in the code today:
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
-- **Date strung.** Is the date a racquet was strung part of the setup? That also decides whether restringing the same combination on a new date makes a new setup.
-- **Hybrid tensions.** In a hybrid, can the mains and crosses be strung at different tensions?
-- **Tension unit choice.** Is the lb/kg choice made when entering a review, when viewing the site, or both?
 - **Who can add reviews before there are logins.** Ben enters everything via seed files, or a shared admin form?
 - **Site visibility.** Who can see the site once it's hosted. If it goes public, the Yonex photos' copyright needs a decision.
 - **Auth.** How people log in, and when.
@@ -144,7 +141,7 @@ What exists in the code today:
 
 ## Proposals awaiting Ben (not decided)
 
-- **Racquet page layout.** A racquet page lists its setups. Each setup card shows the setup (string(s) and gauge(s), full bed or hybrid, tension, plus the date strung if that becomes part of a setup) and a criteria × reviewer score grid. Reviews come first on mobile and use the full width on desktop. *Why:* scores belong to setups, and at the court the scores are what you came for.
+- **Racquet page layout.** A racquet page lists its setups. Each setup card shows the setup (full bed or hybrid, string(s), gauge(s), tension(s) in lb and kg, date strung) and a criteria × reviewer score grid. Reviews come first on mobile and use the full width on desktop. *Why:* scores belong to setups, and at the court the scores are what you came for.
 - **URL layout.** `/racquets` (index), `/racquets/[slug]`, `/strings`, `/strings/[slug]`, and maybe `/setups/[id]`. *Why:* matches the core flow's "Racquets" step and leaves room for strings and shareable setups.
 - **Data model.**
   - `racquet(id, slug unique)`
