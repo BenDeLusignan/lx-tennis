@@ -46,6 +46,7 @@ The Racquets step has its own page, `/racquets`.
 6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place.
 7. **Reviews and setups are entered on the site through an entry form that only logged-in reviewers can see** (role-based access):
    - The header has a **Log in** option.
+   - Reviewers log in with a **username and password**. There are three accounts, one each for Ben, Michal and Otavio, each with its own password.
    - Visitors who aren't logged in only browse; they never see the entry form.
    - Once logged in, a reviewer opens a racquet's page and the entry form is available there as a tab or button, for that racquet. (Tab vs button is a design call for the team.)
    - A review is attributed to the logged-in reviewer; nobody picks a name from a list.
@@ -143,7 +144,7 @@ What exists in the code today:
 ## Open questions (Ben hasn't answered; don't decide these)
 
 - **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the Yonex photos are visible to anyone with the link. Keep them, or replace them?
-- **Login mechanics.** How reviewers log in (e.g. email magic link, or username and password), and how new reviewer accounts are added.
+- **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
 - **Database.** Which one.
 - **String catalogue.** Where string data comes from and what it holds.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
