@@ -101,6 +101,8 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 
 **Next.js App Router + TypeScript.** (The code is on Next.js 16 and React 19, and needs Node.js 20.9 or newer. This Next version differs from older training data, so read the guides in `node_modules/next/dist/docs/` before writing Next code.)
 
+**Database: SQLite.** During development it's a single local file, so the site works offline. Where it lives once hosted is decided together with the hosting provider: Turso (hosted SQLite) if the site goes on Vercel, or a plain SQLite file on a host with a permanent disk.
+
 ### Team conventions
 
 - **CSS Modules plus `globals.css`. No Tailwind.** One `*.module.css` file next to the component or page it styles.
@@ -145,10 +147,9 @@ What exists in the code today:
 
 - **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the Yonex photos are visible to anyone with the link. Keep them, or replace them?
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
-- **Database.** Which one.
 - **String catalogue.** Where string data comes from and what it holds.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
-- **Hosting provider.** Probably Vercel, not final.
+- **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
 
 ## Proposals awaiting Ben (not decided)
