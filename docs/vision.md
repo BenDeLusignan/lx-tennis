@@ -20,7 +20,8 @@ Why: published online reviews often don't match how the group feels a frame or s
 
 ## Who it's for (Ben's decision)
 
-- Ben and his tennis friends: Michal, Otavio, and more over time.
+- **Reviewers:** Ben, Michal and Otavio (more over time). They log in to enter setups and reviews.
+- **Visitors:** anyone else. They can browse and read everything without logging in, but can't enter or change anything.
 - Used on a phone, at the court.
 
 ## Core flow (Ben's decision)
@@ -41,7 +42,12 @@ Why: published online reviews often don't match how the group feels a frame or s
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank.
 5. **Scores are whole numbers from 1 to 10.** No half points.
 6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place.
-7. **Reviews and setups are entered on the site through a shared entry form.** Ben and his friends use the same form; no one edits data files by hand to add a review.
+7. **Reviews and setups are entered on the site through an entry form that only logged-in reviewers can see** (role-based access):
+   - The header has a **Log in** option.
+   - Visitors who aren't logged in only browse; they never see the entry form.
+   - Once logged in, a reviewer opens a racquet's page and the entry form is available there as a tab or button, for that racquet. (Tab vs button is a design call for the team.)
+   - A review is attributed to the logged-in reviewer; nobody picks a name from a list.
+   - No one edits data files by hand to add a review.
 8. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
 9. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
 10. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
@@ -52,7 +58,7 @@ Why: published online reviews often don't match how the group feels a frame or s
    - Yonex VCORE 98 (2023, 7th gen)
    - Yonex PERCEPT 97 (2023)
 
-Caveat (not a decision): the product photos are Yonex's copyrighted images. The team's view is that this is fine for a private hobby site. If the site ever goes public, Ben decides what to do about them (see Open questions).
+Caveat (not a decision): the product photos are Yonex's copyrighted images. That's fine while the site only runs locally. Visitors won't need to log in, so once it's hosted anyone with the link will see them, and Ben decides what to do about them (see Open questions).
 
 ## Theme
 
@@ -131,9 +137,8 @@ What exists in the code today:
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
-- **Entry form access.** How the shared form is protected (e.g. a shared password) and how a reviewer says who they are when submitting.
-- **Site visibility.** Who can see the site once it's hosted. If it goes public, the Yonex photos' copyright needs a decision.
-- **Auth.** How people log in, and when.
+- **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the Yonex photos are visible to anyone with the link. Keep them, or replace them?
+- **Login mechanics.** How reviewers log in (e.g. email magic link, or username and password), and how new reviewer accounts are added.
 - **Database.** Which one.
 - **String catalogue.** Where string data comes from and what it holds.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
