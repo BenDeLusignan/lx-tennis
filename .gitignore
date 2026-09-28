@@ -6,6 +6,27 @@ dist/
 build/
 .expo/
 .next/
+out/
+
+# Next.js / TypeScript generated
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+# Yarn / pnpm
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Testing
+coverage/
+
+# Certificates
+*.pem
 
 # Environment / secrets
 .env

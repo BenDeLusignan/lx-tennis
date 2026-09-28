@@ -1,0 +1,215 @@
+/*
+ * Synthwave theme.
+ *
+ * Every colour, font, radius and glow used on the site is defined here once.
+ * Components reference the semantic tokens (--color-bg, --color-accent, ...),
+ * never raw hex values, so the whole site can be re-tuned from this block.
+ *
+ * Contrast (WCAG 2.x, measured against --color-bg / --color-surface; AA needs 4.5:1):
+ *   --color-text        18.2:1 / 15.6:1
+ *   --color-text-muted  11.6:1 / 9.9:1
+ *   --color-accent       6.2:1 / 5.4:1  (neon pink, used for small text too)
+ *   --color-link        12.6:1 / 10.8:1 (neon cyan, also the focus ring)
+ */
+:root {
+  color-scheme: dark;
+
+  /* Palette */
+  --palette-night-950: #0b0220;
+  --palette-night-900: #120432;
+  --palette-night-800: #1f0b4d;
+  --palette-night-700: #2e1470;
+  --palette-neon-pink: #ff3cac;
+  --palette-neon-purple: #b967ff;
+  --palette-neon-cyan: #2de2e6;
+  --palette-sunset-orange: #ff8a3d;
+  --palette-sunset-yellow: #ffd23f;
+  --palette-lavender-50: #f7f1ff;
+  --palette-lavender-200: #cbbcf5;
+  --palette-lavender-300: #e6d7ff;
+
+  /* Semantic colours */
+  --color-bg: var(--palette-night-950);
+  --color-bg-gradient-end: var(--palette-night-900);
+  --color-surface: var(--palette-night-800);
+  --color-surface-raised: var(--palette-night-700);
+  --color-border: rgb(185 103 255 / 0.45);
+  --color-border-strong: var(--palette-neon-purple);
+  --color-text: var(--palette-lavender-50);
+  --color-text-muted: var(--palette-lavender-200);
+  --color-accent: var(--palette-neon-pink);
+  --color-link: var(--palette-neon-cyan);
+  --color-focus: var(--palette-neon-cyan);
+  --color-grid-line: rgb(255 60 172 / 0.35);
+  --color-sun-top: var(--palette-sunset-yellow);
+  --color-sun-mid: var(--palette-sunset-orange);
+  --color-sun-bottom: var(--palette-neon-pink);
+
+  /* Light "display case" behind racquet photos so dark frames stay visible. */
+  --color-stage-center: var(--palette-lavender-50);
+  --color-stage-edge: var(--palette-lavender-300);
+
+  /* Glows */
+  --glow-pink: 0 0 0.35rem rgb(255 60 172 / 0.8), 0 0 1.25rem rgb(255 60 172 / 0.45);
+  --glow-cyan: 0 0 0.35rem rgb(45 226 230 / 0.8), 0 0 1.25rem rgb(45 226 230 / 0.4);
+  --glow-purple-box: 0 0 0 1px rgb(185 103 255 / 0.5), 0 0 1.5rem rgb(185 103 255 / 0.35);
+  --glow-pink-box: 0 0 0 1px var(--palette-neon-pink), 0 0 1.75rem rgb(255 60 172 / 0.45);
+  --text-glow-pink: 0 0 0.5rem rgb(255 60 172 / 0.65);
+  --text-glow-cyan: 0 0 0.5rem rgb(45 226 230 / 0.55);
+
+  /* Typography (font families are provided by next/font in layout.tsx) */
+  --font-display: var(--font-orbitron), "Trebuchet MS", sans-serif;
+  --font-body: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --font-size-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.25rem);
+  --font-size-hero: clamp(2.25rem, 1.4rem + 4.5vw, 4.5rem);
+
+  /* Spacing, shape, layout */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --content-width: 72rem;
+  --focus-ring-width: 3px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-grid: 12s;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  position: relative;
+  /* Own stacking context so the z-index:-1 grid paints above the body background. */
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-gradient-end) 100%) fixed;
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Retro perspective grid fading in from the bottom of the viewport. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: auto -50% 0;
+  height: 45vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--color-grid-line) 2px, transparent 2px),
+    linear-gradient(90deg, var(--color-grid-line) 2px, transparent 2px);
+  background-size: 4rem 4rem;
+  transform: perspective(22rem) rotateX(60deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, black 10%, transparent 85%);
+  animation: grid-scroll var(--duration-grid) linear infinite;
+}
+
+@keyframes grid-scroll {
+  to {
+    background-position: 0 4rem;
+  }
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+a {
+  color: var(--color-link);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-shadow: var(--text-glow-cyan);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 3px;
+  box-shadow: var(--glow-cyan);
+}
+
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 10;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

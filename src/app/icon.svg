@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Static asset: colours mirror --palette-night-950, --palette-sunset-yellow,
+       --palette-neon-pink and --palette-neon-cyan in src/app/globals.css. -->
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#ff3cac"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0b0220"/>
+  <circle cx="32" cy="32" r="20" fill="url(#sun)"/>
+  <path d="M14.5 22c8 3 11 16 3.5 24M49.5 22c-8 3-11 16-3.5 24" fill="none" stroke="#0b0220" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M8 56h48" stroke="#2de2e6" stroke-width="3" stroke-linecap="round"/>
+</svg>
