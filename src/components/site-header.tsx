@@ -6,7 +6,7 @@ export function SiteHeader() {
   return (
     <header className={styles.header}>
       <Link href="/" className={styles.brand}>
-        Tennis Setups
+        LX Tennis Setups
       </Link>
     </header>
   );

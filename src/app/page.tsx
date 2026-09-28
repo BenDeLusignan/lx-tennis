@@ -9,7 +9,7 @@ export default async function Home() {
   return (
     <>
       <header className={styles.hero}>
-        <h1 className={styles.title}>Tennis Setups</h1>
+        <h1 className={styles.title}>LX Tennis Setups</h1>
         <p className={styles.tagline}>
           Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
         </p>

@@ -1,4 +1,4 @@
-# Tennis Setups: vision
+# LX Tennis Setups: vision
 
 This is the single source of truth for what we're building and the rules we build by.
 Read it before you plan, build or review anything in this repo.
@@ -117,6 +117,7 @@ What exists in the code today:
 
 - **Hosting is postponed on purpose.** Ben is on limited Wi-Fi. (Which host is still open.)
 - **The repo is private.**
+- **The site is called "LX Tennis Setups".** Use exactly that text everywhere users see the name. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
@@ -133,6 +134,7 @@ What exists in the code today:
 - **String catalogue.** Where string data comes from and what it holds.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
 - **Hosting provider.** Probably Vercel, not final.
+- **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
 
 ## Proposals awaiting Ben (not decided)
 
@@ -152,7 +154,7 @@ What exists in the code today:
 
 ## Priority and roadmap order (Ben's decision)
 
-1. **Tennis Setups website** (this repo): Ben's #1 project.
+1. **LX Tennis Setups website** (this repo): Ben's #1 project.
 2. **Ben's portfolio site**: will showcase this site.
 3. **tennis-club-app** and **tennis-game** come after those two.
 
