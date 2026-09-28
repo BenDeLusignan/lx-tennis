@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { logOut } from "@/auth/actions";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
-import { CurrentPathInput } from "@/components/current-path-input";
 import { LoginLink } from "@/components/login-link";
 import styles from "./auth-status.module.css";
 
@@ -36,7 +35,6 @@ async function AuthStatusContent() {
         {reviewer.displayName}
       </p>
       <form action={logOut}>
-        <CurrentPathInput name="next" />
         <button type="submit" className={styles.button}>
           Log out
         </button>

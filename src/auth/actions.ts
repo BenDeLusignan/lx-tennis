@@ -48,8 +48,9 @@ export async function logIn(formData: FormData): Promise<never> {
 }
 
 // POST only (a Server Action), so a link or an <img> on another site can't
-// log a reviewer out. Goes back to the page they were on, now as a visitor.
-export async function logOut(formData: FormData): Promise<never> {
+// log a reviewer out. Always lands on the home page (Ben's call), where the
+// header's switch back to "Log in" shows it worked.
+export async function logOut(): Promise<never> {
   await endSession();
-  redirect(safeNextPath(formData.get("next")));
+  redirect("/");
 }
