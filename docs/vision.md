@@ -32,12 +32,14 @@ Why: published online reviews often don't match how the group feels a frame or s
 1. **A score belongs to a setup, not to a racquet or a string on its own.** A setup is at least racquet + string + tension. (Whether gauge and the date strung are part of it is still open, see Open questions.)
 2. **One review per person per setup.**
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
-4. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
-5. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
-6. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
-7. **Specs the manufacturer doesn't publish are left out, not guessed.** For example, Yonex doesn't publish RA (stiffness) or swingweight, so the site doesn't show them.
-8. **Racquet photos are official manufacturer photos, all from the same angle.**
-9. **The racquet line-up is Ben's choice.** Today it's:
+4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank.
+5. **Scores are whole numbers.** No half points. (The range is still open, see Open questions.)
+6. **Phone-first.** Design for a phone at the court first, then scale up to desktop.
+7. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
+8. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
+9. **Specs the manufacturer doesn't publish are left out, not guessed.** For example, Yonex doesn't publish RA (stiffness) or swingweight, so the site doesn't show them.
+10. **Racquet photos are official manufacturer photos, all from the same angle.**
+11. **The racquet line-up is Ben's choice.** Today it's:
    - Yonex EZONE 98 (2022, 7th gen)
    - Yonex VCORE 98 (2023, 7th gen)
    - Yonex PERCEPT 97 (2023)
@@ -121,8 +123,7 @@ What exists in the code today:
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
-- **Scoring criteria.** Power, control, comfort, spin, feel?
-- **Scale.** 1–10? Half points? Can a score be left blank?
+- **Score range.** 1–10?
 - **Date strung.** Is the date a racquet was strung part of the setup? That also decides whether restringing the same combination on a new date makes a new setup.
 - **Gauge.** Is gauge part of the setup, or a property of the string product?
 - **Hybrid setups.** Can a setup have different mains and crosses, or different tensions?
