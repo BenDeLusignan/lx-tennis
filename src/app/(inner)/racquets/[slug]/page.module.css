@@ -1,11 +1,24 @@
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+/*
+ * Phones: a small photo beside the title keeps Reviews on the first screen.
+ * Desktop: Reviews spans the full width, with the big photo beside Specs below.
+ * Only the photo changes place (it isn't focusable), so tab and reading order
+ * always match the source order in page.tsx.
+ */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "back back"
+    "title photo"
+    "reviews reviews"
+    "specs specs";
+  gap: var(--space-6) var(--space-4);
+  align-items: start;
 }
 
 .back {
-  align-self: flex-start;
+  grid-area: back;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -21,9 +34,12 @@
 }
 
 .titleBlock {
+  grid-area: title;
+  align-self: center;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .title {
@@ -39,62 +55,44 @@
   color: var(--color-text-muted);
 }
 
-.layout {
-  display: grid;
-  gap: var(--space-8);
-}
-
+/* Widths must match the `sizes` prop on RacquetPhoto in page.tsx. */
 .photo {
-  width: min(14rem, 70%);
-  justify-self: center;
+  grid-area: photo;
+  width: 6rem;
 }
 
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  min-width: 0;
-}
-
-.panel {
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.panelTitle {
-  margin-block-end: var(--space-3);
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  color: var(--color-accent);
-  text-shadow: var(--text-glow-pink);
+.reviews {
+  grid-area: reviews;
 }
 
 .specs {
+  grid-area: specs;
+}
+
+.specsTable {
   width: 100%;
   border-collapse: collapse;
 }
 
-.specs th,
-.specs td {
+.specsTable th,
+.specsTable td {
   padding: var(--space-3) var(--space-2);
   border-block-end: 1px solid var(--color-border);
   text-align: start;
   vertical-align: top;
 }
 
-.specs tr:last-child th,
-.specs tr:last-child td {
+.specsTable tr:last-child th,
+.specsTable tr:last-child td {
   border-block-end: 0;
 }
 
-.specs th {
+.specsTable th {
   font-weight: 500;
   color: var(--color-text-muted);
 }
 
-.specs td {
+.specsTable td {
   font-weight: 600;
   text-align: end;
   font-variant-numeric: tabular-nums;
@@ -118,18 +116,17 @@
 }
 
 @media (min-width: 56rem) {
-  .layout {
+  .page {
     grid-template-columns: 22rem minmax(0, 1fr);
-    align-items: start;
+    grid-template-areas:
+      "back back"
+      "title title"
+      "reviews reviews"
+      "photo specs";
+    column-gap: var(--space-8);
   }
 
   .photo {
     width: 100%;
-    position: sticky;
-    top: var(--space-6);
-  }
-
-  .panel {
-    padding: var(--space-6);
   }
 }

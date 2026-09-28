@@ -1,0 +1,69 @@
+.grid {
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* The surface, hover glow and focus state come from Panel. */
+.card {
+  --panel-padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.photo {
+  flex: 0 0 7rem;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cardName {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.cardMeta {
+  color: var(--color-text-muted);
+}
+
+.cardCta {
+  margin-block-start: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-link);
+}
+
+/* Photo widths here must match the `sizes` string in racquet-list.tsx. */
+@media (min-width: 48rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+
+  .card {
+    --panel-padding: var(--space-4);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+  }
+
+  .photo {
+    flex: none;
+    width: 100%;
+  }
+
+  .cardText {
+    align-items: center;
+    text-align: center;
+  }
+}

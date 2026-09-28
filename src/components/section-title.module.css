@@ -1,0 +1,15 @@
+.title {
+  font-weight: 700;
+  color: var(--color-accent);
+  text-shadow: var(--text-glow-pink);
+}
+
+.xl {
+  margin-block-end: var(--space-4);
+  font-size: var(--font-size-xl);
+}
+
+.lg {
+  margin-block-end: var(--space-3);
+  font-size: var(--font-size-lg);
+}

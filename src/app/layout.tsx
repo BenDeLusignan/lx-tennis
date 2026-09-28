@@ -22,8 +22,10 @@ export const metadata: Metadata = {
     "Racquet and string setups tested by Ben and friends, with everyone's scores and reviews side by side.",
 };
 
-// Each page renders its own <header> and <main id="main">, so the landing page
-// can use its hero as the banner while inner pages use <SiteHeader />.
+// The skip link lives here so every page has it, including the 404. Pages
+// bring their own <header> and <main id="main">: the landing page uses its
+// hero as the banner, every other page gets <SiteHeader /> and <main> from
+// InnerShell (via app/(inner)/layout.tsx, or directly in not-found.tsx).
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${orbitron.variable}`}>

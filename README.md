@@ -9,7 +9,7 @@ Racquet and string setups (frame, string, gauge, tension) tested by me and my fr
 - [Next.js](https://nextjs.org) (App Router) + TypeScript
 - Plain CSS / CSS Modules; the synthwave theme lives as design tokens (CSS custom properties) in `src/app/globals.css`
 - Racquet data in `src/data/racquets.ts` (swap its accessor functions for database queries later; pages don't need to change)
-- Racquet photos in `public/racquets/`
+- Racquet photos in `public/images/racquets/`
 
 ## Running it
 

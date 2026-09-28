@@ -13,7 +13,7 @@
  * also given as an Internet Archive snapshot of the official page.
  *
  * Images are Yonex's official face-on product shots (launch colourway),
- * downloaded into /public/racquets, trimmed and centred on an identical
+ * downloaded into /public/images/racquets, trimmed and centred on an identical
  * 1000x1500 transparent canvas so every racquet shares the same scale.
  */
 
@@ -64,7 +64,7 @@ const racquets: readonly Racquet[] = [
     year: 2022,
     generation: "7th gen",
     image: {
-      src: "/racquets/yonex-ezone-98-2022.webp",
+      src: "/images/racquets/yonex-ezone-98-2022.webp",
       ...IMAGE_SIZE,
       alt: "Yonex EZONE 98 (2022) racquet in sky blue and navy, head up, face-on",
     },
@@ -88,7 +88,7 @@ const racquets: readonly Racquet[] = [
     year: 2023,
     generation: "7th gen",
     image: {
-      src: "/racquets/yonex-vcore-98-2023.webp",
+      src: "/images/racquets/yonex-vcore-98-2023.webp",
       ...IMAGE_SIZE,
       alt: "Yonex VCORE 98 (2023) racquet in scarlet red, head up, face-on",
     },
@@ -111,7 +111,7 @@ const racquets: readonly Racquet[] = [
     name: "Yonex PERCEPT 97",
     year: 2023,
     image: {
-      src: "/racquets/yonex-percept-97-2023.webp",
+      src: "/images/racquets/yonex-percept-97-2023.webp",
       ...IMAGE_SIZE,
       alt: "Yonex PERCEPT 97 (2023) racquet in olive green, head up, face-on",
     },
