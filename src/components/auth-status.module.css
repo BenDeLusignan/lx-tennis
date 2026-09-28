@@ -1,0 +1,53 @@
+/*
+ * Holds one control's height (2.75rem, a comfortable 44px touch target)
+ * before and after the login state streams in, so nothing below it moves.
+ */
+.slot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-block-size: 2.75rem;
+  min-inline-size: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/* Long names wrap rather than squeezing the Log out button. */
+.name {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Used for both the "Log in" link and the "Log out" button, so they match. */
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-link);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.button:hover {
+  border-color: var(--color-link);
+  box-shadow: var(--glow-cyan);
+  text-shadow: none;
+}

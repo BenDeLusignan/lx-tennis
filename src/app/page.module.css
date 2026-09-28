@@ -12,6 +12,11 @@
   box-shadow: 0 0.5rem 0.75rem -0.75rem var(--color-accent);
 }
 
+/* First row of the hero, above the title, so it never overlaps it on a phone. */
+.account {
+  align-self: flex-end;
+}
+
 .title {
   font-size: var(--font-size-hero);
   font-weight: 800;

@@ -1,12 +1,27 @@
+/*
+ * Phones: two fixed rows, brand then login state (right-aligned). The login
+ * state streams in after the rest of the page, and a layout that wrapped
+ * depending on its width (a name, or "Log in" at 360px) made the page jump.
+ * From 48rem there's always room for one row.
+ */
 .header {
-  display: flex;
-  align-items: center;
+  display: grid;
+  gap: var(--space-2);
   padding-block-end: var(--space-4);
   margin-block-end: var(--space-6);
   border-block-end: 1px solid var(--color-border);
 }
 
+@media (min-width: 48rem) {
+  .header {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--space-4);
+  }
+}
+
 .brand {
+  justify-self: start;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: var(--font-size-lg);

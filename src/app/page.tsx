@@ -1,3 +1,4 @@
+import { AuthStatus } from "@/components/auth-status";
 import { RacquetList } from "@/components/racquet-list";
 import { SectionTitle } from "@/components/section-title";
 import { getRacquets } from "@/data/racquets";
@@ -5,13 +6,16 @@ import styles from "./page.module.css";
 
 // The landing page sits outside the (inner) route group: its hero is the
 // banner, so it renders its own <header> and <main id="main"> instead of
-// <SiteHeader />.
+// <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
 export default async function Home() {
   const racquets = await getRacquets();
 
   return (
     <>
       <header className={styles.hero}>
+        <div className={styles.account}>
+          <AuthStatus />
+        </div>
         <h1 className={styles.title}>LX Tennis Setups</h1>
         <p className={styles.tagline}>
           Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.

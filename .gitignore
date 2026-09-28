@@ -33,6 +33,13 @@ coverage/
 .env.*
 !.env.example
 
+# Local SQLite database (DATABASE_URL=file:local.db) and its side files.
+# It holds reviewers' password hashes, so it must never be committed.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Logs
 *.log
 

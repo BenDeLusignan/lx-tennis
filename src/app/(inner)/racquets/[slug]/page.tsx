@@ -7,8 +7,14 @@ import { SectionTitle } from "@/components/section-title";
 import { getRacquet, getRacquetSlugs } from "@/data/racquets";
 import styles from "./page.module.css";
 
-// Only the slugs from generateStaticParams exist; anything else is a 404.
-export const dynamicParams = false;
+// Every racquet is prerendered from this list. Cache Components doesn't
+// allow `dynamicParams = false`, so an unknown slug renders on request and
+// gets the 404 from the notFound() below.
+//
+// `instant = false`: the page awaits `params` at the top, which only blocks
+// for slugs not in this list, and those are all 404s. Wrapping the page in
+// <Suspense> instead would add a loading state for nothing.
+export const instant = false;
 
 export async function generateStaticParams() {
   const slugs = await getRacquetSlugs();

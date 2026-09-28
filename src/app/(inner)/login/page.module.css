@@ -1,0 +1,72 @@
+.panel {
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+.intro {
+  margin-block-end: var(--space-6);
+  color: var(--color-text-muted);
+}
+
+/*
+ * The empty #login-error paragraph is still a flex item, so its two gaps
+ * are the space above the submit button when there's no error.
+ */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+
+/* 1rem text keeps iOS from zooming into the field; 2.75rem (44px) is a comfortable touch target. */
+.input {
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: 400;
+}
+
+/* Styled on the message itself, not on #login-error, which stays in the page (empty) for screen readers. */
+.form:has(.error) .input {
+  border-color: var(--color-accent);
+}
+
+.error {
+  display: block;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Pink on the page background is the same pair as pink text on it: 6.2:1. */
+.submit {
+  min-block-size: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) ease;
+}
+
+.submit:hover {
+  box-shadow: var(--glow-pink-box);
+}

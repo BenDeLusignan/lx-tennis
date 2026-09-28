@@ -6,25 +6,67 @@ Racquet and string setups (frame, string, gauge, tension) tested by me and my fr
 
 ## Stack
 
-- [Next.js](https://nextjs.org) (App Router) + TypeScript
+- [Next.js](https://nextjs.org) (App Router) + TypeScript, with Cache Components (Partial Prerendering) on
 - Plain CSS / CSS Modules; the synthwave theme lives as design tokens (CSS custom properties) in `src/app/globals.css`
-- Racquet data in `src/data/racquets.ts` (swap its accessor functions for database queries later; pages don't need to change)
+- SQLite through [Drizzle ORM](https://orm.drizzle.team) and `@libsql/client`: a local file in development, [Turso](https://turso.tech) (hosted SQLite) later by changing `DATABASE_URL`
+- Racquet data in `src/data/racquets.ts`; reviewer accounts in the database, read through `src/data/reviewers.ts`
 - Racquet photos in `public/images/racquets/`
 
-## Running it
+## Setup
 
 Requires Node.js 20.9 or newer.
 
+1. **Install:**
+
+   ```bash
+   npm install
+   ```
+
+2. **Environment:** copy the example and fill in `SESSION_SECRET` (the comments in the file say how to generate one). `.env.local` is gitignored; never commit it.
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   | Variable | What it is |
+   | --- | --- |
+   | `DATABASE_URL` | `file:local.db` for a local SQLite file in the repo root (gitignored), or a `libsql://…turso.io` URL for Turso |
+   | `DATABASE_AUTH_TOKEN` | Turso only; empty for a local file |
+   | `SESSION_SECRET` | At least 32 random characters; signs the login cookie. Changing it logs everyone out |
+
+3. **Create the database:** applies the migrations in `drizzle/`, which create the `reviewer` table and add Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) with no password.
+
+   ```bash
+   npm run db:migrate
+   ```
+
+4. **Set each reviewer's password:** it asks twice and doesn't echo what you type, so the password never lands in your shell history. Run it again any time to reset a password; that also logs the reviewer out on every device.
+
+   ```bash
+   npm run db:set-password -- ben
+   npm run db:set-password -- michal
+   npm run db:set-password -- otavio
+   ```
+
+5. **Run it:** `npm run dev`, then open http://localhost:3000 and use **Log in** in the header.
+
+## Scripts
+
 ```bash
-npm install     # install dependencies
-npm run dev     # start the dev server at http://localhost:3000
-npm run build   # production build
-npm run start   # serve the production build
-npm run lint    # ESLint
+npm run dev              # dev server at http://localhost:3000
+npm run build            # production build (lists which routes are static / partially prerendered)
+npm run start            # serve the production build
+npm run lint             # ESLint
+npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect
+npm run db:migrate       # apply pending migrations in drizzle/ to DATABASE_URL
+npm run db:generate      # after editing src/db/schema.ts: write the SQL migration into drizzle/
+npm run db:set-password -- <username>   # set or reset a reviewer's password
 ```
 
 ## Gotchas
 
 - **`PageProps` / `LayoutProps` are generated types.** Next creates them in `.next/` (gitignored), so on a fresh clone your editor and `tsc` will report them as missing until you run `npm run dev`, `npm run build` or `npx next typegen` once.
 - **`next dev` rewrites part of `AGENTS.md`.** When it detects an AI coding agent and the Next.js block is missing or out of date, it rewrites everything between the `<!-- BEGIN:nextjs-agent-rules -->` and `<!-- END:nextjs-agent-rules -->` markers (see `node_modules/next/dist/server/lib/generate-agent-files.js`). Don't edit inside those markers; put project notes outside them, where they survive.
-- **The build needs internet.** `next/font` downloads the Geist and Orbitron fonts from Google Fonts at build time.
+- **The build needs internet.** `next/font` downloads the Geist and Orbitron fonts from Google Fonts at build time. The database doesn't: the build never connects to it.
+- **Migrations are the schema's history.** Commit the generated files in `drizzle/` together with the `src/db/schema.ts` change, and never edit a migration that has already been applied somewhere; add a new one.
+- **`npm test` and `db:set-password` run `tsx --conditions=react-server`.** Server-side modules import `server-only`, which throws when loaded outside the React server environment; that flag tells Node to load the server build of it. Don't remove it from `package.json`, or every test and the password script will fail on import.

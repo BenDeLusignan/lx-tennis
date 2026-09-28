@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthStatus } from "@/components/auth-status";
 import styles from "./site-header.module.css";
 
 /** Banner for inner pages. The landing page uses its own hero instead. */
@@ -8,6 +9,7 @@ export function SiteHeader() {
       <Link href="/" className={styles.brand}>
         LX Tennis Setups
       </Link>
+      <AuthStatus />
     </header>
   );
 }

@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790629620267,
+      "tag": "0000_create_reviewer",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790629620687,
+      "tag": "0001_seed_reviewers",
+      "breakpoints": true
+    }
+  ]
+}
