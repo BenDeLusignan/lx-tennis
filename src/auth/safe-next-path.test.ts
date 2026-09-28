@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { safeNextPath } from "@/auth/safe-next-path";
+import { loginPath, safeNextPath } from "@/auth/safe-next-path";
 
 test("keeps same-origin paths, with their query and hash", () => {
   assert.equal(safeNextPath("/racquets/yonex-ezone-98-2022"), "/racquets/yonex-ezone-98-2022");
@@ -31,4 +31,12 @@ test("ignores a missing or repeated parameter", () => {
 test("doesn't send a reviewer who just logged in back to the login page", () => {
   assert.equal(safeNextPath("/login"), "/");
   assert.equal(safeNextPath("/login?next=/racquets"), "/");
+});
+
+test("a login link comes back to the page it was made for", () => {
+  for (const path of ["/account", "/racquets/yonex-ezone-98-2022", "/racquets?sort=name&dir=asc#top"]) {
+    const next = new URL(loginPath(path), "http://same-origin.invalid").searchParams.get("next");
+    assert.equal(safeNextPath(next), path, path);
+  }
+  assert.equal(loginPath("/"), "/login");
 });

@@ -1,12 +1,14 @@
 import { Suspense } from "react";
-import { logOut } from "@/auth/actions";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
+import { AccountLink } from "@/components/account-link";
 import { LoginLink } from "@/components/login-link";
+import { LogOutButton } from "@/components/log-out-button";
 import styles from "./auth-status.module.css";
 
 /**
- * The header's login state: "Log in" for visitors, the reviewer's name and
- * "Log out" once logged in. Used by `SiteHeader` and the landing page hero.
+ * The header's login state: "Log in" for visitors; once logged in, the
+ * reviewer's name (a link to /account) and "Log out". Used by `SiteHeader`
+ * and the landing page hero.
  *
  * It reads the session cookie, so it's the one part of each page rendered
  * per request. The <Suspense> boundary is what keeps everything else in the
@@ -26,19 +28,12 @@ export function AuthStatus() {
 
 async function AuthStatusContent() {
   const reviewer = await getCurrentReviewer();
-  if (!reviewer) return <LoginLink className={styles.button} />;
+  if (!reviewer) return <LoginLink />;
 
   return (
     <div className={styles.status}>
-      <p className={styles.name}>
-        <span className="visually-hidden">Logged in as </span>
-        {reviewer.displayName}
-      </p>
-      <form action={logOut}>
-        <button type="submit" className={styles.button}>
-          Log out
-        </button>
-      </form>
+      <AccountLink displayName={reviewer.displayName} className={styles.name} />
+      <LogOutButton />
     </div>
   );
 }

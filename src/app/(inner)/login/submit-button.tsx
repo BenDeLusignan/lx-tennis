@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/button";
 
 /**
  * A client component only for the "Logging in…" label while the action runs,
@@ -8,11 +9,11 @@ import { useFormStatus } from "react-dom";
  * disabling the focused button would drop keyboard focus to the page, and a
  * second submit is harmless.
  */
-export function SubmitButton({ className }: { className?: string }) {
+export function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className={className}>
+    <Button type="submit" variant="primary">
       {pending ? "Logging in…" : "Log in"}
-    </button>
+    </Button>
   );
 }

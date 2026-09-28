@@ -1,0 +1,53 @@
+/*
+ * 2.75rem (44px) is a comfortable touch target. Doesn't shrink or wrap, so
+ * in a tight row (the header on a 360px phone) the text next to it wraps
+ * instead of the button being squeezed.
+ */
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+/* The button's own glow replaces the global link glow on the text. */
+.button:hover {
+  text-shadow: none;
+}
+
+/* Dark text on pink is the same pair as pink text on the page background: 6.2:1. */
+.primary {
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.primary:hover {
+  box-shadow: var(--glow-pink-box);
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-link);
+}
+
+.secondary:hover {
+  border-color: var(--color-link);
+  box-shadow: var(--glow-cyan);
+}

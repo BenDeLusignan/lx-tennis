@@ -1,0 +1,29 @@
+/* Same width as the login panel: both are short, form-like cards. */
+.panel {
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+/*
+ * Label beside value at every width: "Username", the longer label, still
+ * leaves room for a name at 360px. Each row is at least one line tall from
+ * its label, so the loading fallback (values blank) takes the same space
+ * as the real values and the Log out button below doesn't move.
+ */
+.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin-block-end: var(--space-6);
+}
+
+.label {
+  color: var(--color-text-muted);
+}
+
+/* Long names wrap instead of widening the card. */
+.value {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}

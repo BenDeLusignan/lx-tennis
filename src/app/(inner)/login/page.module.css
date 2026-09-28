@@ -50,23 +50,3 @@
   color: var(--color-accent);
   font-weight: 600;
 }
-
-/* Pink on the page background is the same pair as pink text on it: 6.2:1. */
-.submit {
-  min-block-size: 2.75rem;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: var(--color-bg);
-  font-family: var(--font-display);
-  font-size: var(--font-size-base);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: box-shadow var(--duration-fast) ease;
-}
-
-.submit:hover {
-  box-shadow: var(--glow-pink-box);
-}

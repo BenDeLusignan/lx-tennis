@@ -24,3 +24,12 @@ export function safeNextPath(next: unknown): string {
   if (path.startsWith("//") || url.pathname === "/login") return "/";
   return path;
 }
+
+/**
+ * The login page URL that comes back to `path` afterwards: the other half
+ * of `safeNextPath`, which reads what this writes. From the home page it's
+ * plain /login, since home is where logging in goes by default.
+ */
+export function loginPath(path: string): string {
+  return path === "/" ? "/login" : `/login?${new URLSearchParams({ next: path })}`;
+}

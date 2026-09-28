@@ -72,7 +72,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           </Suspense>
         </p>
 
-        <SubmitButton className={styles.submit} />
+        <SubmitButton />
       </form>
     </Panel>
   );
