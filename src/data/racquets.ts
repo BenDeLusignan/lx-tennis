@@ -6,12 +6,13 @@
  * moves to a database, swap the bodies of those functions for queries and
  * leave the pages alone.
  *
- * Specs are copied from the manufacturer's official product pages only. A
- * spec the manufacturer does not publish (e.g. Yonex doesn't publish
- * stiffness/RA or swingweight) is deliberately absent rather than guessed or
- * converted. The official pages for these generations have since been
- * replaced by newer models, so each source is also given as an Internet
- * Archive snapshot of the official page.
+ * Specs are copied from the manufacturer's official product pages only.
+ * Every racquet carries the same five specs (Product rule 11); extras a
+ * manufacturer publishes, such as Babolat's swingweight or stiffness, are
+ * deliberately not stored, and one of the five it doesn't publish would be
+ * left out rather than guessed or converted. The official pages for these
+ * generations have since been replaced by newer models, so each source is
+ * also given as an Internet Archive snapshot of the official page.
  *
  * Images are the manufacturer's official face-on product shots (launch
  * colourway), downloaded into /public/images/racquets, trimmed, scaled to the
