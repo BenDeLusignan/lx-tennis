@@ -137,6 +137,8 @@ Caveat (not a decision): the product photos are the manufacturers' copyrighted i
 
 *Why:* the database itself enforces one review per person per setup, all five scores, valid score ranges and no duplicate setups, and renaming a slug can't break links between records.
 
+**Freshness: a page is refreshed when something is saved.** Racquet pages, reviews included, stay ready-made and are served instantly. Saving, editing or deleting a setup, review or string refreshes the racquet pages it affects straight away, so a reviewer sees their change right after saving, and so does everyone else from then on. The refresh lives in the save code in `src/data`, not on pages, so a new way of changing data can't forget it. *Why:* fastest for visitors at the court, with no stale window after a save.
+
 ### Team conventions
 
 - **CSS Modules plus `globals.css`. No Tailwind.** One `*.module.css` file next to the component or page it styles.
@@ -205,7 +207,6 @@ What exists in the code today:
 
 - **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the manufacturers' racquet photos are visible to anyone with the link. Keep them, or replace them?
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
-- **Caching model.** How new reviews show up without a redeploy (revalidation).
 - **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
 - **Account page extras.** Whether the account page also gets a change-password form and/or a list of the reviewer's own reviews.
