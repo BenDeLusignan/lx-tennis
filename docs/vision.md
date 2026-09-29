@@ -62,6 +62,11 @@ The Racquets step has its own page, `/racquets`.
    - Yonex EZONE 98 (2022, 7th gen)
    - Yonex VCORE 98 (2023, 7th gen)
    - Yonex PERCEPT 97 (2023)
+14. **Strings.** Each string has a brand, a name and a type. The type is required and comes from a fixed list: polyester, co-polyester, multifilament, synthetic gut, natural gut, Kevlar/aramid.
+   - The list starts with ten strings Ben chooses.
+   - When entering a setup, a reviewer picks each string from the list, or chooses **Add new string** and enters its brand, name and type. It's then on the list for everyone.
+   - Any logged-in reviewer can edit a string's brand, name or type (e.g. to fix spelling), and the change shows on every setup that uses it.
+   - A string can be deleted only while no setup uses it.
 
 Caveat (not a decision): the product photos are Yonex's copyrighted images. That's fine while the site only runs locally. Visitors won't need to log in, so once it's hosted anyone with the link will see them, and Ben decides what to do about them (see Open questions).
 
@@ -108,7 +113,7 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 **Data model.** Stable ids are the keys, not slugs, and the database enforces the product rules where it can:
 
 - `racquet`: id and unique slug only. Specs, photos and sources stay in `src/data/racquets.ts`, keyed by slug.
-- `string`: what it holds beyond identifying the string is still open (see Open questions).
+- `string`: brand, name and type (one of the types in Product rule 14), unique by brand and name. A string that a setup uses can't be deleted.
 - `setup`: its racquet, full bed or hybrid, date strung, its tension unit (lb or kg), and the string, gauge and tension for the mains (plus the crosses on a hybrid). Each tension is stored as the number typed; the database calculates it in kg to 1 decimal place from that number and the unit, so the two can never disagree. A duplicate setup is refused (Product rule 2), comparing tensions by that kg value, so 55 lb and 24.9 kg count as the same.
 - `review`: its setup and reviewer, unique together; the five scores as required whole-number columns checked to be 1–10 (so adding a criterion means a migration); an optional written review.
 
@@ -169,7 +174,6 @@ What exists in the code today:
 
 - **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the Yonex photos are visible to anyone with the link. Keep them, or replace them?
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
-- **String catalogue.** Where string data comes from and what it holds.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
 - **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
