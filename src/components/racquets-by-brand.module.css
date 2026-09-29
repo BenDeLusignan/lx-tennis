@@ -1,0 +1,12 @@
+/* Room between brands, so each heading clearly starts a new group. */
+.brands {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+@media (min-width: 48rem) {
+  .brands {
+    gap: var(--space-12);
+  }
+}

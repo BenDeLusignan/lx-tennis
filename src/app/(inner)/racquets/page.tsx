@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { RacquetList } from "@/components/racquet-list";
+import { RacquetsByBrand } from "@/components/racquets-by-brand";
 import { SectionTitle } from "@/components/section-title";
-import { getRacquets } from "@/data/racquets";
+import { getRacquetsByBrand } from "@/data/racquets";
 
 export const metadata: Metadata = {
   title: "Racquets",
@@ -9,13 +9,13 @@ export const metadata: Metadata = {
 };
 
 export default async function RacquetsPage() {
-  const racquets = await getRacquets();
+  const brands = await getRacquetsByBrand();
 
   return (
     <>
       {/* Same look as the landing page's "Racquets" heading; h1 here because it's the page title. */}
       <SectionTitle as="h1">Racquets</SectionTitle>
-      <RacquetList racquets={racquets} headingLevel="h2" />
+      <RacquetsByBrand sections={brands} headingLevel="h2" />
     </>
   );
 }

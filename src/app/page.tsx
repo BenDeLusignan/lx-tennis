@@ -1,14 +1,14 @@
 import { AuthStatus } from "@/components/auth-status";
-import { RacquetList } from "@/components/racquet-list";
+import { RacquetsByBrand } from "@/components/racquets-by-brand";
 import { SectionTitle } from "@/components/section-title";
-import { getRacquets } from "@/data/racquets";
+import { getRacquetsByBrand } from "@/data/racquets";
 import styles from "./page.module.css";
 
 // The landing page sits outside the (inner) route group: its hero is the
 // banner, so it renders its own <header> and <main id="main"> instead of
 // <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
 export default async function Home() {
-  const racquets = await getRacquets();
+  const brands = await getRacquetsByBrand();
 
   return (
     <>
@@ -25,7 +25,7 @@ export default async function Home() {
 
       <main id="main">
         <SectionTitle>Racquets</SectionTitle>
-        <RacquetList racquets={racquets} headingLevel="h3" />
+        <RacquetsByBrand sections={brands} headingLevel="h3" />
       </main>
     </>
   );

@@ -62,13 +62,16 @@ The Racquets step has its own page, `/racquets`.
    - Yonex EZONE 98 (2022, 7th gen)
    - Yonex VCORE 98 (2023, 7th gen)
    - Yonex PERCEPT 97 (2023)
+   - Babolat Pure Aero 98 (2023), Otavio's racquet
+
+   Wherever racquets are listed, they're grouped into a section per brand, in this order: **Yonex, Babolat, Head, Tecnifibre, Wilson**. Every brand gets its section, even with no racquets yet, and an empty brand shows an honest "No racquets yet".
 14. **Strings.** Each string has a brand, a name and a type. The type is required and comes from a fixed list: polyester, co-polyester, multifilament, synthetic gut, natural gut, Kevlar/aramid.
    - The list starts with ten strings Ben chooses.
    - When entering a setup, a reviewer picks each string from the list, or chooses **Add new string** and enters its brand, name and type. It's then on the list for everyone.
    - Any logged-in reviewer can edit a string's brand, name or type (e.g. to fix spelling), and the change shows on every setup that uses it.
    - A string can be deleted only while no setup uses it.
 
-Caveat (not a decision): the product photos are Yonex's copyrighted images. That's fine while the site only runs locally. Visitors won't need to log in, so once it's hosted anyone with the link will see them, and Ben decides what to do about them (see Open questions).
+Caveat (not a decision): the product photos are the manufacturers' copyrighted images. That's fine while the site only runs locally. Visitors won't need to log in, so once it's hosted anyone with the link will see them, and Ben decides what to do about them (see Open questions).
 
 ## Theme
 
@@ -85,7 +88,7 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 
    | Breakpoint | Used for |
    | --- | --- |
-   | `48rem` (768px) | wider page padding (`layout.module.css`), racquet cards go to 3 columns (`racquet-list.module.css`), site header goes from two rows (brand, then login state) to one row (`site-header.module.css`) |
+   | `48rem` (768px) | wider page padding (`layout.module.css`), racquet cards go to 3 columns (`racquet-list.module.css`), more space between brand sections (`racquets-by-brand.module.css`), site header goes from two rows (brand, then login state) to one row (`site-header.module.css`) |
    | `56rem` (896px) | racquet page goes from one column (small photo beside the title) to full-width Reviews with the photo beside Specs (`(inner)/racquets/[slug]/page.module.css`); `Panel` padding grows (`panel.module.css`) |
 
    Reuse these. If a new one is really needed, add it to this table in the same change.
@@ -123,7 +126,7 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 
 - **CSS Modules plus `globals.css`. No Tailwind.** One `*.module.css` file next to the component or page it styles.
 - **Every page except the landing page lives in the `src/app/(inner)` route group.** Its layout wraps each page in `InnerShell` (`SiteHeader` plus the page's one `<main id="main">`), so pages there render neither. The landing page renders its own hero `<header>` and `<main id="main">`. The root `not-found.tsx` can't sit in a route group, so it uses `InnerShell` directly. *Why:* a page can't forget the header or the skip link's target.
-- **Build with the shared pieces in `src/components`** instead of restyling per page: `Panel` for any card or content block (with `href` it's a whole-card link), `SectionTitle` for the pink section heading, `Button` for buttons and button-like links (`primary` filled pink for a form's main action, `secondary` cyan outline otherwise; with `href` it's a link), `RacquetList` for racquet cards, `AuthStatus` for the login state in a header, `LogOutButton` wherever Log out appears. Tighten a panel's padding by setting `--panel-padding`, not by overriding `padding`. *Why:* copies drift, and the theme has to look the same on every page.
+- **Build with the shared pieces in `src/components`** instead of restyling per page: `Panel` for any card or content block (with `href` it's a whole-card link), `SectionTitle` for the pink section heading, `Button` for buttons and button-like links (`primary` filled pink for a form's main action, `secondary` cyan outline otherwise; with `href` it's a link), `RacquetsByBrand` wherever racquets are listed (it renders `RacquetList`, the racquet cards, per brand), `EmptyState` for every "nothing here yet" (`compact` for a one-line slot in a list), `AuthStatus` for the login state in a header, `LogOutButton` wherever Log out appears. Tighten a panel's padding by setting `--panel-padding`, not by overriding `padding`. *Why:* copies drift, and the theme has to look the same on every page.
 - **Server components by default.** Add `'use client'` only where a component really needs the browser. Today: `LoginLink` and `AccountLink` (need the current path), and on the login page `SubmitButton` (pending label) and `LoginFailed` (moves focus to the username field).
 - **Data only through the async accessors in `src/data`** (today `src/data/racquets.ts` and `src/data/reviewers.ts`). Pages never reach into the raw data or the database. *Why:* data can move (in-code array to database, local file to Turso) by rewriting accessor bodies without touching pages.
 - **The database schema and client live in `src/db`.** Only `src/data` and the tooling (`drizzle.config.ts`) import `src/db`; pages and scripts go through `src/data`. The schema is Drizzle (`src/db/schema.ts`); after changing it, run `npm run db:generate` and commit the SQL migration in `drizzle/` with it. Never edit a migration that's already been applied; add a new one.
@@ -141,8 +144,9 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 - **Accessibility basics stay in place:** skip link to `#main` (in the root layout), one `<main id="main">` per page, headings in order, a visible focus ring, and meaningful `alt` text.
 - **Comments explain why**, not what, and point at things that must change together.
 - **Adding a racquet** follows the existing pattern:
+  - Set its `brand` to one of `BRANDS` in `src/data/racquets.ts`; which brands exist, and their order, is Ben's call (Product rule 13). The `name` starts with the brand.
   - Specs and their source URLs (plus archive links) live as comments next to each racquet in `src/data/racquets.ts`.
-  - The photo is the face-on product shot, trimmed and centred on an identical 1000 × 1500 transparent canvas so every racquet shows at the same scale, stored as WebP in `public/images/racquets/`.
+  - The photo is the official face-on product shot, trimmed, scaled to the same 1410px frame height and centred at the top of an identical 1000 × 1500 transparent canvas so every racquet shows at the same scale, stored as WebP in `public/images/racquets/`.
   - The slug follows `brand-model-year`, e.g. `yonex-ezone-98-2022`.
 - **Static images live under `public/images/`**, never straight in `public/`. *Why:* files in `public/` are served from the site root, so `public/racquets/` would share URLs with the `/racquets` pages.
 
@@ -150,16 +154,16 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 
 What exists in the code today:
 
-- **`/`**: landing page with the hero and a card per racquet. The hero has the login state in its top row.
-- **`/racquets`**: the same racquet cards under a "Racquets" heading.
+- **`/`**: landing page with the hero, then a "Racquets" heading and the racquets grouped by brand (`RacquetsByBrand`): a section per brand in Product rule 13's order, each with its racquet cards or a compact "No racquets yet". Under the brand heading a card shows just the model ("EZONE 98"); the brand stays in the link's accessible name. The hero has the login state in its top row. Headings: h1 site name, h2 Racquets, h3 brand, h4 racquet name.
+- **`/racquets`**: the same brand sections under a "Racquets" page heading. Headings: h1 Racquets, h2 brand, h3 racquet name.
 - **`/racquets/[slug]`**: the racquet's name, then a Reviews panel that shows an empty state ("No reviews yet"), then a table of official specs. On phones a small photo sits beside the name; on desktop Reviews spans the full width and the photo sits beside Specs.
 - **`/login`**: reviewer log in (username and password). A wrong username or password redirects to `/login?failed=1` with one generic error, and focus moves to the username field (both fields are empty after the reload). On success it sets a signed, httpOnly, SameSite=Lax session cookie (Secure in production) that lasts 30 days, and goes back to the page in `?next=` if that's a path on this site, otherwise home. Works before the page's JavaScript has loaded.
 - **`/account`**: the logged-in reviewer's display name and username, and a **Log out** button. Visitors are sent to `/login?next=%2Faccount` (a 307, from `src/proxy.ts`), so logging in comes back here.
 - **Header login state** (`AuthStatus`, in `SiteHeader` and the landing hero): **Log in** for visitors (hidden on `/login`); once logged in, the reviewer's name as a cyan underlined link to `/account` (on `/account` itself it's marked `aria-current="page"` and looks like plain text), then a **Log out** button (a Server Action that goes to the home page). On phones the site header has two rows, brand then login state; from 48rem, one. Resetting a reviewer's password or changing `SESSION_SECRET` logs them out. Logging out only deletes the cookie in that browser: a copied cookie stays valid until it expires or the password is reset.
 - **404 page** in the theme, with the site header.
 - **Rendering:** Cache Components (Partial Prerendering) is on. Every page is prerendered as a static shell at build time (racquet pages via `generateStaticParams`), including the login form and the account page's labels and Log out button; only the header's login state, the login page's `?next=` and error message, and the account page's name and username stream in per request. Responses are `Cache-Control: private, no-store` because of that personal part. An unknown racquet slug renders on request and gets the 404 via `notFound()` (Cache Components doesn't allow `dynamicParams = false`). No revalidation, so new racquet data still needs a rebuild.
-- Shared components in `src/components`: `InnerShell` (header + `<main>` for every page but the landing page), `SiteHeader`, `AuthStatus` (login state), `LoginLink`, `AccountLink` (the header's name link), `LogOutButton`, `Button`, `Panel` (card and content-block surface), `SectionTitle` (pink section heading), `RacquetList` (racquet cards, used on `/` and `/racquets`) and `RacquetPhoto` (photo on a light "display case" stage so dark frames stay visible).
-- Data: a typed in-code array in `src/data/racquets.ts` holding the three racquets from the line-up. The slug is the key. Photos are in `public/images/racquets/`.
+- Shared components in `src/components`: `InnerShell` (header + `<main>` for every page but the landing page), `SiteHeader`, `AuthStatus` (login state), `LoginLink`, `AccountLink` (the header's name link), `LogOutButton`, `Button`, `Panel` (card and content-block surface), `SectionTitle` (pink section heading), `EmptyState` (dashed "nothing here yet" box: "No reviews yet" on racquet pages, "No racquets yet" for an empty brand), `RacquetsByBrand` (a section per brand, used on `/` and `/racquets`), `RacquetList` (one brand's racquet cards) and `RacquetPhoto` (photo on a light "display case" stage so dark frames stay visible).
+- Data: a typed in-code array in `src/data/racquets.ts` holding the racquets from the line-up, each with its `brand`. The slug is the key. `getRacquetsByBrand()` returns a section for every brand in the fixed order, empty ones included, and is what `/` and `/racquets` use. Photos are in `public/images/racquets/`.
 - **Database:** SQLite through Drizzle ORM and `@libsql/client`, set by `DATABASE_URL` (`file:local.db` locally; a Turso URL plus `DATABASE_AUTH_TOKEN` later, with no code change). One table, `reviewer` (id, unique lowercase username, non-blank display name, scrypt password hash), seeded by migration with Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) and no passwords. Passwords are set only with `npm run db:set-password -- <username>`; there is no way to add accounts (see Open questions). Setup steps and scripts are in the README.
 - Not built yet: strings, setups, reviews, scores, the entry form. No review data exists.
 - No CI, not deployed.
@@ -172,7 +176,7 @@ What exists in the code today:
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
-- **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the Yonex photos are visible to anyone with the link. Keep them, or replace them?
+- **Photo copyright once hosted.** Visitors can view the site without logging in, so once it's hosted the manufacturers' racquet photos are visible to anyone with the link. Keep them, or replace them?
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
 - **Caching model.** How new reviews show up without a redeploy (revalidation).
 - **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).

@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <div className={styles.page}>{children}</div>
         <footer className={styles.footer}>
-          <p>Racquet photos and specs from Yonex&rsquo;s official product pages.</p>
+          <p>Racquet photos and specs from the manufacturers&rsquo; official product pages.</p>
         </footer>
       </body>
     </html>

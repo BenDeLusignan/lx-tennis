@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { Panel } from "@/components/panel";
 import { RacquetPhoto } from "@/components/racquet-photo";
 import { SectionTitle } from "@/components/section-title";
@@ -33,6 +34,13 @@ export async function generateMetadata({
   };
 }
 
+// The data keeps the manufacturer's number as published (Babolat gives
+// 10.7586 oz); the page always shows 1 dp, matching Yonex's published values.
+const oneDecimal = new Intl.NumberFormat("en", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 export default async function RacquetPage({ params }: PageProps<"/racquets/[slug]">) {
   const { slug } = await params;
   const racquet = await getRacquet(slug);
@@ -43,7 +51,7 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
     ["Head size", `${specs.headSizeSqIn} sq in`],
     [
       "Weight (unstrung)",
-      `${specs.unstrungWeight.grams} g / ${specs.unstrungWeight.ounces} oz`,
+      `${specs.unstrungWeight.grams} g / ${oneDecimal.format(specs.unstrungWeight.ounces)} oz`,
     ],
     ["Balance", `${specs.balanceMm} mm`],
     ["Length", `${specs.lengthIn} in`],
@@ -78,13 +86,10 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
         <SectionTitle id="reviews-heading" size="lg">
           Reviews
         </SectionTitle>
-        <div className={styles.empty}>
-          <p className={styles.emptyTitle}>No reviews yet</p>
-          <p>
-            When someone tests a setup on this racquet, their scores and notes will appear here
-            side by side.
-          </p>
-        </div>
+        <EmptyState title="No reviews yet">
+          When someone tests a setup on this racquet, their scores and notes will appear here side
+          by side.
+        </EmptyState>
       </Panel>
 
       <Panel aria-labelledby="specs-heading" className={styles.specs}>
@@ -93,7 +98,7 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
         </SectionTitle>
         <table className={styles.specsTable}>
           <caption className="visually-hidden">
-            Official Yonex specifications for the {racquet.name} ({racquet.year})
+            Official {racquet.brand} specifications for the {racquet.name} ({racquet.year})
           </caption>
           <tbody>
             {specRows.map(([label, value]) => (

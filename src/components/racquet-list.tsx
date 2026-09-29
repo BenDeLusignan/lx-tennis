@@ -6,10 +6,13 @@ import styles from "./racquet-list.module.css";
 interface RacquetListProps {
   racquets: readonly Racquet[];
   /** Level for each racquet's name: one below the heading this list sits under. */
-  headingLevel: "h2" | "h3";
+  headingLevel: "h3" | "h4";
 }
 
-/** Grid of racquet cards linking to each racquet's page. Used on `/` and `/racquets`. */
+/**
+ * Grid of one brand's racquet cards, each linking to its racquet page.
+ * `RacquetsByBrand` renders one per brand, under the brand's heading.
+ */
 export function RacquetList({ racquets, headingLevel: Name }: RacquetListProps) {
   return (
     <ul className={styles.grid}>
@@ -27,8 +30,15 @@ export function RacquetList({ racquets, headingLevel: Name }: RacquetListProps) 
               className={styles.photo}
             />
             <div className={styles.cardText}>
+              {/*
+                The brand heading above already names the brand, so the card shows
+                just the model, which keeps names on one line on a phone. The
+                brand stays in the link's name for screen readers, which can
+                list links away from their heading.
+              */}
               <Name id={`${racquet.slug}-name`} className={styles.cardName}>
-                {racquet.name}
+                <span className="visually-hidden">{racquet.brand} </span>
+                {modelName(racquet)}
               </Name>
               <span id={`${racquet.slug}-meta`} className={styles.cardMeta}>
                 {racquet.generation ? `${racquet.year} · ${racquet.generation}` : racquet.year}
@@ -42,4 +52,10 @@ export function RacquetList({ racquets, headingLevel: Name }: RacquetListProps) 
       ))}
     </ul>
   );
+}
+
+/** "Yonex EZONE 98" → "EZONE 98". A name that doesn't start with its brand is shown whole. */
+function modelName({ name, brand }: Racquet) {
+  const prefix = `${brand} `;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
 }
