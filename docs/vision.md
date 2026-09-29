@@ -43,7 +43,10 @@ The Racquets step has its own page, `/racquets`.
 
    When entering a setup, a full bed takes one string and gauge plus a mains and a crosses tension. Choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
 2. **One review per person per setup, and each setup exists once.** Entering a setup that already exists (same racquet, strings, gauges, tensions and date strung) is refused, and the reviewer is pointed to the existing one to add their review. That way everyone's scores for the same stringing sit side by side, so agreements and disagreements are easy to see.
-3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
+3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria. On a racquet's page, each setup is a card:
+   - the setup on top: full bed or hybrid, string(s), gauge(s), tensions in lb and kg, date strung;
+   - then a score grid with the criteria as rows and the reviewers as columns, so comparing everyone on one criterion means reading across one row; a reviewer who hasn't reviewed that setup shows an empty column, never a made-up score;
+   - then the written reviews.
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank. A written review alongside the scores is optional.
 5. **Scores are whole numbers from 1 to 10.** No half points.
 6. **Tension is typed once and shown in both lb and kg.** Each tension is a single number field. The setup has one lb/kg choice that covers all its tensions (mains and crosses alike), with nothing pre-selected: the reviewer must pick one. Accepted values are 30–80 lb (13.6–36.3 kg), with up to 1 decimal place. Wherever a tension is shown, both units appear: the value typed first, then its equivalent in the other unit rounded to 1 decimal place (e.g. "55 lb · 24.9 kg").
@@ -205,7 +208,6 @@ What exists in the code today:
 
 ## Proposals awaiting Ben (not decided)
 
-- **Racquet page layout.** A racquet page lists its setups. Each setup card shows the setup (full bed or hybrid, string(s), gauge(s), tension(s) in lb and kg, date strung) and a criteria × reviewer score grid. *Why:* scores belong to setups.
 - **URL layout.** `/strings`, `/strings/[slug]`, and maybe `/setups/[id]`, alongside the existing `/racquets` and `/racquets/[slug]`. *Why:* leaves room for strings and shareable setups.
 - **Shared UI primitives first.** Extract a score chip before building the score grid. *Why:* shared pieces keep the theme consistent across pages; copying styles page by page makes them drift.
 - **Reviewer colours.** Ben pink, Michal cyan, Otavio purple, always shown with the name so colour is never the only cue.
