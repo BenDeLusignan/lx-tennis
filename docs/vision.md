@@ -39,11 +39,11 @@ The Racquets step has its own page, `/racquets`.
    - the date strung. Restringing the same combination on a new date makes a new setup.
 
    When entering a setup, choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
-2. **One review per person per setup.**
+2. **One review per person per setup, and each setup exists once.** Entering a setup that already exists (same racquet, strings, gauges, tensions and date strung) is refused, and the reviewer is pointed to the existing one to add their review. That way everyone's scores for the same stringing sit side by side, so agreements and disagreements are easy to see.
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
-4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank.
+4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank. A written review alongside the scores is optional.
 5. **Scores are whole numbers from 1 to 10.** No half points.
-6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place.
+6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place. Wherever a tension is shown, both units appear: the value the reviewer typed and its equivalent in the other unit.
 7. **Reviews and setups are entered on the site through an entry form that only logged-in reviewers can see** (role-based access):
    - The header has a **Log in** option.
    - Reviewers log in with a **username and password**. There are three accounts, one each for Ben, Michal and Otavio, each with its own password.
@@ -104,6 +104,15 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 **Next.js App Router + TypeScript.** (The code is on Next.js 16 and React 19, and needs Node.js 20.9 or newer. This Next version differs from older training data, so read the guides in `node_modules/next/dist/docs/` before writing Next code.)
 
 **Database: SQLite.** During development it's a single local file, so the site works offline. Where it lives once hosted is decided together with the hosting provider: Turso (hosted SQLite) if the site goes on Vercel, or a plain SQLite file on a host with a permanent disk.
+
+**Data model.** Stable ids are the keys, not slugs, and the database enforces the product rules where it can:
+
+- `racquet`: id and unique slug only. Specs, photos and sources stay in `src/data/racquets.ts`, keyed by slug.
+- `string`: what it holds beyond identifying the string is still open (see Open questions).
+- `setup`: its racquet, full bed or hybrid, date strung, and the string, gauge and tension for the mains (plus the crosses on a hybrid). A tension is stored as the number the reviewer typed plus its unit; the other unit is calculated for display. A duplicate setup is refused (Product rule 2).
+- `review`: its setup and reviewer, unique together; the five scores as required whole-number columns checked to be 1–10 (so adding a criterion means a migration); an optional written review.
+
+*Why:* the database itself enforces one review per person per setup, all five scores, valid score ranges and no duplicate setups, and renaming a slug can't break links between records.
 
 ### Team conventions
 
@@ -170,15 +179,6 @@ What exists in the code today:
 
 - **Racquet page layout.** A racquet page lists its setups. Each setup card shows the setup (full bed or hybrid, string(s), gauge(s), tension(s) in lb and kg, date strung) and a criteria × reviewer score grid. *Why:* scores belong to setups.
 - **URL layout.** `/strings`, `/strings/[slug]`, and maybe `/setups/[id]`, alongside the existing `/racquets` and `/racquets/[slug]`. *Why:* leaves room for strings and shareable setups.
-- **Data model.**
-  - `racquet(id, slug unique)`
-  - `string`
-  - `setup`
-  - `reviewer`
-  - `review` with `UNIQUE(setup_id, reviewer_id)`
-  - `score(review_id, criterion_id, value CHECK range)`
-
-  Stable ids are the keys, not slugs. *Why:* the database itself enforces "one review per person per setup" and valid score ranges, and renaming a slug can't break links between records.
 - **Shared UI primitives first.** Extract a score chip before building the score grid. *Why:* shared pieces keep the theme consistent across pages; copying styles page by page makes them drift.
 - **Reviewer colours.** Ben pink, Michal cyan, Otavio purple, always shown with the name so colour is never the only cue.
 
