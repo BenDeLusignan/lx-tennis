@@ -87,6 +87,10 @@ Caveat (not a decision): the product photos are the manufacturers' copyrighted i
 
 **Synthwave on every page, now and in the future:** retro neon purple, pink and blue on a dark background. It must stay consistent across the whole site. A new page that doesn't look like the rest of the site is a bug.
 
+**Reviewer colours:** Ben pink, Michal cyan, Otavio purple. A colour is always shown with the reviewer's name, so colour is never the only cue.
+
+**Scores appear as one shared score chip**, built before the score grid and used wherever a score is shown. *Why:* shared pieces keep the theme consistent across pages; copying styles page by page makes them drift.
+
 ### Team conventions
 
 1. **Colours only via the semantic tokens** in `src/app/globals.css` (`--color-*`, `--glow-*`, `--text-glow-*`). No raw hex or `rgb()` in components or CSS Modules, and no reaching into the `--palette-*` layer directly. The palette sits under the semantic tokens so the whole site can be re-tuned in one block.
@@ -209,8 +213,6 @@ What exists in the code today:
 ## Proposals awaiting Ben (not decided)
 
 - **URL layout.** `/strings`, `/strings/[slug]`, and maybe `/setups/[id]`, alongside the existing `/racquets` and `/racquets/[slug]`. *Why:* leaves room for strings and shareable setups.
-- **Shared UI primitives first.** Extract a score chip before building the score grid. *Why:* shared pieces keep the theme consistent across pages; copying styles page by page makes them drift.
-- **Reviewer colours.** Ben pink, Michal cyan, Otavio purple, always shown with the name so colour is never the only cue.
 
 ## Priority and roadmap order (Ben's decision)
 
