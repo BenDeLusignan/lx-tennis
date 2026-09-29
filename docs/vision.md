@@ -43,7 +43,7 @@ The Racquets step has its own page, `/racquets`.
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank. A written review alongside the scores is optional.
 5. **Scores are whole numbers from 1 to 10.** No half points.
-6. **Tension is shown in both lb and kg.** Every tension entry has a field for each unit. Whatever the user types in one fills in the equivalent in the other automatically, rounded to 1 decimal place. Wherever a tension is shown, both units appear: the value the reviewer typed and its equivalent in the other unit.
+6. **Tension is typed once and shown in both lb and kg.** Each tension is a single number field. The setup has one lb/kg choice that covers all its tensions (mains and crosses alike), with nothing pre-selected: the reviewer must pick one. Accepted values are 30–80 lb (13.6–36.3 kg), with up to 1 decimal place. Wherever a tension is shown, both units appear: the value typed first, then its equivalent in the other unit rounded to 1 decimal place (e.g. "55 lb · 24.9 kg").
 7. **Reviews and setups are entered on the site through an entry form that only logged-in reviewers can see** (role-based access):
    - The header has a **Log in** option.
    - Reviewers log in with a **username and password**. There are three accounts, one each for Ben, Michal and Otavio, each with its own password.
@@ -109,7 +109,7 @@ Caveat (not a decision): the product photos are Yonex's copyrighted images. That
 
 - `racquet`: id and unique slug only. Specs, photos and sources stay in `src/data/racquets.ts`, keyed by slug.
 - `string`: what it holds beyond identifying the string is still open (see Open questions).
-- `setup`: its racquet, full bed or hybrid, date strung, and the string, gauge and tension for the mains (plus the crosses on a hybrid). A tension is stored as the number the reviewer typed plus its unit; the other unit is calculated for display. A duplicate setup is refused (Product rule 2).
+- `setup`: its racquet, full bed or hybrid, date strung, its tension unit (lb or kg), and the string, gauge and tension for the mains (plus the crosses on a hybrid). Each tension is stored as the number typed; the database calculates it in kg to 1 decimal place from that number and the unit, so the two can never disagree. A duplicate setup is refused (Product rule 2), comparing tensions by that kg value, so 55 lb and 24.9 kg count as the same.
 - `review`: its setup and reviewer, unique together; the five scores as required whole-number columns checked to be 1–10 (so adding a criterion means a migration); an optional written review.
 
 *Why:* the database itself enforces one review per person per setup, all five scores, valid score ranges and no duplicate setups, and renaming a slug can't break links between records.
