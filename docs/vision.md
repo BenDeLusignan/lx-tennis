@@ -57,7 +57,7 @@ The Racquets step has its own page, `/racquets`.
 9. **Never invent reviews, scores or reviewers.** No placeholder or sample data dressed up as real. If there's nothing yet, show an honest empty state.
 10. **Racquet specs come only from official manufacturer sources**, each with its source URL. Internet Archive links to the official page are fine (and needed once the manufacturer replaces a model's page).
 11. **Specs the manufacturer doesn't publish are left out, not guessed.** For example, Yonex doesn't publish RA (stiffness) or swingweight, so the site doesn't show them.
-12. **Racquet photos are official manufacturer photos, all from the same angle.**
+12. **Racquet photos are official manufacturer photos**, all shown at the same scale. The angle can differ between brands: Yonex's official shots are turned slightly, while Babolat's are flat face-on, for example.
 13. **The racquet line-up is Ben's choice.** Today it's:
    - Yonex EZONE 98 (2022, 7th gen)
    - Yonex VCORE 98 (2023, 7th gen)
@@ -182,6 +182,7 @@ What exists in the code today:
 - **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
 - **Account page extras.** Whether the account page also gets a change-password form and/or a list of the reviewer's own reviews.
+- **Extra published specs.** Some manufacturers publish specs that Yonex doesn't (Babolat gives swingweight, stiffness/RA, beam and recommended tension for the Pure Aero 98). Show them on the racquets that have them, or keep every racquet to the same five specs?
 
 ## Proposals awaiting Ben (not decided)
 
