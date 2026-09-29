@@ -34,11 +34,14 @@ The Racquets step has its own page, `/racquets`.
 
 1. **A score belongs to a setup, not to a racquet or a string on its own.** A setup is:
    - the racquet;
-   - **full bed** (one string throughout): the string used, its gauge and one tension; or
-   - **hybrid** (different strings in the mains and crosses): a string, gauge and tension for the **Mains**, and a string, gauge and tension for the **Crosses**;
+   - a string, gauge and tension for the **Mains**, and a string, gauge and tension for the **Crosses**:
+     - **full bed**: one string and gauge throughout; the mains and crosses tensions can be the same or different;
+     - **hybrid**: any strings, gauges and tensions in the mains and crosses;
    - the date strung. Restringing the same combination on a new date makes a new setup.
 
-   When entering a setup, choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
+   **Gauge is in millimetres** (e.g. 1.25 mm), the unit every brand prints.
+
+   When entering a setup, a full bed takes one string and gauge plus a mains and a crosses tension. Choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
 2. **One review per person per setup, and each setup exists once.** Entering a setup that already exists (same racquet, strings, gauges, tensions and date strung) is refused, and the reviewer is pointed to the existing one to add their review. That way everyone's scores for the same stringing sit side by side, so agreements and disagreements are easy to see.
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria.
 4. **Scoring criteria:** power, control, comfort, spin and feel. Every review scores all five: a reviewer can't leave a criterion blank. A written review alongside the scores is optional.
@@ -66,7 +69,9 @@ The Racquets step has its own page, `/racquets`.
 
    Wherever racquets are listed, they're grouped into a section per brand, in this order: **Yonex, Babolat, Head, Tecnifibre, Wilson**. Every brand gets its section, even with no racquets yet, and an empty brand shows an honest "No racquets yet".
 14. **Strings.** Each string has a brand, a name and a type. The type is required and comes from a fixed list: polyester, co-polyester, multifilament, synthetic gut, natural gut, Kevlar/aramid.
-   - The list starts with ten strings Ben chooses.
+   - The list starts with these ten, named as the manufacturer writes them, with the manufacturer's own type:
+     - Yonex (polyester): POLYTOUR PRO, POLYTOUR FIRE, POLYTOUR DRIVE, POLYTOUR REV, POLYTOUR SPIN
+     - Solinco (co-polyester): Hyper-G, Hyper-G Soft, Confidential, Confidential Soft, Mach-10
    - When entering a setup, a reviewer picks each string from the list, or chooses **Add new string** and enters its brand, name and type. It's then on the list for everyone.
    - Any logged-in reviewer can edit a string's brand, name or type (e.g. to fix spelling), and the change shows on every setup that uses it.
    - A string can be deleted only while no setup uses it.
@@ -117,7 +122,10 @@ Caveat (not a decision): the product photos are the manufacturers' copyrighted i
 
 - `racquet`: id and unique slug only. Specs, photos and sources stay in `src/data/racquets.ts`, keyed by slug.
 - `string`: brand, name and type (one of the types in Product rule 14), unique by brand and name. A string that a setup uses can't be deleted.
-- `setup`: its racquet, full bed or hybrid, date strung, its tension unit (lb or kg), and the string, gauge and tension for the mains (plus the crosses on a hybrid). Each tension is stored as the number typed; the database calculates it in kg to 1 decimal place from that number and the unit, so the two can never disagree. A duplicate setup is refused (Product rule 2), comparing tensions by that kg value, so 55 lb and 24.9 kg count as the same.
+- `setup`: its racquet, date strung, its tension unit (lb or kg), and a string, gauge and tension for both the mains and the crosses.
+  - Full bed or hybrid isn't stored: a setup is a full bed when its mains and crosses have the same string and gauge. That way the same stringing can't be entered once as each.
+  - Each tension is stored as the number typed; the database calculates it in kg to 1 decimal place from that number and the unit, so the two can never disagree.
+  - A duplicate setup is refused (Product rule 2), comparing tensions by that kg value, so 55 lb and 24.9 kg count as the same, and so do 54.9 lb and 55 lb (both 24.9 kg).
 - `review`: its setup and reviewer, unique together; the five scores as required whole-number columns checked to be 1–10 (so adding a criterion means a migration); an optional written review.
 
 *Why:* the database itself enforces one review per person per setup, all five scores, valid score ranges and no duplicate setups, and renaming a slug can't break links between records.
@@ -148,6 +156,7 @@ Caveat (not a decision): the product photos are the manufacturers' copyrighted i
   - Specs and their source URLs (plus archive links) live as comments next to each racquet in `src/data/racquets.ts`.
   - The photo is the official face-on product shot, trimmed, scaled to the same 1410px frame height and centred at the top of an identical 1000 × 1500 transparent canvas so every racquet shows at the same scale, stored as WebP in `public/images/racquets/`.
   - The slug follows `brand-model-year`, e.g. `yonex-ezone-98-2022`.
+  - Add its row to the `racquet` table with a new migration that inserts the slug (`npm run db:generate -- --custom --name=<name>`, as `drizzle/0003_seed_racquets_and_strings.sql` does). A test fails until every slug in `src/data/racquets.ts` has a row.
 - **Static images live under `public/images/`**, never straight in `public/`. *Why:* files in `public/` are served from the site root, so `public/racquets/` would share URLs with the `/racquets` pages.
 
 ## Current state
@@ -164,8 +173,19 @@ What exists in the code today:
 - **Rendering:** Cache Components (Partial Prerendering) is on. Every page is prerendered as a static shell at build time (racquet pages via `generateStaticParams`), including the login form and the account page's labels and Log out button; only the header's login state, the login page's `?next=` and error message, and the account page's name and username stream in per request. Responses are `Cache-Control: private, no-store` because of that personal part. An unknown racquet slug renders on request and gets the 404 via `notFound()` (Cache Components doesn't allow `dynamicParams = false`). No revalidation, so new racquet data still needs a rebuild.
 - Shared components in `src/components`: `InnerShell` (header + `<main>` for every page but the landing page), `SiteHeader`, `AuthStatus` (login state), `LoginLink`, `AccountLink` (the header's name link), `LogOutButton`, `Button`, `Panel` (card and content-block surface), `SectionTitle` (pink section heading), `EmptyState` (dashed "nothing here yet" box: "No reviews yet" on racquet pages, "No racquets yet" for an empty brand), `RacquetsByBrand` (a section per brand, used on `/` and `/racquets`), `RacquetList` (one brand's racquet cards) and `RacquetPhoto` (photo on a light "display case" stage so dark frames stay visible).
 - Data: a typed in-code array in `src/data/racquets.ts` holding the racquets from the line-up, each with its `brand`. The slug is the key. `getRacquetsByBrand()` returns a section for every brand in the fixed order, empty ones included, and is what `/` and `/racquets` use. Photos are in `public/images/racquets/`.
-- **Database:** SQLite through Drizzle ORM and `@libsql/client`, set by `DATABASE_URL` (`file:local.db` locally; a Turso URL plus `DATABASE_AUTH_TOKEN` later, with no code change). One table, `reviewer` (id, unique lowercase username, non-blank display name, scrypt password hash), seeded by migration with Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) and no passwords. Passwords are set only with `npm run db:set-password -- <username>`; there is no way to add accounts (see Open questions). Setup steps and scripts are in the README.
-- Not built yet: strings, setups, reviews, scores, the entry form. No review data exists.
+- **Database:** SQLite through Drizzle ORM and `@libsql/client` (which enforces foreign keys on every connection), set by `DATABASE_URL` (`file:local.db` locally; a Turso URL plus `DATABASE_AUTH_TOKEN` later, with no code change). Setup steps and scripts are in the README. Schema in `src/db/schema.ts`; the rules below are checked by the database and tested in `src/db/schema.test.ts` against a fresh database with every migration applied.
+  - `reviewer`: id, unique lowercase username, non-blank display name, scrypt password hash. Seeded by migration with Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) and no passwords. Passwords are set only with `npm run db:set-password -- <username>`; there is no way to add accounts (see Open questions).
+  - `racquet`: id and unique slug (lowercase letters, digits, hyphens), seeded with the four line-up slugs.
+  - `string`: brand, name (both non-blank, no leading or trailing whitespace) and type, stored as `polyester`, `co-polyester`, `multifilament`, `synthetic-gut`, `natural-gut` or `kevlar-aramid`. Unique by brand and name ignoring case, so "hyper-g" collides with "Hyper-G". Seeded with Ben's ten.
+  - `setup`:
+    - Racquet, `strung_on` (a real `YYYY-MM-DD` date), `tension_unit` (`lb` or `kg`), who created it and when.
+    - Mains and crosses each have a string, gauge and tension, all required. There's no full bed/hybrid column: a setup is a full bed when its mains and crosses have the same string and gauge.
+    - Numbers are exact integers. Gauge is in hundredths of a mm (1.00–1.50 mm, stored 100–150). Tension is in tenths of the setup's unit, as typed (30–80 lb or 13.6–36.3 kg, stored 300–800 or 136–363).
+    - The database generates each tension in tenths of a kg (`*_tension_tenths_kg`; 1 lb = 0.45359237 kg, rounded half up).
+    - A duplicate is refused by one unique index on racquet, date, and the mains' and crosses' strings, gauges and kg tensions.
+  - `review`: setup and reviewer (unique together), power, control, comfort, spin and feel (required integers 1–10), optional written review (not blank when given), created and updated times.
+  - Strings, racquets, setups and reviewers in use can't be deleted (RESTRICT foreign keys). There are no `src/data` accessors for racquet rows, strings, setups or reviews yet.
+- Not built yet: the entry form and anything that shows strings, setups, reviews or scores. No setup or review data exists.
 - No CI, not deployed.
 
 ## Other decisions by Ben

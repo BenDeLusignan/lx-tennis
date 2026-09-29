@@ -15,6 +15,20 @@
       "when": 1790629620687,
       "tag": "0001_seed_reviewers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790708389409,
+      "tag": "0002_create_racquet_string_setup_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790708389802,
+      "tag": "0003_seed_racquets_and_strings",
+      "breakpoints": true
     }
   ]
 }
