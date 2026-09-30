@@ -27,7 +27,7 @@ type SearchParams = Pick<PageProps<"/account/strings">, "searchParams">;
 const ERRORS: Record<string, string> = {
   invalid: "Brand and name can’t be blank, and the type has to be one from the list.",
   "string-exists": "Another string already has that brand and name (ignoring capitals).",
-  "in-use": "That string is used by a setup, so it can’t be deleted.",
+  "in-use": "That string has been tested in a review, so it can’t be deleted.",
 };
 
 const TYPE_LABELS = Object.fromEntries(STRING_TYPES.map(({ value, label }) => [value, label]));
@@ -132,7 +132,7 @@ function StringForm({ string, inUse }: { string: TennisString; inUse: boolean })
                 Delete
               </Button>
               <p id={id("in-use")} className={styles.note}>
-                In use by a setup, so it can&rsquo;t be deleted.
+                Tested in a review, so it can&rsquo;t be deleted.
               </p>
             </>
           ) : (
