@@ -41,7 +41,7 @@ The Racquets step has its own page, `/racquets`.
 
    **Gauge is in millimetres** (e.g. 1.25 mm), the unit every brand prints.
 
-   When entering a setup, a full bed takes one string and gauge plus a mains and a crosses tension. Choosing "Hybrid" reveals separate **Mains:** and **Crosses:** entry areas, each with its own string, gauge and tension.
+   When entering a setup, the form always shows a **Mains:** area and a **Crosses:** area, for a full bed as well as a hybrid. A full bed takes one string and gauge (entered in Mains, with Crosses saying it's the same) plus a tension in each area. Choosing "Hybrid" reveals the crosses' own string and gauge, so each area has its own string, gauge and tension.
 2. **One review per person per setup, and each setup exists once.** Entering a setup that already exists (same racquet, strings, gauges, tensions and date strung) is refused, and the reviewer is pointed to the existing one to add their review. That way everyone's scores for the same stringing sit side by side, so agreements and disagreements are easy to see.
 3. **Side by side.** All reviewers' scores for a setup appear together, on the same criteria. On a racquet's page, each setup is a card:
    - the setup on top: full bed or hybrid, string(s), gauge(s), tensions in lb and kg, date strung;
