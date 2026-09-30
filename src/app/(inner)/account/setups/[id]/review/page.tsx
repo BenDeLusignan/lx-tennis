@@ -78,12 +78,14 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
   const { existing, error } = await searchParams;
   // The session's own review: nobody's scores but yours ever fill this form.
   const mine = setup.reviews.find((review) => review.reviewer.id === reviewer.id);
+  // Where Cancel and a finished edit both go: the setup's card. A plain link,
+  // so leaving the form saves nothing and works before JavaScript loads.
+  const cardHref = `/racquets/${setup.racquetSlug}#setup-${setup.id}`;
   // A fresh key per response, so the same message twice is focused again.
   const key = crypto.randomUUID();
   const errorMessage = typeof error === "string" && Object.hasOwn(ERRORS, error) ? ERRORS[error] : null;
 
   if (mine) {
-    const cardHref = `/racquets/${setup.racquetSlug}#setup-${setup.id}`;
     return (
       <Panel aria-labelledby="form-heading">
         <SectionTitle id="form-heading" size="lg">
@@ -108,7 +110,7 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
           <ReviewFields defaults={{ scores: mine.scores, body: mine.body }} />
           <div className={styles.actions}>
             <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
-            <Button href={cardHref}>Back to the setup</Button>
+            <Button href={cardHref}>Cancel</Button>
           </div>
         </form>
       </Panel>
@@ -135,7 +137,10 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
           </FormMessage>
         )}
         <ReviewFields />
-        <SubmitButton pendingLabel="Saving…">Save review</SubmitButton>
+        <div className={styles.actions}>
+          <SubmitButton pendingLabel="Saving…">Save review</SubmitButton>
+          <Button href={cardHref}>Cancel</Button>
+        </div>
       </form>
     </Panel>
   );

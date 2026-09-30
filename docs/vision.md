@@ -23,6 +23,7 @@ Why: published online reviews often don't match how the group feels a frame or s
 - **Reviewers:** Ben, Michal and Otavio (more over time). They log in to enter setups and reviews.
 - **Visitors:** anyone else. They can browse and read everything without logging in, but can't enter or change anything.
 - Used on a phone, at the court.
+- Ben, Michal and Otavio are men; use he/him for them in docs and copy.
 
 ## Core flow (Ben's decision)
 
@@ -191,13 +192,13 @@ What exists in the code today:
 - **`/account`**: the logged-in reviewer's display name and username, a link to edit the string list (`/account/strings`), and a **Log out** button. Visitors are sent to `/login?next=%2Faccount` (a 307, from `src/proxy.ts`), so logging in comes back here.
 - **`/account/racquets/[slug]/new`** (reviewers only; unknown slug 404s): a new setup plus your review, in one form.
   - Above the form, the racquet's existing setups (summary only), each with **Add your review**, or "You've reviewed this one", so nobody re-enters a setup that's there.
-  - The form: date strung (not in the future); Full bed / Hybrid (Full bed pre-selected); the lb/kg choice as two radios with nothing pre-selected; a Mains and a Crosses area. A full bed shows one string and gauge (in Mains) with a tension in each area; Hybrid reveals the crosses' own string and gauge. Each string is picked from the list (grouped by brand, with its type) or "Add new string…", which reveals brand, name and type. Then the five scores and the optional written review (`ReviewFields`).
+  - The form: date strung (not in the future); Full bed / Hybrid (Full bed pre-selected); the lb/kg choice as two radios with nothing pre-selected; a Mains and a Crosses area. A full bed shows one string and gauge (in Mains) with a tension in each area; Hybrid reveals the crosses' own string and gauge. Each string is picked from the list (grouped by brand, with its type) or "Add new string…", which reveals brand, name and type. Then the five scores and the optional written review (`ReviewFields`). **Save setup and review** has a **Cancel** link beside it, back to the racquet's page; it's plain navigation, so nothing is saved.
   - The reveals are CSS, so they work before JavaScript loads. Once it has: the revealed fields become required, the tensions' min and max follow lb/kg, each tension shows its live conversion ("= 24.9 kg"), and a new string that's already on the list is refused before submitting.
   - Errors from the save come back as `?error=` flags, each with its own message (focused); a duplicate setup goes to that setup's review page instead (`?existing=1`), which says it's already on the site, whether or not you've reviewed it.
   - Headings: h1 Add a setup, h2 Already on this racquet, h3 each setup, h2 New setup and your review.
 - **`/account/setups/[id]/review`** (reviewers only; unknown or malformed id 404s): the setup's summary (not the others' scores, so they don't pull yours towards theirs), then your review.
-  - If you haven't reviewed it: the add form (scores and written review).
-  - If you have: the same form filled in with your current scores and written review, headed "Edit your review", with **Save changes** and a link back to the setup's card. Saving goes to the card. A failed save comes back with a message saying nothing was saved, and the form shows your review as it was.
+  - If you haven't reviewed it: the add form (scores and written review), with **Save review** and a **Cancel** link beside it, back to the setup's card. Nothing is saved.
+  - If you have: the same form filled in with your current scores and written review, headed "Edit your review", with **Save changes** and a **Cancel** link back to the setup's card. Saving goes to the card. A failed save comes back with a message saying nothing was saved, and the form shows your review as it was.
   - A duplicate setup sent here (`?existing=1`) says so either way.
   - Only for a reviewer who has reviewed it, below the edit form: a separate **Delete your review** panel. A reviewer with no review sees nothing.
     - A short line on why you'd delete it, then "Delete your review…", a `<details>` (so it works before JavaScript loads) that opens to "This deletes your review. It can't be undone.", then either "Other reviewers' reviews stay." or, when yours is the only review, "Yours is the only review, so the setup is deleted too." (read per request), and the real **Yes, delete my review** button, a Server Action POST. Success goes to the setup's card, or to the racquet's page when the setup went with its last review.

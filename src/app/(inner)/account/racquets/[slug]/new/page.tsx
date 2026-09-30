@@ -5,6 +5,7 @@ import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
 import { AddReviewButton } from "@/components/add-review-button";
 import { BackLink } from "@/components/back-link";
+import { Button } from "@/components/button";
 import { Field } from "@/components/field";
 import { FormMessage } from "@/components/form-message";
 import { Input } from "@/components/input";
@@ -174,7 +175,12 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
 
           <ReviewFields />
 
-          <SubmitButton pendingLabel="Saving…">Save setup and review</SubmitButton>
+          {/* Cancel is only a link back to the racquet: nothing is saved, and it
+              works before JavaScript loads. */}
+          <div className={styles.actions}>
+            <SubmitButton pendingLabel="Saving…">Save setup and review</SubmitButton>
+            <Button href={`/racquets/${slug}`}>Cancel</Button>
+          </div>
         </form>
       </Panel>
     </div>
