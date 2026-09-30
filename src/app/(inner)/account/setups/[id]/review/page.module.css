@@ -13,6 +13,7 @@
   color: var(--color-text-muted);
 }
 
+/* Also wraps a lone button: a bare button in a column-flex form would stretch to the full width. */
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -24,4 +25,58 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+}
+
+/* The delete area: the explanation, then the confirmation and its button, spaced evenly. */
+.delete {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* A <details> opens the confirmation with no JavaScript. The summary is the 44px+ tap target. */
+.confirmSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-link);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.confirmSummary:hover {
+  text-shadow: var(--text-glow-cyan);
+}
+
+.confirmSummary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron instead of the default triangle, turned when open. Decorative (empty alt). */
+.confirmSummary::before {
+  content: "›" / "";
+  transition: transform var(--duration-fast) ease;
+}
+
+.confirm[open] .confirmSummary::before {
+  transform: rotate(90deg);
+}
+
+.warning {
+  font-weight: 600;
+}
+
+.confirmForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block-start: var(--space-2);
 }

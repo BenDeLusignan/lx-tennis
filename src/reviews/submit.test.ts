@@ -5,10 +5,10 @@ import { beforeEach, test } from "node:test";
 import { and, eq } from "drizzle-orm";
 import type { Reviewer } from "@/data/reviewers";
 import { createSetupWithReview, getRacquetSetups, getSetup } from "@/data/setups";
-import { getStrings } from "@/data/strings";
+import { getStrings, getStringsWithUsage } from "@/data/strings";
 import { getDb } from "@/db/client";
 import { review } from "@/db/schema";
-import { submitReview, submitReviewEdit, submitSetupWithReview } from "@/reviews/submit";
+import { submitDeleteSetup, submitReview, submitReviewEdit, submitSetupWithReview } from "@/reviews/submit";
 
 // Seeded on a fresh database: reviewers 1–3, racquets 1–4, strings 1–10.
 const BEN: Reviewer = { id: 1, username: "ben", displayName: "Ben" };
@@ -421,5 +421,139 @@ test("an edit with invalid scores is refused and nothing changes", async () => {
   );
 
   assert.deepEqual(await storedReview(id, BEN.id), before);
+  assert.deepEqual(refreshedTags, []);
+});
+
+/** Whether a setup uses the string, as /account/strings shows it ("String tested"). */
+async function stringInUse(name: string): Promise<boolean> {
+  const found = (await getStringsWithUsage()).find((string) => string.name === name);
+  assert.ok(found, `no string named ${name}`);
+  return found.inUse;
+}
+
+test("a visitor can't delete a setup and is sent to log in", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  clearRefreshedTags();
+
+  assert.equal(
+    await submitDeleteSetup(null, form({ setup: String(id) })),
+    `/login?next=${encodeURIComponent(`/account/setups/${id}/review`)}`,
+  );
+  assert.ok(await getSetup(id));
+  assert.ok(await storedReview(id, BEN.id));
+  assert.deepEqual(refreshedTags, []);
+});
+
+test("the creator deletes their setup and their review with it, and the racquet page and string list refresh", async () => {
+  const id = createdId(
+    await submitSetupWithReview(
+      BEN,
+      fullBed({
+        kind: "hybrid",
+        crossesString: "new",
+        crossesNewBrand: "Wilson",
+        crossesNewName: "Delete Test Gut",
+        crossesNewType: "natural-gut",
+        crossesGauge: "1.30",
+      }),
+    ),
+  );
+  assert.equal(await stringInUse("Delete Test Gut"), true);
+  clearRefreshedTags();
+
+  assert.equal(await submitDeleteSetup(BEN, form({ setup: String(id) })), `/racquets/${SLUG}`);
+
+  assert.equal(await getSetup(id), undefined);
+  assert.equal(await storedReview(id, BEN.id), undefined);
+  assert.ok(!(await getRacquetSetups(SLUG)).some((setup) => setup.id === id));
+  // The string stays on the list, but no setup uses it any more.
+  assert.equal(await stringInUse("Delete Test Gut"), false);
+  assert.deepEqual([...refreshedTags].sort(), ["strings", `setups:${SLUG}`].sort());
+});
+
+test("the creator can delete a setup that has no reviews at all", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  // Nothing in the app removes a review, so arrange this one in the table.
+  await getDb().delete(review).where(eq(review.setupId, id));
+  clearRefreshedTags();
+
+  assert.equal(await submitDeleteSetup(BEN, form({ setup: String(id) })), `/racquets/${SLUG}`);
+  assert.equal(await getSetup(id), undefined);
+  assert.ok(refreshedTags.includes(`setups:${SLUG}`));
+});
+
+test("the creator can't delete a setup once someone else has reviewed it, and nothing is removed", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  await submitReview(MICHAL, form({ setup: String(id), ...SCORES, body: "Michal's" }));
+  const bens = await storedReview(id, BEN.id);
+  const michals = await storedReview(id, MICHAL.id);
+  clearRefreshedTags();
+
+  assert.equal(
+    await submitDeleteSetup(BEN, form({ setup: String(id) })),
+    `/account/setups/${id}/review?error=has-other-reviews`,
+  );
+  assert.ok(await getSetup(id));
+  assert.deepEqual(await storedReview(id, BEN.id), bens);
+  assert.deepEqual(await storedReview(id, MICHAL.id), michals);
+  assert.deepEqual(refreshedTags, []);
+});
+
+test("a reviewer who didn't create the setup can't delete it, even with forged fields", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  const bens = await storedReview(id, BEN.id);
+  clearRefreshedTags();
+
+  // Michal hasn't reviewed it, and names Ben as the reviewer and creator too.
+  assert.equal(
+    await submitDeleteSetup(
+      MICHAL,
+      form({
+        setup: String(id),
+        reviewer: String(BEN.id),
+        reviewerId: String(BEN.id),
+        createdBy: String(BEN.id),
+        review: String(bens.id),
+        id: String(id),
+      }),
+    ),
+    `/account/setups/${id}/review?error=not-creator`,
+  );
+  assert.ok(await getSetup(id));
+  assert.deepEqual(await storedReview(id, BEN.id), bens);
+
+  // Having reviewed it makes no difference.
+  await submitReview(MICHAL, form({ setup: String(id), ...SCORES }));
+  clearRefreshedTags();
+  assert.equal(
+    await submitDeleteSetup(MICHAL, form({ setup: String(id) })),
+    `/account/setups/${id}/review?error=not-creator`,
+  );
+  assert.ok(await getSetup(id));
+  assert.ok(await storedReview(id, BEN.id));
+  assert.ok(await storedReview(id, MICHAL.id));
+  assert.deepEqual(refreshedTags, []);
+
+  // Without Ben's own review in the way, Michal is the only reviewer: he still
+  // can't delete Ben's setup. Only the creator check decides this case.
+  await getDb().delete(review).where(and(eq(review.setupId, id), eq(review.reviewerId, BEN.id)));
+  clearRefreshedTags();
+  assert.equal(
+    await submitDeleteSetup(MICHAL, form({ setup: String(id) })),
+    `/account/setups/${id}/review?error=not-creator`,
+  );
+  assert.ok(await getSetup(id));
+  assert.ok(await storedReview(id, MICHAL.id));
+  assert.deepEqual(refreshedTags, []);
+});
+
+test("deleting a setup that's already gone isn't an error", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  await submitDeleteSetup(BEN, form({ setup: String(id) }));
+  clearRefreshedTags();
+
+  assert.equal(await submitDeleteSetup(BEN, form({ setup: String(id) })), "/racquets");
+  assert.equal(await submitDeleteSetup(BEN, form({ setup: "999999" })), "/racquets");
+  assert.equal(await submitDeleteSetup(BEN, form({ setup: "abc" })), "/racquets");
   assert.deepEqual(refreshedTags, []);
 });

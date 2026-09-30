@@ -14,7 +14,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { getRacquet } from "@/data/racquets";
 import { getSetup, type Setup } from "@/data/setups";
 import { parseId } from "@/forms/fields";
-import { addReview, updateReview } from "@/reviews/actions";
+import { addReview, deleteSetup, updateReview } from "@/reviews/actions";
 import styles from "./page.module.css";
 
 // The h1 and title are neutral on purpose: add vs edit depends on the
@@ -39,6 +39,12 @@ const ERRORS: Record<string, string> = {
   scores: "Give all five criteria a whole-number score from 1 to 10.",
 };
 
+// The codes deleteSetup redirects with.
+const DELETE_ERRORS: Record<string, string> = {
+  "has-other-reviews": "Someone else has reviewed this setup, so it stays.",
+  "not-creator": "Only the reviewer who entered this setup can delete it.",
+};
+
 export default async function ReviewPage({ params, searchParams }: Props) {
   const { id } = await params;
   const setupId = parseId(id);
@@ -61,7 +67,9 @@ export default async function ReviewPage({ params, searchParams }: Props) {
       </Panel>
 
       <Suspense fallback={null}>
+        <DeleteRefusal searchParams={searchParams} />
         <YourReview setup={setup} searchParams={searchParams} />
+        <DeleteSetup setup={setup} />
       </Suspense>
     </div>
   );
@@ -136,6 +144,73 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
         <ReviewFields />
         <SubmitButton pendingLabel="Saving…">Save review</SubmitButton>
       </form>
+    </Panel>
+  );
+}
+
+// Why a delete was refused, at the top with the other messages so it's seen
+// without scrolling, and so it shows before JavaScript loads. Shown to anyone
+// the flag reaches, including a forged request from a reviewer who isn't the
+// creator (who gets no delete panel).
+async function DeleteRefusal({ searchParams }: Pick<Props, "searchParams">) {
+  const { error } = await searchParams;
+  if (typeof error !== "string" || !Object.hasOwn(DELETE_ERRORS, error)) return null;
+  // A fresh key per response, so the same message twice is focused again.
+  return (
+    <FormMessage key={crypto.randomUUID()} tone="error">
+      {DELETE_ERRORS[error]} Nothing was deleted.
+    </FormMessage>
+  );
+}
+
+// Only for the reviewer who entered the setup, and only while nobody else
+// has reviewed it (the server checks both in `deleteSetup`; this is just what
+// the page offers). Step one is a <details>, so the confirmation works
+// before JavaScript loads: opening it reveals what deleting does and the
+// real Delete button, a Server Action POST.
+async function DeleteSetup({ setup }: { setup: Setup }) {
+  const reviewer = await getCurrentReviewer();
+  // YourReview sends visitors to log in; anyone else sees nothing.
+  if (!reviewer || setup.createdBy !== reviewer.id) return null;
+
+  const othersReviewed = setup.reviews.some((review) => review.reviewer.id !== reviewer.id);
+
+  return (
+    <Panel aria-labelledby="delete-heading">
+      <SectionTitle id="delete-heading" size="lg">
+        Delete this setup
+      </SectionTitle>
+      <div className={styles.delete}>
+        {othersReviewed ? (
+          <div className={styles.actions}>
+            <Button type="button" disabled aria-describedby="delete-unavailable">
+              Delete this setup
+            </Button>
+            <p id="delete-unavailable" className={styles.note}>
+              Others have reviewed this setup, so it can&rsquo;t be deleted.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className={styles.note}>
+              Entered under the wrong racquet? You can delete the setup while nobody else has
+              reviewed it.
+            </p>
+            <details className={styles.confirm}>
+              <summary className={styles.confirmSummary}>Delete this setup…</summary>
+              <form action={deleteSetup} className={styles.confirmForm}>
+                <input type="hidden" name="setup" value={setup.id} />
+                <p className={styles.warning}>
+                  This deletes the setup and your review. It can&rsquo;t be undone.
+                </p>
+                <div className={styles.actions}>
+                  <Button type="submit">Yes, delete this setup</Button>
+                </div>
+              </form>
+            </details>
+          </>
+        )}
+      </div>
     </Panel>
   );
 }

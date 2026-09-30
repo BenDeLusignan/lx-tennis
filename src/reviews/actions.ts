@@ -2,7 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
-import { submitReview, submitReviewEdit, submitSetupWithReview } from "@/reviews/submit";
+import {
+  submitDeleteSetup,
+  submitReview,
+  submitReviewEdit,
+  submitSetupWithReview,
+} from "@/reviews/submit";
 
 // Anyone can POST to a Server Action, whatever the page shows, so each one
 // checks the session itself: `submit*` sends a visitor to log in before
@@ -20,4 +25,8 @@ export async function addReview(formData: FormData): Promise<never> {
 
 export async function updateReview(formData: FormData): Promise<never> {
   redirect(await submitReviewEdit(await getCurrentReviewer(), formData));
+}
+
+export async function deleteSetup(formData: FormData): Promise<never> {
+  redirect(await submitDeleteSetup(await getCurrentReviewer(), formData));
 }
