@@ -14,11 +14,13 @@ import { SubmitButton } from "@/components/submit-button";
 import { getRacquet } from "@/data/racquets";
 import { getSetup, type Setup } from "@/data/setups";
 import { parseId } from "@/forms/fields";
-import { addReview } from "@/reviews/actions";
+import { addReview, updateReview } from "@/reviews/actions";
 import styles from "./page.module.css";
 
+// The h1 and title are neutral on purpose: add vs edit depends on the
+// session, which is read behind <Suspense> (the static shell can't know it).
 export const metadata: Metadata = {
-  title: "Add your review",
+  title: "Review this setup",
 };
 
 // Setups are added all the time, so there's no list of ids to prerender.
@@ -31,13 +33,13 @@ export const instant = false;
 
 type Props = PageProps<"/account/setups/[id]/review">;
 
-// The codes addReview redirects with.
+// The codes addReview and updateReview redirect with.
 const ERRORS: Record<string, string> = {
   invalid: "Something in the form was missing or not in the right format.",
   scores: "Give all five criteria a whole-number score from 1 to 10.",
 };
 
-export default async function AddReviewPage({ params, searchParams }: Props) {
+export default async function ReviewPage({ params, searchParams }: Props) {
   const { id } = await params;
   const setupId = parseId(id);
   const setup = setupId === null ? undefined : await getSetup(setupId);
@@ -50,7 +52,7 @@ export default async function AddReviewPage({ params, searchParams }: Props) {
     <div className={styles.page}>
       <div>
         <BackLink href={`/racquets/${racquet.slug}`}>{racquet.name}</BackLink>
-        <SectionTitle as="h1">Add your review</SectionTitle>
+        <SectionTitle as="h1">Review this setup</SectionTitle>
       </div>
 
       <Panel aria-labelledby="setup-heading">
@@ -65,41 +67,53 @@ export default async function AddReviewPage({ params, searchParams }: Props) {
   );
 }
 
-// The form, or "you've reviewed this" (Product rule 2: one review per
-// person per setup), after the page's own login check (the proxy's is only
-// the quick one).
+// Your review: the add form, or (Product rule 2: one review per person per
+// setup) the same form filled in with your review to edit it. After the
+// page's own login check (the proxy's is only the quick one).
 async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props, "searchParams">) {
   const reviewer = await getCurrentReviewer();
   if (!reviewer) redirect(loginPath(`/account/setups/${setup.id}/review`));
 
   const { existing, error } = await searchParams;
-  const cardHref = `/racquets/${setup.racquetSlug}#setup-${setup.id}`;
+  // The session's own review: nobody's scores but yours ever fill this form.
+  const mine = setup.reviews.find((review) => review.reviewer.id === reviewer.id);
+  // A fresh key per response, so the same message twice is focused again.
+  const key = crypto.randomUUID();
+  const errorMessage = typeof error === "string" && Object.hasOwn(ERRORS, error) ? ERRORS[error] : null;
 
-  if (setup.reviews.some((review) => review.reviewer.id === reviewer.id)) {
+  if (mine) {
+    const cardHref = `/racquets/${setup.racquetSlug}#setup-${setup.id}`;
     return (
-      <>
-        {existing === "1" && (
-          // Sent here by createSetupWithReview instead of saving a duplicate,
-          // and this reviewer's own review is already on it.
-          <FormMessage key={crypto.randomUUID()} tone="error">
-            This setup is already on the site, so nothing from the new-setup form was saved.
-          </FormMessage>
-        )}
-        <Panel aria-labelledby="reviewed-heading" className={styles.reviewed}>
-          <SectionTitle id="reviewed-heading" size="lg">
-            You&rsquo;ve reviewed this setup
-          </SectionTitle>
-          <p>There&rsquo;s one review per person per setup, and yours is already on it.</p>
-          <Button href={cardHref} className={styles.reviewedAction}>
-            See it on the racquet page
-          </Button>
-        </Panel>
-      </>
+      <Panel aria-labelledby="form-heading">
+        <SectionTitle id="form-heading" size="lg">
+          Edit your review
+        </SectionTitle>
+        <form action={updateReview} className={styles.form}>
+          <input type="hidden" name="setup" value={setup.id} />
+          {existing === "1" && (
+            // Sent here by createSetupWithReview instead of saving a duplicate,
+            // and this reviewer's own review is already on it.
+            <FormMessage key={key} tone="error">
+              This setup is already on the site, so nothing from the new-setup form was saved. Your
+              review of it is below.
+            </FormMessage>
+          )}
+          {errorMessage && (
+            <FormMessage key={key} tone="error">
+              {errorMessage} Nothing was saved, so your review below is as it was. Make your changes
+              again.
+            </FormMessage>
+          )}
+          <ReviewFields defaults={{ scores: mine.scores, body: mine.body }} />
+          <div className={styles.actions}>
+            <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+            <Button href={cardHref}>Back to the setup</Button>
+          </div>
+        </form>
+      </Panel>
     );
   }
 
-  // A fresh key per response, so the same message twice is focused again.
-  const key = crypto.randomUUID();
   return (
     <Panel aria-labelledby="form-heading">
       <SectionTitle id="form-heading" size="lg">
@@ -114,9 +128,9 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
             form was saved, so enter your scores here.
           </FormMessage>
         )}
-        {typeof error === "string" && Object.hasOwn(ERRORS, error) && (
+        {errorMessage && (
           <FormMessage key={key} tone="error">
-            {ERRORS[error]} Nothing was saved, so the form is empty again.
+            {errorMessage} Nothing was saved, so the form is empty again.
           </FormMessage>
         )}
         <ReviewFields />

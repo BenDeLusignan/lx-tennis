@@ -349,3 +349,44 @@ export async function addReview(
   updateTag(racquetSetupsTag(found.racquetSlug));
   return { status: "created", racquetSlug: found.racquetSlug };
 }
+
+export type UpdateReviewResult =
+  | { status: "updated"; racquetSlug: string }
+  /** The reviewer has no review of this setup; nothing was written. */
+  | { status: "not-reviewed"; racquetSlug: string }
+  | { status: "unknown-setup" };
+
+/**
+ * Changes the scores and written review of the reviewer's own review of a
+ * setup (only its original reviewer may edit it). Only from a Server Action
+ * (it refreshes pages with `updateTag`).
+ *
+ * The row is found by setup AND the reviewer from the session, never by a
+ * review id from the request, so no input can point this at someone else's
+ * review; and it only updates, so a reviewer with no review gets
+ * "not-reviewed" rather than a new one (adding is `addReview`'s job).
+ */
+export async function updateReview(
+  setupId: number,
+  changes: NewReview,
+  author: Reviewer,
+): Promise<UpdateReviewResult> {
+  const db = getDb();
+  const [found] = await db
+    .select({ racquetSlug: racquet.slug })
+    .from(setup)
+    .innerJoin(racquet, eq(racquet.id, setup.racquetId))
+    .where(eq(setup.id, setupId));
+  if (!found) return { status: "unknown-setup" };
+
+  // Drizzle sets `updated_at` on every update it runs (see the schema).
+  const updated = await db
+    .update(review)
+    .set({ ...changes.scores, body: changes.body })
+    .where(and(eq(review.setupId, setupId), eq(review.reviewerId, author.id)))
+    .returning({ id: review.id });
+  if (updated.length === 0) return { status: "not-reviewed", racquetSlug: found.racquetSlug };
+
+  updateTag(racquetSetupsTag(found.racquetSlug));
+  return { status: "updated", racquetSlug: found.racquetSlug };
+}

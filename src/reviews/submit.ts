@@ -1,7 +1,7 @@
 import "server-only";
 import { loginPath } from "@/auth/safe-next-path";
 import type { Reviewer } from "@/data/reviewers";
-import { addReview, createSetupWithReview } from "@/data/setups";
+import { addReview, createSetupWithReview, updateReview } from "@/data/setups";
 import { parseId } from "@/forms/fields";
 import { parseRacquetSlug, parseReviewFields, parseSetupForm } from "@/reviews/setup-form";
 
@@ -56,6 +56,35 @@ export async function submitReview(reviewer: Reviewer | null, formData: FormData
       return `/racquets/${result.racquetSlug}#setup-${setupId}`;
     case "already-reviewed":
       // The page shows that they've reviewed it, with no form.
+      return reviewPath;
+    case "unknown-setup":
+      return `${reviewPath}?error=invalid`;
+  }
+}
+
+/**
+ * Edits the logged-in reviewer's own review of a setup. The form carries only
+ * the setup id: whose review changes comes from the session, inside
+ * `updateReview`, so nobody can edit another reviewer's review by any request.
+ */
+export async function submitReviewEdit(
+  reviewer: Reviewer | null,
+  formData: FormData,
+): Promise<string> {
+  const setupId = parseId(formData.get("setup"));
+  if (!reviewer) return loginPath(setupId ? `/account/setups/${setupId}/review` : "/account");
+  if (!setupId) return "/racquets";
+  const reviewPath = `/account/setups/${setupId}/review`;
+
+  const parsed = parseReviewFields(formData);
+  if (!parsed.ok) return `${reviewPath}?error=${parsed.error}`;
+
+  const result = await updateReview(setupId, parsed.value, reviewer);
+  switch (result.status) {
+    case "updated":
+      return `/racquets/${result.racquetSlug}#setup-${setupId}`;
+    case "not-reviewed":
+      // Nothing to edit: the page shows the add form instead.
       return reviewPath;
     case "unknown-setup":
       return `${reviewPath}?error=invalid`;

@@ -2,10 +2,13 @@
 import { clearRefreshedTags, refreshedTags } from "@/data/test-database";
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
+import { and, eq } from "drizzle-orm";
 import type { Reviewer } from "@/data/reviewers";
 import { createSetupWithReview, getRacquetSetups, getSetup } from "@/data/setups";
 import { getStrings } from "@/data/strings";
-import { submitReview, submitSetupWithReview } from "@/reviews/submit";
+import { getDb } from "@/db/client";
+import { review } from "@/db/schema";
+import { submitReview, submitReviewEdit, submitSetupWithReview } from "@/reviews/submit";
 
 // Seeded on a fresh database: reviewers 1–3, racquets 1–4, strings 1–10.
 const BEN: Reviewer = { id: 1, username: "ben", displayName: "Ben" };
@@ -295,4 +298,128 @@ test("a racquet's setups come newest strung first", async () => {
   const newer = createdId(await submitSetupWithReview(BEN, fullBed({ strungOn: "2020-01-02" })));
   const ids = (await getRacquetSetups(SLUG)).map((setup) => setup.id);
   assert.ok(ids.indexOf(newer) < ids.indexOf(older));
+});
+
+/** A reviewer's stored review of a setup, straight from the table (the readers don't show times). */
+async function storedReview(setupId: number, reviewerId: number) {
+  const [row] = await getDb()
+    .select()
+    .from(review)
+    .where(and(eq(review.setupId, setupId), eq(review.reviewerId, reviewerId)));
+  return row;
+}
+
+const EDIT = { power: "3", control: "4", comfort: "5", spin: "6", feel: "10", body: "Softer than I thought." };
+
+test("a visitor can't edit a review and is sent to log in", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  clearRefreshedTags();
+
+  assert.equal(
+    await submitReviewEdit(null, form({ setup: String(id), ...EDIT })),
+    `/login?next=${encodeURIComponent(`/account/setups/${id}/review`)}`,
+  );
+  const stored = await storedReview(id, BEN.id);
+  assert.equal(stored.power, 7);
+  assert.equal(stored.body, "Crisp.");
+  assert.deepEqual(refreshedTags, []);
+});
+
+test("a reviewer edits their own review: scores and text change, the time moves, the racquet page refreshes", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  // Push updated_at into the past so "the time moved" doesn't depend on the clock's second.
+  await getDb()
+    .update(review)
+    .set({ updatedAt: new Date(0) })
+    .where(and(eq(review.setupId, id), eq(review.reviewerId, BEN.id)));
+  const before = await storedReview(id, BEN.id);
+  assert.equal(before.updatedAt.getTime(), 0);
+  clearRefreshedTags();
+
+  assert.equal(
+    await submitReviewEdit(BEN, form({ setup: String(id), ...EDIT })),
+    `/racquets/${SLUG}#setup-${id}`,
+  );
+
+  const after = await storedReview(id, BEN.id);
+  assert.deepEqual(
+    [after.power, after.control, after.comfort, after.spin, after.feel, after.body],
+    [3, 4, 5, 6, 10, "Softer than I thought."],
+  );
+  assert.ok(after.updatedAt.getTime() > 0);
+  assert.equal(after.createdAt.getTime(), before.createdAt.getTime());
+  assert.deepEqual(refreshedTags, [`setups:${SLUG}`]);
+
+  // A blank written review clears it.
+  assert.equal(
+    await submitReviewEdit(BEN, form({ setup: String(id), ...EDIT, body: "  " })),
+    `/racquets/${SLUG}#setup-${id}`,
+  );
+  assert.equal((await storedReview(id, BEN.id)).body, null);
+});
+
+test("a reviewer can't change another reviewer's review, whatever the form says", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  await submitReview(MICHAL, form({ setup: String(id), ...SCORES, body: "Michal's" }));
+  const bens = await storedReview(id, BEN.id);
+  clearRefreshedTags();
+
+  // Michal edits, and also tries to name Ben and his review in the form:
+  // only his own row, found by his session, changes.
+  await submitReviewEdit(
+    MICHAL,
+    form({ setup: String(id), reviewer: String(BEN.id), reviewerId: String(BEN.id), review: String(bens.id), id: String(bens.id), ...EDIT }),
+  );
+
+  assert.deepEqual(await storedReview(id, BEN.id), bens);
+  const michals = await storedReview(id, MICHAL.id);
+  assert.deepEqual([michals.power, michals.feel, michals.body], [3, 10, "Softer than I thought."]);
+});
+
+test("editing a setup you haven't reviewed creates nothing and leaves others' reviews alone", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  const bens = await storedReview(id, BEN.id);
+  clearRefreshedTags();
+
+  // Sent to the review page, which shows the add form.
+  assert.equal(
+    await submitReviewEdit(MICHAL, form({ setup: String(id), ...EDIT })),
+    `/account/setups/${id}/review`,
+  );
+  assert.equal(await storedReview(id, MICHAL.id), undefined);
+  assert.deepEqual(await storedReview(id, BEN.id), bens);
+  assert.deepEqual(refreshedTags, []);
+
+  assert.equal(
+    await submitReviewEdit(MICHAL, form({ setup: "999999", ...EDIT })),
+    "/account/setups/999999/review?error=invalid",
+  );
+  assert.equal(await submitReviewEdit(MICHAL, form({ setup: "abc", ...EDIT })), "/racquets");
+});
+
+test("an edit with invalid scores is refused and nothing changes", async () => {
+  const id = createdId(await submitSetupWithReview(BEN, fullBed()));
+  const before = await storedReview(id, BEN.id);
+  clearRefreshedTags();
+
+  for (const bad of [{ feel: "0" }, { feel: "11" }, { feel: "7.5" }, { feel: "" }, { feel: "abc" }]) {
+    assert.equal(
+      await submitReviewEdit(BEN, form({ setup: String(id), ...EDIT, ...bad })),
+      `/account/setups/${id}/review?error=scores`,
+    );
+  }
+  // A missing criterion, and a written review over the limit.
+  const missingSpin = form({ setup: String(id), ...EDIT });
+  missingSpin.delete("spin");
+  assert.equal(
+    await submitReviewEdit(BEN, missingSpin),
+    `/account/setups/${id}/review?error=scores`,
+  );
+  assert.equal(
+    await submitReviewEdit(BEN, form({ setup: String(id), ...EDIT, body: "x".repeat(4001) })),
+    `/account/setups/${id}/review?error=invalid`,
+  );
+
+  assert.deepEqual(await storedReview(id, BEN.id), before);
+  assert.deepEqual(refreshedTags, []);
 });

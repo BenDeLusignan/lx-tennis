@@ -13,14 +13,11 @@
   color: var(--color-text-muted);
 }
 
-.reviewed {
+.actions {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-3);
-}
-
-.reviewedAction {
-  align-self: flex-start;
 }
 
 .form {

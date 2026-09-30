@@ -6,7 +6,11 @@ import { setupHeadingId } from "./setup-summary";
 
 interface AddReviewButtonProps {
   setup: Setup;
-  /** Shown instead when the logged-in reviewer has already reviewed it. Nothing by default. */
+  /**
+   * Shown instead when the logged-in reviewer has already reviewed it. The
+   * caller decides what's useful there (the racquet page: "Edit your review";
+   * the new-setup page: "You've reviewed this one"). Nothing by default.
+   */
   whenReviewed?: ReactNode;
   /** Placement only (e.g. `align-self`), as with Button. */
   className?: string;

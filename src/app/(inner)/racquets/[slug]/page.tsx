@@ -5,6 +5,7 @@ import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { AddReviewButton } from "@/components/add-review-button";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/button";
+import { EditReviewLink } from "@/components/edit-review-link";
 import { EmptyState } from "@/components/empty-state";
 import { Panel } from "@/components/panel";
 import { RacquetPhoto } from "@/components/racquet-photo";
@@ -112,7 +113,11 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
                 {/* At the foot of the card: for visitors there's nothing
                     here, and a gap kept free for a button they'll never
                     see would waste a phone's height on every card. */}
-                <AddReviewButton setup={setup} className={styles.cardAction} />
+                <AddReviewButton
+                  setup={setup}
+                  className={styles.cardAction}
+                  whenReviewed={<EditReviewLink setup={setup} className={styles.cardAction} />}
+                />
               </SetupCard>
             ))}
           </div>
