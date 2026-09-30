@@ -235,7 +235,7 @@ What exists in the code today:
 
 ## Other decisions by Ben
 
-- **Hosting is postponed on purpose.** Ben is on limited Wi-Fi. (Which host is still open.)
+- **Hosting is postponed on purpose.** Ben is on limited Wi-Fi. (Which host is still open.) The site is paused as it is (Ben is happy with how it works) until he's back from holiday, when he'll sort out hosting.
 - **The repo is private.**
 - **The site is called "LX Tennis Setups".** Write it exactly like that in text: page and tab titles, metadata, alt text, docs and messages. On the site itself, headings and the header brand may display it in all caps through CSS (`text-transform: uppercase`), as they do now. Ben likes that look. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
 - **Photo copyright is not an issue.** The manufacturers' official racquet photos stay, hosted or not: the site is only for a few people. Ben's call.
