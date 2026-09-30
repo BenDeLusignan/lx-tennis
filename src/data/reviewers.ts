@@ -1,5 +1,6 @@
 import "server-only";
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { getDb } from "@/db/client";
 import { reviewer } from "@/db/schema";
 
@@ -71,4 +72,20 @@ export async function getReviewerUsernames(): Promise<string[]> {
     .from(reviewer)
     .orderBy(reviewer.id);
   return rows.map((row) => row.username);
+}
+
+/**
+ * Every reviewer, by id: the score grid's column order. Cached into the
+ * static shell with no tag, because nothing in the app changes a reviewer's
+ * id or name (`db:set-password` changes only the hash, which isn't here). A
+ * reviewer added by a migration shows up after the next build, whose new
+ * build id starts every cache afresh.
+ */
+export async function getReviewers(): Promise<readonly Reviewer[]> {
+  "use cache";
+  cacheLife("max");
+  return getDb()
+    .select({ id: reviewer.id, username: reviewer.username, displayName: reviewer.displayName })
+    .from(reviewer)
+    .orderBy(reviewer.id);
 }

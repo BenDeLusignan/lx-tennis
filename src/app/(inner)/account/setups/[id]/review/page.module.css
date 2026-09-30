@@ -1,0 +1,30 @@
+/* Same column as the new-setup form. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin-block-end: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.reviewed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.reviewedAction {
+  align-self: flex-start;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}

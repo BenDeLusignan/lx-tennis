@@ -1,0 +1,23 @@
+/*
+ * Coloured text meets AA on --color-bg and --color-surface (ratios in
+ * globals.css). Don't put it on --color-surface-raised: pink and purple
+ * drop just below 4.5:1 there.
+ */
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 700;
+  color: var(--reviewer-color);
+  overflow-wrap: anywhere;
+}
+
+/* A short bar in the same colour, so the name reads as a key for its column. */
+.name::before {
+  content: "";
+  flex-shrink: 0;
+  inline-size: 0.2rem;
+  block-size: 1em;
+  border-radius: var(--radius-sm);
+  background: var(--reviewer-color);
+}

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { logIn } from "@/auth/actions";
 import { safeNextPath } from "@/auth/safe-next-path";
+import { Field } from "@/components/field";
+import { Input } from "@/components/input";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
+import { SubmitButton } from "@/components/submit-button";
 import { LoginFailed } from "./login-failed";
-import { SubmitButton } from "./submit-button";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -34,9 +36,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           <NextInput searchParams={searchParams} />
         </Suspense>
 
-        <div className={styles.field}>
-          <label htmlFor="username">Username</label>
-          <input
+        <Field label="Username" htmlFor="username">
+          <Input
             id="username"
             name="username"
             type="text"
@@ -46,22 +47,19 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             autoCorrect="off"
             spellCheck={false}
             aria-describedby="login-error"
-            className={styles.input}
           />
-        </div>
+        </Field>
 
-        <div className={styles.field}>
-          <label htmlFor="password">Password</label>
-          <input
+        <Field label="Password" htmlFor="password">
+          <Input
             id="password"
             name="password"
             type="password"
             required
             autoComplete="current-password"
             aria-describedby="login-error"
-            className={styles.input}
           />
-        </div>
+        </Field>
 
         {/* Always in the page (empty until an attempt fails) so screen readers
             announce the message when it's inserted; LoginFailed also moves
@@ -72,7 +70,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           </Suspense>
         </p>
 
-        <SubmitButton />
+        <SubmitButton pendingLabel="Logging in…">Log in</SubmitButton>
       </form>
     </Panel>
   );

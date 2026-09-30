@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { getCurrentReviewer } from "@/auth/current-reviewer";
+import { AddReviewButton } from "@/components/add-review-button";
+import { BackLink } from "@/components/back-link";
+import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { Panel } from "@/components/panel";
 import { RacquetPhoto } from "@/components/racquet-photo";
 import { SectionTitle } from "@/components/section-title";
+import { SetupCard } from "@/components/setup-card";
 import { getRacquet, getRacquetSlugs } from "@/data/racquets";
+import { getReviewers } from "@/data/reviewers";
+import { getRacquetSetups } from "@/data/setups";
 import styles from "./page.module.css";
 
 // Every racquet is prerendered from this list. Cache Components doesn't
@@ -46,6 +53,10 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
   const racquet = await getRacquet(slug);
   if (!racquet) notFound();
 
+  // Both cached and refreshed when something is saved, so the cards are in
+  // the static shell; only the reviewer's buttons stream in.
+  const [setups, reviewers] = await Promise.all([getRacquetSetups(slug), getReviewers()]);
+
   const { specs } = racquet;
   const specRows: [label: string, value: string][] = [
     ["Head size", `${specs.headSizeSqIn} sq in`],
@@ -63,9 +74,9 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
   // you came for. The CSS only moves the photo between layouts.
   return (
     <div className={styles.page}>
-      <Link href="/racquets" className={styles.back}>
-        <span aria-hidden="true">&larr;</span> All racquets
-      </Link>
+      <BackLink href="/racquets" className={styles.back}>
+        All racquets
+      </BackLink>
 
       <div className={styles.titleBlock}>
         <h1 className={styles.title}>{racquet.name}</h1>
@@ -83,13 +94,34 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
       />
 
       <Panel aria-labelledby="reviews-heading" className={styles.reviews}>
-        <SectionTitle id="reviews-heading" size="lg">
-          Reviews
-        </SectionTitle>
-        <EmptyState title="No reviews yet">
-          When someone tests a setup on this racquet, their scores and notes will appear here side
-          by side.
-        </EmptyState>
+        {/* The row keeps a button's height whether or not "Add a setup"
+            streams in, so the cards below never jump. */}
+        <div className={styles.reviewsHeader}>
+          <SectionTitle id="reviews-heading" size="lg" className={styles.reviewsTitle}>
+            Reviews
+          </SectionTitle>
+          <Suspense fallback={null}>
+            <AddSetupButton slug={slug} />
+          </Suspense>
+        </div>
+
+        {setups.length > 0 ? (
+          <div className={styles.setups}>
+            {setups.map((setup) => (
+              <SetupCard key={setup.id} setup={setup} reviewers={reviewers}>
+                {/* At the foot of the card: for visitors there's nothing
+                    here, and a gap kept free for a button they'll never
+                    see would waste a phone's height on every card. */}
+                <AddReviewButton setup={setup} className={styles.cardAction} />
+              </SetupCard>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No reviews yet">
+            When someone tests a setup on this racquet, their scores and notes will appear here side
+            by side.
+          </EmptyState>
+        )}
       </Panel>
 
       <Panel aria-labelledby="specs-heading" className={styles.specs}>
@@ -112,4 +144,12 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
       </Panel>
     </div>
   );
+}
+
+// Reviewers only, and only a way in: the form's page and its action check
+// the login for themselves.
+async function AddSetupButton({ slug }: { slug: string }) {
+  const reviewer = await getCurrentReviewer();
+  if (!reviewer) return null;
+  return <Button href={`/account/racquets/${slug}/new`}>Add a setup</Button>;
 }

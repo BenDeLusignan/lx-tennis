@@ -27,3 +27,8 @@
   overflow-wrap: anywhere;
   font-weight: 600;
 }
+
+.tools {
+  margin-block-end: var(--space-6);
+  color: var(--color-text-muted);
+}

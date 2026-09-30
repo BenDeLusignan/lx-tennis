@@ -1,0 +1,18 @@
+/* The same bar-and-text look as the login page's error. */
+.message {
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid currentColor;
+  font-weight: 600;
+  /* It's focused with the script (tabIndex -1), not by the user: no ring. */
+  outline: none;
+  box-shadow: none;
+  scroll-margin-block: var(--space-8);
+}
+
+.error {
+  color: var(--color-accent);
+}
+
+.success {
+  color: var(--color-link);
+}

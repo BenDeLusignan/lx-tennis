@@ -1,0 +1,178 @@
+/* A form reads best in one column of limited width, even on desktop. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.lede,
+.intro {
+  color: var(--color-text-muted);
+}
+
+.intro {
+  margin-block-end: var(--space-4);
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* TensionHint's line is kept even while empty, so the form doesn't jump when it fills in. */
+output.hint {
+  display: block;
+  min-block-size: calc(var(--font-size-sm) * 1.6);
+}
+
+/* Existing setups, above the form */
+
+.existing {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.existingItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.existingItem + .existingItem {
+  border-block-start: 1px solid var(--color-border);
+}
+
+.existingItem:last-child {
+  padding-block-end: 0;
+}
+
+.existingAction {
+  align-self: flex-start;
+}
+
+/* The form */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  border: 0;
+}
+
+.legend {
+  margin-block-end: var(--space-1);
+  font-weight: 600;
+}
+
+/*
+ * Full bed / Hybrid and lb / kg: the real radio stays visible inside a
+ * 44px-tall pill, so it looks and works like a radio (and keeps the
+ * browser's focus ring and "please select one" bubble).
+ */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-link);
+}
+
+.choice:has(:checked) {
+  border-color: var(--color-link);
+  box-shadow: var(--glow-cyan);
+  color: var(--color-link);
+}
+
+/* Mains and crosses: side by side from 48rem, where both fit. */
+.sides {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.side {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.side > .legend {
+  padding-inline: var(--space-2);
+  margin-inline-start: calc(-1 * var(--space-2));
+  font-family: var(--font-display);
+  color: var(--color-accent);
+}
+
+/*
+ * The reveals (Product rules 1 and 14). Pure CSS on the form's own state,
+ * so they work before JavaScript loads. SetupFormConstraints makes the
+ * revealed fields required; keep the selectors here and its
+ * `data-required-when-shown` fields in step.
+ */
+.hybridOnly {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form:has(input[name="kind"][value="hybrid"]:checked) .hybridOnly {
+  display: flex;
+}
+
+.form:has(input[name="kind"][value="hybrid"]:checked) .fullBedOnly {
+  display: none;
+}
+
+.newString {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.side:has(option[value="new"]:checked) .newString {
+  display: flex;
+}
+
+.newStringLegend {
+  padding-inline: var(--space-1);
+  font-weight: 600;
+}
+
+@media (min-width: 48rem) {
+  .sides {
+    grid-template-columns: 1fr 1fr;
+  }
+}

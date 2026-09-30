@@ -1,0 +1,27 @@
+/*
+ * Text stays --color-text (15.6:1 on the surface) whatever the border colour,
+ * so a reviewer colour only has to meet the 3:1 non-text contrast of a border.
+ * A filled chip pairs --color-bg text with the fill, as the primary button
+ * does (6.2:1 on pink).
+ *
+ * 2.25rem (--score-chip-size in globals.css) fits three reviewer columns on a
+ * 360px phone. The entry forms make the whole label around the chip the
+ * touch target, so it can stay this size.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--score-chip-size);
+  vertical-align: middle;
+  block-size: var(--score-chip-size);
+  border: 2px solid var(--score-chip-color, var(--color-accent));
+  border-radius: var(--radius-sm);
+  background: var(--score-chip-fill, transparent);
+  color: var(--score-chip-text, var(--color-text));
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  box-shadow: 0 0 0.5rem -0.1rem var(--score-chip-color, var(--color-accent));
+}

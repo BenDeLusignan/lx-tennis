@@ -5,8 +5,8 @@ import { getReviewerCredentialsById, type Reviewer } from "@/data/reviewers";
 
 /**
  * The logged-in reviewer, or null for a visitor. This is the security
- * boundary: anything that writes data (the future entry form's Server
- * Action) must call it on the server and refuse when it returns null.
+ * boundary: anything that writes data (the Server Actions in each area's
+ * `actions.ts`) must call it on the server and refuse when it returns null.
  * Hiding UI from visitors is only cosmetic.
  *
  * Reads the session cookie, so the calling component renders at request

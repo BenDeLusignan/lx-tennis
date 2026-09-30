@@ -1,0 +1,44 @@
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Long string names wrap rather than widen the card on a phone. */
+.title {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Label beside value at every width, as on /account: the labels are short. */
+.details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+}
+
+.details dt {
+  color: var(--color-text-muted);
+}
+
+.details dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  display: block;
+}
+
+/* "· 24.9 kg" may wrap to its own line as a unit, never mid-value. */
+.other {
+  display: inline-block;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}

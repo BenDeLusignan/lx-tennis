@@ -1,0 +1,22 @@
+/*
+ * At least 2.75rem tall (a comfortable tap target), then pulled left by the
+ * same amount it's padded so its text still lines up with the page content
+ * below it.
+ */
+.back {
+  justify-self: start;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3);
+  margin-inline-start: calc(-1 * var(--space-3));
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}

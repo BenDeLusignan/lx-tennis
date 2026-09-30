@@ -1,0 +1,93 @@
+.scores {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  border: 0;
+}
+
+.legend {
+  margin-block-end: var(--space-1);
+  font-weight: 600;
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.criterion {
+  min-inline-size: 0;
+  border: 0;
+}
+
+.criterionLegend {
+  margin-block-end: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+/* After a submit attempt, a criterion left without a score is marked in pink. */
+.criterion:has(:user-invalid) .criterionLegend {
+  color: var(--color-accent);
+}
+
+/*
+ * Two rows of five on phones: ten 44px targets don't fit across a 390px
+ * screen, and five-and-five is easier to scan than a ragged wrap. One row
+ * from 48rem, the site's first breakpoint.
+ */
+.choices {
+  display: grid;
+  grid-template-columns: repeat(5, 2.75rem);
+  gap: var(--space-2);
+}
+
+/* The whole 2.75rem (44px) cell is the touch target; the chip sits in its middle. */
+.choice {
+  position: relative;
+  display: grid;
+  place-items: center;
+  block-size: 2.75rem;
+  cursor: pointer;
+}
+
+/*
+ * The real radio covers the cell, invisible, instead of being moved off
+ * screen: taps land on it, and the browser's "please select one" bubble
+ * points at the chips rather than at a 1px corner.
+ */
+.radio {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice:hover {
+  --score-chip-color: var(--color-link);
+}
+
+/* The chosen score is filled: dark text on pink, 6.2:1, as on the primary button. */
+.choice:has(:checked) {
+  --score-chip-color: var(--color-accent);
+  --score-chip-fill: var(--color-accent);
+  --score-chip-text: var(--color-bg);
+}
+
+/* The radio is invisible, so the focus ring goes around its chip instead. */
+.choice:has(:focus-visible) > :last-child {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 48rem) {
+  .choices {
+    grid-template-columns: repeat(10, 2.75rem);
+  }
+}

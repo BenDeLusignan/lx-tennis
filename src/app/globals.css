@@ -10,6 +10,12 @@
  *   --color-text-muted  11.6:1 / 9.9:1
  *   --color-accent       6.2:1 / 5.4:1  (neon pink, used for small text too)
  *   --color-link        12.6:1 / 10.8:1 (neon cyan, also the focus ring)
+ *   --color-reviewer-ben     6.2:1 / 5.4:1  (neon pink)
+ *   --color-reviewer-michal 12.6:1 / 10.8:1 (neon cyan)
+ *   --color-reviewer-otavio  6.2:1 / 5.3:1  (neon purple)
+ *   --color-reviewer-other  11.6:1 / 9.9:1  (lavender: a reviewer without a colour yet)
+ * Pink and purple fall just short of 4.5:1 on --color-surface-raised (4.48
+ * and 4.45), so reviewer-coloured text never sits on that surface.
  */
 :root {
   color-scheme: dark;
@@ -44,6 +50,17 @@
   --color-sun-top: var(--palette-sunset-yellow);
   --color-sun-mid: var(--palette-sunset-orange);
   --color-sun-bottom: var(--palette-neon-pink);
+
+  /*
+   * Reviewer colours (Ben's call): always shown together with the name, never
+   * as the only cue. Keyed by username in src/components/reviewer-color.ts;
+   * a reviewer added later gets --color-reviewer-other until they get a colour
+   * here and there.
+   */
+  --color-reviewer-ben: var(--palette-neon-pink);
+  --color-reviewer-michal: var(--palette-neon-cyan);
+  --color-reviewer-otavio: var(--palette-neon-purple);
+  --color-reviewer-other: var(--palette-lavender-200);
 
   /* Light "display case" behind racquet photos so dark frames stay visible. */
   --color-stage-center: var(--palette-lavender-50);
@@ -80,6 +97,9 @@
   --radius-lg: 1.25rem;
   --content-width: 72rem;
   --focus-ring-width: 3px;
+
+  /* Score chip: one size, so the grid's empty slot always matches a chip. */
+  --score-chip-size: 2.25rem;
 
   /* Motion */
   --duration-fast: 150ms;

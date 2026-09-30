@@ -1,0 +1,74 @@
+.scroller {
+  overflow-x: auto;
+}
+
+/*
+ * Fixed layout: the criterion column is as wide as its longest label
+ * ("Comfort", "Control"), and the reviewer columns share the rest evenly
+ * whatever their names, so the grid reads as a grid. Its minimum width
+ * keeps every reviewer column wide enough for a name in the header and a
+ * chip below it (--reviewer-column-width); below that, the wrapper scrolls
+ * sideways instead of names breaking mid-word or chips spilling out of
+ * their cells. --reviewer-count is set by score-grid.tsx.
+ */
+.grid {
+  --criterion-width: 5rem;
+  --reviewer-column-width: 3.5rem;
+  inline-size: 100%;
+  min-inline-size: calc(
+    var(--criterion-width) + var(--reviewer-count) * var(--reviewer-column-width)
+  );
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.criterionColumn {
+  width: var(--criterion-width);
+}
+
+.caption {
+  margin-block-end: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: start;
+  color: var(--color-text-muted);
+}
+
+.grid th,
+.grid td {
+  padding: var(--space-1);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.grid thead th {
+  padding-block-end: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.grid tbody th {
+  padding-inline-end: var(--space-3);
+  font-weight: 500;
+  text-align: start;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* A row line under each criterion helps the eye read across. */
+.grid tbody tr + tr {
+  border-block-start: 1px solid var(--color-border);
+}
+
+/*
+ * An empty slot the size of a chip, dashed like EmptyState (same strong
+ * border, so it clears 3:1): "nobody has scored this", never a number.
+ */
+.empty {
+  display: inline-block;
+  vertical-align: middle;
+  inline-size: var(--score-chip-size);
+  block-size: var(--score-chip-size);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}

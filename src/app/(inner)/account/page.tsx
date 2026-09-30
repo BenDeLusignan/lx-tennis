@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
@@ -27,6 +28,10 @@ export default function AccountPage() {
       <Suspense fallback={<AccountDetails />}>
         <CurrentAccountDetails />
       </Suspense>
+      <p className={styles.tools}>
+        <Link href="/account/strings">Edit the string list</Link>: fix a brand, name or type, or
+        delete a string no setup uses.
+      </p>
       <LogOutButton />
     </Panel>
   );

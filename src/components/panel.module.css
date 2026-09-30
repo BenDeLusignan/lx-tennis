@@ -1,23 +1,30 @@
 /*
  * Not inherited, so a Panel nested inside another (e.g. a setup card inside
- * the Reviews panel) gets its own default padding, not its parent's override.
+ * the Reviews panel) gets its own defaults, not its parent's overrides.
  */
 @property --panel-padding {
   syntax: "*";
   inherits: false;
 }
 
+@property --panel-background {
+  syntax: "*";
+  inherits: false;
+}
+
 /*
- * Padding comes from --panel-padding when the caller sets it (the racquet
- * cards do, to stay compact). A custom property rather than a competing
- * `padding` rule, because two CSS Modules setting the same property at the
- * same specificity would depend on which stylesheet happens to load last.
+ * Padding and background come from --panel-padding and --panel-background
+ * when the caller sets them (the racquet cards tighten the padding; setup
+ * cards sit on --color-bg). Custom properties rather than competing
+ * `padding` or `background` rules, because two CSS Modules setting the same
+ * property at the same specificity would depend on which stylesheet
+ * happens to load last.
  */
 .panel {
   padding: var(--panel-padding, var(--space-4));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background: var(--panel-background, var(--color-surface));
 }
 
 .link {

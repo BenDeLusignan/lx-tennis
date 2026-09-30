@@ -14,7 +14,7 @@ Racquet and string setups (frame, string, gauge, tension) tested by me and my fr
 
 ## Setup
 
-Requires Node.js 20.9 or newer.
+Requires Node.js 20.9 or newer to run the site. `npm test` needs Node.js 25.9 or newer (see Gotchas).
 
 1. **Install:**
 
@@ -57,7 +57,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build (lists which routes are static / partially prerendered)
 npm run start            # serve the production build
 npm run lint             # ESLint
-npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, database rules (on a throwaway database, never local.db)
+npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, database rules, setup/review/string forms and actions (on throwaway databases, never local.db)
 npm run db:migrate       # apply pending migrations in drizzle/ to DATABASE_URL
 npm run db:generate      # after editing src/db/schema.ts: write the SQL migration into drizzle/
 npm run db:set-password -- <username>   # set or reset a reviewer's password
@@ -67,6 +67,7 @@ npm run db:set-password -- <username>   # set or reset a reviewer's password
 
 - **`PageProps` / `LayoutProps` are generated types.** Next creates them in `.next/` (gitignored), so on a fresh clone your editor and `tsc` will report them as missing until you run `npm run dev`, `npm run build` or `npx next typegen` once.
 - **`next dev` rewrites part of `AGENTS.md`.** When it detects an AI coding agent and the Next.js block is missing or out of date, it rewrites everything between the `<!-- BEGIN:nextjs-agent-rules -->` and `<!-- END:nextjs-agent-rules -->` markers (see `node_modules/next/dist/server/lib/generate-agent-files.js`). Don't edit inside those markers; put project notes outside them, where they survive.
-- **The build needs internet.** `next/font` downloads the Geist and Orbitron fonts from Google Fonts at build time. The database doesn't: the build never connects to it.
+- **The build needs internet and the database.** `next/font` downloads the Geist and Orbitron fonts from Google Fonts at build time, and each racquet page is prerendered with its setup cards read from the database. So `DATABASE_URL` must point at a database with every migration applied.
 - **Migrations are the schema's history.** Commit the generated files in `drizzle/` together with the `src/db/schema.ts` change, and never edit a migration that has already been applied somewhere; add a new one.
 - **`npm test` and `db:set-password` run `tsx --conditions=react-server`.** Server-side modules import `server-only`, which throws when loaded outside the React server environment; that flag tells Node to load the server build of it. Don't remove it from `package.json`, or every test and the password script will fail on import.
+- **`npm test` needs Node.js 25.9 or newer.** It passes `--experimental-test-module-mocks` so the database tests can stand in for `next/cache` (see `src/data/test-database.ts`). Node prints an `ExperimentalWarning` for each of those files; that's expected.

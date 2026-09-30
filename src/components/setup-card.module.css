@@ -1,0 +1,54 @@
+/*
+ * Nested inside the Reviews panel, so its padding is tighter than a
+ * top-level panel's: on a 390px phone three score columns still get room.
+ * It sits on --color-bg rather than the panel's surface (Product rule 3's
+ * grid and the reviewer colours are checked against both).
+ */
+.card {
+  --panel-padding: var(--space-4);
+  --panel-background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* Clear of the page top when a save lands on #setup-<id>. */
+  scroll-margin-block-start: var(--space-4);
+}
+
+/* The card you just saved to glows, so you can see where you've landed. */
+.card:target {
+  border-color: var(--color-accent);
+  box-shadow: var(--glow-pink-box);
+}
+
+.written {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.writtenTitle {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Keeps the paragraphs a reviewer typed; long words wrap instead of widening the card. */
+.body {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
