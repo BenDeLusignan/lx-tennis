@@ -8,6 +8,8 @@ interface SubmitButtonProps {
   children: ReactNode;
   /** Shown while the form's action runs, e.g. "Saving…". */
   pendingLabel: ReactNode;
+  /** Fill the cell it sits in; see `Button`'s `fill`. */
+  fill?: boolean;
 }
 
 /**
@@ -19,10 +21,10 @@ interface SubmitButtonProps {
  * keyboard focus to the page, and a second submit is harmless (actions
  * refuse duplicates).
  */
-export function SubmitButton({ children, pendingLabel }: SubmitButtonProps) {
+export function SubmitButton({ children, pendingLabel, fill }: SubmitButtonProps) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant="primary">
+    <Button type="submit" variant="primary" fill={fill}>
       {pending ? pendingLabel : children}
     </Button>
   );

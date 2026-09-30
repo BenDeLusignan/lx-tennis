@@ -9,6 +9,11 @@ interface ButtonLook {
    * else, like the header's Log in and Log out.
    */
   variant?: "primary" | "secondary";
+  /**
+   * Fill the width of the cell it sits in, and let a long label wrap
+   * instead of overflowing. For the equal-width pair in `FormActions`.
+   */
+  fill?: boolean;
 }
 
 type ButtonProps =
@@ -21,18 +26,18 @@ type ButtonProps =
  * shape as `Panel`: one component for both, so a link and a button that sit
  * side by side can't drift apart.
  */
-export function Button({ variant = "secondary", ...props }: ButtonProps) {
+export function Button({ variant = "secondary", fill = false, ...props }: ButtonProps) {
   if (props.href !== undefined) {
     const { className, ...linkProps } = props;
-    return <Link className={classes(variant, className)} {...linkProps} />;
+    return <Link className={classes(variant, fill, className)} {...linkProps} />;
   }
 
   const { className, ...buttonProps } = props;
-  return <button className={classes(variant, className)} {...buttonProps} />;
+  return <button className={classes(variant, fill, className)} {...buttonProps} />;
 }
 
 // A caller's className adds to the button styles (e.g. for width) rather than replacing them.
-function classes(variant: "primary" | "secondary", extra: string | undefined) {
-  const own = `${styles.button} ${styles[variant]}`;
+function classes(variant: "primary" | "secondary", fill: boolean, extra: string | undefined) {
+  const own = `${styles.button} ${styles[variant]}${fill ? ` ${styles.fill}` : ""}`;
   return extra ? `${own} ${extra}` : own;
 }

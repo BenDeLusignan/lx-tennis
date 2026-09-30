@@ -13,7 +13,7 @@
   color: var(--color-text-muted);
 }
 
-/* Also wraps a lone button: a bare button in a column-flex form would stretch to the full width. */
+/* Wraps the delete panel's lone button: a bare button in a column-flex form would stretch to the full width. (Save + Cancel use `FormActions`.) */
 .actions {
   display: flex;
   flex-wrap: wrap;

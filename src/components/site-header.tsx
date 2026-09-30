@@ -7,7 +7,7 @@ export function SiteHeader() {
   return (
     <header className={styles.header}>
       <Link href="/" className={styles.brand}>
-        LX Tennis Setups
+        LX Tennis
       </Link>
       <AuthStatus />
     </header>

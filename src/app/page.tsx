@@ -16,7 +16,7 @@ export default async function Home() {
         <div className={styles.account}>
           <AuthStatus />
         </div>
-        <h1 className={styles.title}>LX Tennis Setups</h1>
+        <h1 className={styles.title}>LX Tennis</h1>
         <p className={styles.tagline}>
           Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
         </p>

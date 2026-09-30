@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Log in",
-  description: "Reviewer log in for LX Tennis Setups.",
+  description: "Reviewer log in for LX Tennis.",
 };
 
 type SearchParams = Pick<PageProps<"/login">, "searchParams">;

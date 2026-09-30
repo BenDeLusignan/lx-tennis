@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Your account",
-  description: "Your LX Tennis Setups reviewer account.",
+  description: "Your LX Tennis reviewer account.",
 };
 
 // Reviewers only. Visitors never get here: src/proxy.ts sends them to the

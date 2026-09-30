@@ -18,7 +18,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Strings",
-  description: "Edit or delete the strings on the LX Tennis Setups list.",
+  description: "Edit or delete the strings on the LX Tennis list.",
 };
 
 type SearchParams = Pick<PageProps<"/account/strings">, "searchParams">;

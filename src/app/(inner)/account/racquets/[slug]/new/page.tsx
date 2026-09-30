@@ -7,6 +7,7 @@ import { AddReviewButton } from "@/components/add-review-button";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
+import { FormActions } from "@/components/form-actions";
 import { FormMessage } from "@/components/form-message";
 import { Input } from "@/components/input";
 import { Panel } from "@/components/panel";
@@ -177,10 +178,14 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
 
           {/* Cancel is only a link back to the racquet: nothing is saved, and it
               works before JavaScript loads. */}
-          <div className={styles.actions}>
-            <SubmitButton pendingLabel="Saving…">Save setup and review</SubmitButton>
-            <Button href={`/racquets/${slug}`}>Cancel</Button>
-          </div>
+          <FormActions>
+            <SubmitButton pendingLabel="Saving…" fill>
+              Save setup and review
+            </SubmitButton>
+            <Button href={`/racquets/${slug}`} fill>
+              Cancel
+            </Button>
+          </FormActions>
         </form>
       </Panel>
     </div>

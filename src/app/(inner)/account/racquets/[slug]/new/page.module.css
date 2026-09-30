@@ -63,14 +63,6 @@ output.hint {
   gap: var(--space-6);
 }
 
-/* Save and Cancel. Wraps on a narrow phone, and keeps the buttons from stretching to the form's full width (a bare button in a column-flex form would). Same as `.actions` in the review page's CSS. */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .group {
   display: flex;
   flex-direction: column;

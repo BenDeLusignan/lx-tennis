@@ -26,6 +26,24 @@
   text-shadow: none;
 }
 
+/*
+ * Fills its cell (the equal pair in `FormActions`), so the label may have to
+ * wrap: a long, letter-spaced primary label like "Save setup and review" is
+ * only ~110px wide at 360px. Centred and balanced lines, a little block
+ * padding so wrapped text doesn't touch the edges, and a break allowed
+ * inside a word as a last resort so nothing can overflow. Comes after
+ * `.button` so these win at equal specificity.
+ */
+.fill {
+  box-sizing: border-box;
+  inline-size: 100%;
+  padding: var(--space-2);
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
 /* Dark text on pink is the same pair as pink text on the page background: 6.2:1. */
 .primary {
   border: 0;

@@ -4,7 +4,7 @@
   this file alone (node_modules/next/dist/server/lib/generate-agent-files.js).
 -->
 
-# LX Tennis Setups: read the vision first
+# LX Tennis: read the vision first
 
 `docs/vision.md` is the single source of truth for this project: what we're building, for whom, the product and theme rules, the code conventions, and what Ben has and hasn't decided. Every rule in it is labelled either **Ben's decision** or **Team convention**.
 

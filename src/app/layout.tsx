@@ -15,8 +15,8 @@ const orbitron = Orbitron({
 
 export const metadata: Metadata = {
   title: {
-    default: "LX Tennis Setups",
-    template: "%s · LX Tennis Setups",
+    default: "LX Tennis",
+    template: "%s · LX Tennis",
   },
   description:
     "Racquet and string setups tested by Ben and friends, with everyone's scores and reviews side by side.",

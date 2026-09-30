@@ -5,6 +5,7 @@ import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/button";
+import { FormActions } from "@/components/form-actions";
 import { FormMessage } from "@/components/form-message";
 import { Panel } from "@/components/panel";
 import { ReviewFields } from "@/components/review-fields";
@@ -108,10 +109,14 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
             </FormMessage>
           )}
           <ReviewFields defaults={{ scores: mine.scores, body: mine.body }} />
-          <div className={styles.actions}>
-            <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
-            <Button href={cardHref}>Cancel</Button>
-          </div>
+          <FormActions>
+            <SubmitButton pendingLabel="Saving…" fill>
+              Save changes
+            </SubmitButton>
+            <Button href={cardHref} fill>
+              Cancel
+            </Button>
+          </FormActions>
         </form>
       </Panel>
     );
@@ -137,10 +142,14 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
           </FormMessage>
         )}
         <ReviewFields />
-        <div className={styles.actions}>
-          <SubmitButton pendingLabel="Saving…">Save review</SubmitButton>
-          <Button href={cardHref}>Cancel</Button>
-        </div>
+        <FormActions>
+          <SubmitButton pendingLabel="Saving…" fill>
+            Save review
+          </SubmitButton>
+          <Button href={cardHref} fill>
+            Cancel
+          </Button>
+        </FormActions>
       </form>
     </Panel>
   );
