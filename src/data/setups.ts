@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, ne, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { ALL_SETUPS_TAG, racquetSetupsTag, STRINGS_TAG } from "@/data/cache-tags";
@@ -50,8 +50,6 @@ export interface SetupReview {
 export interface Setup {
   id: number;
   racquetSlug: string;
-  /** The id of the reviewer who entered it: the only one who may delete it (`deleteSetup`). */
-  createdBy: number;
   /** YYYY-MM-DD. */
   strungOn: string;
   tensionUnit: TensionUnit;
@@ -70,7 +68,6 @@ async function loadSetups(where: SQL): Promise<Setup[]> {
   const db = getDb();
   const rows = await db
     .select({
-      createdBy: setup.createdBy,
       id: setup.id,
       racquetSlug: racquet.slug,
       strungOn: setup.strungOn,
@@ -126,7 +123,6 @@ async function loadSetups(where: SQL): Promise<Setup[]> {
 
   return rows.map((row) => ({
     id: row.id,
-    createdBy: row.createdBy,
     racquetSlug: row.racquetSlug,
     strungOn: row.strungOn,
     tensionUnit: row.tensionUnit,
@@ -395,58 +391,64 @@ export async function updateReview(
   return { status: "updated", racquetSlug: found.racquetSlug };
 }
 
-export type DeleteSetupResult =
-  | { status: "deleted"; racquetSlug: string }
-  /** The setup was entered by someone else; nothing was deleted. */
-  | { status: "not-creator" }
-  /** Someone other than the creator has reviewed it; nothing was deleted. */
-  | { status: "has-other-reviews" }
+export type DeleteReviewResult =
+  /** `setupRemoved`: it was the setup's last review, so the setup went too. */
+  | { status: "deleted"; racquetSlug: string; setupRemoved: boolean }
+  /** The reviewer has no review of this setup; nothing was deleted. */
+  | { status: "not-reviewed"; racquetSlug: string }
   | { status: "unknown-setup" };
 
 /**
- * Deletes a setup entered under the wrong racquet by mistake: only its
- * creator may, and only while nobody else has reviewed it. The creator's
- * own review goes with it. Only from a Server Action (it refreshes pages
+ * Deletes the reviewer's own review of a setup, so a setup entered under the
+ * wrong racquet can be cleared away without one reviewer's mistake costing
+ * the others their reviews. When it was the setup's last review, the setup
+ * is deleted too: a setup with no reviews would be an empty card nobody can
+ * tell apart from a real one. Only from a Server Action (it refreshes pages
  * with `updateTag`).
  *
- * The creator is the reviewer from the session compared with `created_by`,
- * never an id from the request. Everything is checked inside one write
- * transaction (`BEGIN IMMEDIATE`, so writers queue), so a review added by
- * someone else a moment earlier is seen here, and one added a moment later
- * waits until this has finished. The RESTRICT foreign key from `review` to
- * `setup` stays as the backstop: a stray review would fail the delete and
- * roll everything back, rather than vanish.
+ * The row is found by setup AND the reviewer from the session, never by a
+ * review id from the request, so no input can point this at someone else's
+ * review. The delete and the "any reviews left?" check share one write
+ * transaction (`BEGIN IMMEDIATE`, so writers queue): a review added a moment
+ * later can't slip in between and be deleted with the setup, and two last
+ * reviewers deleting at once can't both miss that they were last. The
+ * RESTRICT foreign key from `review` to `setup` stays as the backstop: a
+ * stray review would fail the setup delete and roll everything back, rather
+ * than vanish.
  *
  * The caller treats "unknown-setup" as done, as a double-submitted Delete
  * must not show an error (as `deleteString`).
  */
-export async function deleteSetup(setupId: number, author: Reviewer): Promise<DeleteSetupResult> {
-  const result = await getDb().transaction(async (tx): Promise<DeleteSetupResult> => {
+export async function deleteReview(setupId: number, author: Reviewer): Promise<DeleteReviewResult> {
+  const result = await getDb().transaction(async (tx): Promise<DeleteReviewResult> => {
     const [found] = await tx
-      .select({ createdBy: setup.createdBy, racquetSlug: racquet.slug })
+      .select({ racquetSlug: racquet.slug })
       .from(setup)
       .innerJoin(racquet, eq(racquet.id, setup.racquetId))
       .where(eq(setup.id, setupId));
     if (!found) return { status: "unknown-setup" };
-    if (found.createdBy !== author.id) return { status: "not-creator" };
 
-    const [others] = await tx
+    const deleted = await tx
+      .delete(review)
+      .where(and(eq(review.setupId, setupId), eq(review.reviewerId, author.id)))
+      .returning({ id: review.id });
+    if (deleted.length === 0) return { status: "not-reviewed", racquetSlug: found.racquetSlug };
+
+    const [remaining] = await tx
       .select({ id: review.id })
       .from(review)
-      .where(and(eq(review.setupId, setupId), ne(review.reviewerId, author.id)))
+      .where(eq(review.setupId, setupId))
       .limit(1);
-    if (others) return { status: "has-other-reviews" };
+    if (remaining) return { status: "deleted", racquetSlug: found.racquetSlug, setupRemoved: false };
 
-    // Reviews first: review.setup_id is RESTRICT.
-    await tx.delete(review).where(eq(review.setupId, setupId));
     await tx.delete(setup).where(eq(setup.id, setupId));
-    return { status: "deleted", racquetSlug: found.racquetSlug };
+    return { status: "deleted", racquetSlug: found.racquetSlug, setupRemoved: true };
   });
 
   if (result.status === "deleted") {
     updateTag(racquetSetupsTag(result.racquetSlug));
-    // The setup's strings may no longer be used by any setup.
-    updateTag(STRINGS_TAG);
+    // Only a removed setup changes the string list: its strings may no longer be in use.
+    if (result.setupRemoved) updateTag(STRINGS_TAG);
   }
   return result;
 }

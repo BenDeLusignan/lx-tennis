@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
 import {
-  submitDeleteSetup,
+  submitDeleteReview,
   submitReview,
   submitReviewEdit,
   submitSetupWithReview,
@@ -27,6 +27,6 @@ export async function updateReview(formData: FormData): Promise<never> {
   redirect(await submitReviewEdit(await getCurrentReviewer(), formData));
 }
 
-export async function deleteSetup(formData: FormData): Promise<never> {
-  redirect(await submitDeleteSetup(await getCurrentReviewer(), formData));
+export async function deleteReview(formData: FormData): Promise<never> {
+  redirect(await submitDeleteReview(await getCurrentReviewer(), formData));
 }

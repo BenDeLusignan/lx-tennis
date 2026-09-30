@@ -32,7 +32,7 @@ export const ALL_SETUPS_TAG = "setups";
 /**
  * The string list and which strings are in use: `getStrings()` and
  * `getStringsWithUsage()`. Refreshed by any string change, by every new
- * setup (it may add strings, and it puts its strings in use) and by every
- * setup delete (its strings may no longer be in use).
+ * setup (it may add strings, and it puts its strings in use) and by a
+ * review delete that removes its setup (its strings may no longer be in use).
  */
 export const STRINGS_TAG = "strings";

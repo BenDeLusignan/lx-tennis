@@ -1,7 +1,7 @@
 import "server-only";
 import { loginPath } from "@/auth/safe-next-path";
 import type { Reviewer } from "@/data/reviewers";
-import { addReview, createSetupWithReview, deleteSetup, updateReview } from "@/data/setups";
+import { addReview, createSetupWithReview, deleteReview, updateReview } from "@/data/setups";
 import { parseId } from "@/forms/fields";
 import { parseRacquetSlug, parseReviewFields, parseSetupForm } from "@/reviews/setup-form";
 
@@ -92,29 +92,30 @@ export async function submitReviewEdit(
 }
 
 /**
- * Deletes a setup its logged-in creator entered by mistake, while nobody
- * else has reviewed it. The form carries only the setup id: who the creator
- * is comes from the session, inside `deleteSetup`, so no field can delete
- * someone else's setup. A setup that's already gone counts as deleted.
+ * Deletes the logged-in reviewer's own review of a setup (and the setup with
+ * it, if that was its last review). The form carries only the setup id: whose
+ * review goes comes from the session, inside `deleteReview`, so nobody can
+ * delete another reviewer's review by any request. A setup that's already
+ * gone counts as done.
  */
-export async function submitDeleteSetup(
+export async function submitDeleteReview(
   reviewer: Reviewer | null,
   formData: FormData,
 ): Promise<string> {
   const setupId = parseId(formData.get("setup"));
   if (!reviewer) return loginPath(setupId ? `/account/setups/${setupId}/review` : "/account");
   if (!setupId) return "/racquets";
-  const reviewPath = `/account/setups/${setupId}/review`;
 
-  const result = await deleteSetup(setupId, reviewer);
+  const result = await deleteReview(setupId, reviewer);
   switch (result.status) {
     case "deleted":
-      return `/racquets/${result.racquetSlug}`;
+      // The setup's card, unless the setup went with its last review.
+      return `/racquets/${result.racquetSlug}${result.setupRemoved ? "" : `#setup-${setupId}`}`;
     case "unknown-setup":
       // Already deleted (a double submit, say): there's nothing left to show.
       return "/racquets";
-    case "not-creator":
-    case "has-other-reviews":
-      return `${reviewPath}?error=${result.status}`;
+    case "not-reviewed":
+      // Nothing to delete (a double submit, say): the page shows the add form.
+      return `/account/setups/${setupId}/review`;
   }
 }
