@@ -69,7 +69,7 @@ export default async function StringsPage({ searchParams }: PageProps<"/account/
                   </span>
                   <span className={styles.meta}>
                     {TYPE_LABELS[string.type]}
-                    {string.inUse && <span className={styles.inUse}>In use</span>}
+                    {string.inUse && <span className={styles.inUse}>String tested</span>}
                   </span>
                 </summary>
                 <StringForm string={string} inUse={string.inUse} />
