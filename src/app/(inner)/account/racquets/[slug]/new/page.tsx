@@ -180,7 +180,7 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
               works before JavaScript loads. */}
           <FormActions>
             <SubmitButton pendingLabel="Saving…" fill>
-              Save setup and review
+              Save setup
             </SubmitButton>
             <Button href={`/racquets/${slug}`} fill>
               Cancel

@@ -28,7 +28,7 @@
 
 /*
  * Fills its cell (the equal pair in `FormActions`), so the label may have to
- * wrap: a long, letter-spaced primary label like "Save setup and review" is
+ * wrap: a long, letter-spaced primary label like "Save changes" is
  * only ~110px wide at 360px. Centred and balanced lines, a little block
  * padding so wrapped text doesn't touch the edges, and a break allowed
  * inside a word as a last resort so nothing can overflow. Comes after
