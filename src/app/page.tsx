@@ -7,6 +7,8 @@ import styles from "./page.module.css";
 // The landing page sits outside the (inner) route group: its hero is the
 // banner, so it renders its own <header> and <main id="main"> instead of
 // <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
+// The site description is the intro to the Racquets section (not the hero), so
+// it reads as part of the content it describes.
 export default async function Home() {
   const brands = await getRacquetsByBrand();
 
@@ -17,14 +19,14 @@ export default async function Home() {
           <AuthStatus />
         </div>
         <h1 className={styles.title}>LX Tennis</h1>
-        <p className={styles.tagline}>
-          Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
-        </p>
         <div className={styles.sun} aria-hidden="true" />
       </header>
 
       <main id="main">
         <SectionTitle>Racquets</SectionTitle>
+        <p className={styles.intro}>
+          Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
+        </p>
         <RacquetsByBrand sections={brands} headingLevel="h3" />
       </main>
     </>
