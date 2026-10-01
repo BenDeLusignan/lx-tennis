@@ -27,11 +27,8 @@
 }
 
 /* Intro under the "Racquets" heading: left-aligned like the heading it follows,
-   with room before the first brand section. */
+   as wide as the page content, with room before the first brand section. */
 .intro {
-  max-width: 40rem;
-  /* Even line lengths, so a two-line intro doesn't end on a lonely "by side." */
-  text-wrap: balance;
   margin-block-end: var(--space-6);
   font-size: var(--font-size-lg);
   color: var(--color-text-muted);
