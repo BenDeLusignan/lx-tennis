@@ -57,6 +57,23 @@ output.hint {
 
 /* The form */
 
+/*
+ * The date input and its Today button share a row, so the button always
+ * sits beside the field it fills. The input takes the space; on very
+ * narrow screens the button wraps below it rather than squeeze the date.
+ */
+.dateRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.dateRow input {
+  flex: 1 1 10rem;
+  min-inline-size: 0;
+}
+
 .form {
   display: flex;
   flex-direction: column;

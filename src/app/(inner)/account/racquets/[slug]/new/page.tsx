@@ -23,6 +23,7 @@ import { createSetupWithReview } from "@/reviews/actions";
 import { SetupFormConstraints } from "./setup-form-constraints";
 import { StringPicker } from "./string-picker";
 import { TensionHint } from "./tension-hint";
+import { TodayButton } from "./today-button";
 import styles from "./page.module.css";
 
 // Prerendered per racquet, like the racquet page, with its list of setups
@@ -116,7 +117,10 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
           </Suspense>
 
           <Field label="Date strung" htmlFor="strungOn">
-            <Input id="strungOn" name="strungOn" type="date" required />
+            <div className={styles.dateRow}>
+              <Input id="strungOn" name="strungOn" type="date" required />
+              <TodayButton inputId="strungOn" />
+            </div>
           </Field>
 
           <fieldset className={styles.group}>

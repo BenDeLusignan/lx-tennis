@@ -77,9 +77,10 @@ export async function getReviewerUsernames(): Promise<string[]> {
 /**
  * Every reviewer, by id: the score grid's column order. Cached into the
  * static shell with no tag, because nothing in the app changes a reviewer's
- * id or name (`db:set-password` changes only the hash, which isn't here). A
- * reviewer added by a migration shows up after the next build, whose new
- * build id starts every cache afresh.
+ * id or name (the password hash changes via `db:set-password` or the
+ * account page's change-password form, and isn't here). A reviewer added by
+ * a migration shows up after the next build, whose new build id starts
+ * every cache afresh.
  */
 export async function getReviewers(): Promise<readonly Reviewer[]> {
   "use cache";

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { TENSION_LIMITS } from "@/data/units";
+import { localToday } from "./local-date";
 import { stringKey } from "./string-key";
 
 /**
@@ -88,11 +89,4 @@ export function SetupFormConstraints() {
   }, []);
 
   return <span ref={ref} hidden />;
-}
-
-/** Today as YYYY-MM-DD in the reviewer's time zone, the format a date input's `max` takes. */
-function localToday(): string {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }

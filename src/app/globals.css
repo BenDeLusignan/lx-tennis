@@ -103,7 +103,6 @@
 
   /* Motion */
   --duration-fast: 150ms;
-  --duration-grid: 12s;
 }
 
 *,
@@ -156,13 +155,6 @@ body::before {
   transform: perspective(22rem) rotateX(60deg);
   transform-origin: bottom center;
   mask-image: linear-gradient(to top, black 10%, transparent 85%);
-  animation: grid-scroll var(--duration-grid) linear infinite;
-}
-
-@keyframes grid-scroll {
-  to {
-    background-position: 0 4rem;
-  }
 }
 
 h1,

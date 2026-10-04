@@ -10,3 +10,12 @@ export const REVIEW_BODY_MAX_LENGTH = 4000;
 
 /** A string's brand or name. Real ones are well under 30 characters. */
 export const STRING_FIELD_MAX_LENGTH = 100;
+
+/** A reviewer's password: the floor shared by the script and the change-password form. */
+export const PASSWORD_MIN_LENGTH = 12;
+
+/**
+ * Server Actions are public POST endpoints, so this bounds what anyone can
+ * make scrypt chew on. The same cap the login action applies.
+ */
+export const PASSWORD_MAX_LENGTH = 1024;

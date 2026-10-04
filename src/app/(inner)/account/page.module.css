@@ -32,3 +32,21 @@
   margin-block-end: var(--space-6);
   color: var(--color-text-muted);
 }
+
+/* Same flow as the login form: one column, fields a space apart. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-block-end: var(--space-6);
+}
+
+.hint {
+  color: var(--color-text-muted);
+}
+
+/*
+ * The empty #password-form-message element is still a flex item, so its
+ * two gaps are the space above the Change password button when there's no
+ * message (as on the login page).
+ */

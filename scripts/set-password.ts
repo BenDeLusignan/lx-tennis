@@ -14,6 +14,7 @@
 import { createInterface } from "node:readline";
 import { loadEnvConfig } from "@next/env";
 import { hashPassword } from "@/auth/password";
+import { PASSWORD_MIN_LENGTH } from "@/data/limits";
 import {
   getReviewerCredentialsByUsername,
   getReviewerUsernames,
@@ -22,8 +23,6 @@ import {
 
 // Same .env files as the app, so this writes to the database the app reads.
 loadEnvConfig(process.cwd());
-
-const MIN_LENGTH = 12;
 
 // Reads one line from stdin. On a terminal, echo is off and keys are
 // handled by hand; otherwise it's piped input.
@@ -83,8 +82,8 @@ async function main() {
     ? null
     : createInterface({ input: process.stdin, terminal: false })[Symbol.asyncIterator]();
   const password = await readSecretLine(`New password for ${username}: `, lines);
-  if (password.length < MIN_LENGTH) {
-    console.error(`Use at least ${MIN_LENGTH} characters.`);
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    console.error(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
     process.exit(1);
   }
   if ((await readSecretLine("Same password again: ", lines)) !== password) {
