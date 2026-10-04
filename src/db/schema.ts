@@ -314,3 +314,42 @@ export const review = sqliteTable(
     ),
   ],
 );
+
+/**
+ * Failed password attempts, so the limiter can survive Vercel's serverless
+ * functions sharing no memory (docs/vision.md, "Limits on password
+ * attempts"). One row per key: an (identifier, IP) pair, or one IP across
+ * every identifier. The key is an HMAC of both (`src/auth/attempt-keys.ts`),
+ * so the table holds no email address and no IP address, only an opaque
+ * digest — a database leak exposes neither.
+ *
+ * The rules live in `src/data/attempt-rules.ts` and are pure; this table
+ * only stores their result. Written inside one transaction per failed
+ * attempt (`src/data/attempts.ts`), which also deletes rows whose window and
+ * lock have both passed, so the table can't grow forever and needs no cron.
+ * Times are Unix seconds, so a test can move the clock without sleeping.
+ */
+export const loginAttempt = sqliteTable(
+  "login_attempt",
+  {
+    /** base64url HMAC-SHA256 of the key string; see the table comment above. */
+    attemptKey: text("attempt_key").primaryKey(),
+    /** Failures recorded in the current window. */
+    failures: integer("failures").notNull(),
+    /** Unix seconds; after this a failure streak starts again from zero. */
+    windowExpiresAt: integer("window_expires_at").notNull(),
+    /** Unix seconds; requests before this are refused unverified. 0 when not locked. */
+    lockedUntil: integer("locked_until").notNull(),
+    /** Lockouts this key has reached in the window; picks the escalating step. */
+    lockoutLevel: integer("lockout_level").notNull(),
+  },
+  (table) => [
+    check("login_attempt_key_not_blank", sql`length(${table.attemptKey}) > 0`),
+    check(
+      "login_attempt_counters_valid",
+      sql`${table.failures} >= 0 AND ${table.windowExpiresAt} >= 0 AND ${table.lockedUntil} >= 0 AND ${table.lockoutLevel} >= 0`,
+    ),
+    // Housekeeping (a delete on every write) looks rows up by these.
+    index("login_attempt_expiry_idx").on(table.windowExpiresAt, table.lockedUntil),
+  ],
+);

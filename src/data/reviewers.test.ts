@@ -2,7 +2,12 @@
 import "@/data/test-database";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getReviewerEmail, getReviewers, setReviewerEmail } from "@/data/reviewers";
+import {
+  getReviewerCredentialsByIdentifier,
+  getReviewerEmail,
+  getReviewers,
+  setReviewerEmail,
+} from "@/data/reviewers";
 
 // Fresh database: reviewers 1–3 are Ben, Michal and Otavio, all with a null
 // email until a test sets one.
@@ -32,4 +37,22 @@ test("setReviewerEmail refuses an address another reviewer already has", async (
   await setReviewerEmail(1, "ben@example.com");
   assert.equal(await setReviewerEmail(2, "ben@example.com"), "email-used");
   assert.equal(await getReviewerEmail(2), null);
+});
+
+test("the login lookup finds a reviewer by email or username, whatever the capitals, and carries no email", async () => {
+  await setReviewerEmail(1, "ben@example.com");
+
+  for (const identifier of ["ben", "  BEN ", "ben@example.com", " Ben@Example.COM "]) {
+    const found = await getReviewerCredentialsByIdentifier(identifier);
+    assert.ok(found, identifier);
+    assert.equal(found.id, 1, identifier);
+    assert.ok(!("email" in found), "credentials never carry the email");
+  }
+
+  // An "@" means an email, so a username can't be reached that way, and an
+  // email can't be reached by its local part.
+  assert.equal(await getReviewerCredentialsByIdentifier("ben@"), undefined);
+  assert.equal(await getReviewerCredentialsByIdentifier("michal@example.com"), undefined);
+  assert.equal(await getReviewerCredentialsByIdentifier("nobody"), undefined);
+  assert.equal(await getReviewerCredentialsByIdentifier(""), undefined);
 });

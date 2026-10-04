@@ -15,6 +15,7 @@ import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
 import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
 import { getReviewerEmail, type Reviewer } from "@/data/reviewers";
+import { lockoutMessage } from "@/forms/lockout-message";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -24,8 +25,10 @@ export const metadata: Metadata = {
 
 type SearchParams = Pick<PageProps<"/account">, "searchParams">;
 
-// The codes the changePassword action redirects with, each with its own message.
-const CHANGE_ERRORS: Record<PasswordChangeError, string> = {
+// The codes the changePassword action redirects with, each with its own
+// message. "locked" isn't listed: its message carries the minutes left, from
+// the `wait=minutes` the URL also carries (see `lockoutMessage`).
+const CHANGE_ERRORS: Record<Exclude<PasswordChangeError, "locked">, string> = {
   current: "That’s not your current password.",
   short: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
   mismatch: "The two new passwords don’t match.",
@@ -33,8 +36,10 @@ const CHANGE_ERRORS: Record<PasswordChangeError, string> = {
   invalid: "Check the form and try again.",
 };
 
-// The codes the changeEmail action redirects with, each with its own message.
-const EMAIL_ERRORS: Record<EmailChangeError, string> = {
+// The codes the changeEmail action redirects with, each with its own
+// message. "email-locked" is the email form's lockout, worded by
+// `lockoutMessage` like "locked".
+const EMAIL_ERRORS: Record<Exclude<EmailChangeError, "email-locked">, string> = {
   "email-current": "That’s not your current password.",
   "email-invalid": "That doesn’t look like an email address.",
   // With the site's three reviewers, naming the clash tells a reviewer
@@ -204,7 +209,7 @@ function AccountDetails({ reviewer, email }: { reviewer?: Reviewer; email?: stri
 // redirect; a fresh key per response remounts FormMessage, so the same
 // message twice in a row is focused again.
 async function PasswordFormStatus({ searchParams }: SearchParams) {
-  const { changed, error } = await searchParams;
+  const { changed, error, wait } = await searchParams;
   if (changed === "1") {
     return (
       <FormMessage key={crypto.randomUUID()} tone="success">
@@ -217,20 +222,21 @@ async function PasswordFormStatus({ searchParams }: SearchParams) {
   if (typeof error !== "string" || !isPasswordChangeError(error)) return null;
   return (
     <FormMessage key={crypto.randomUUID()} tone="error">
-      {CHANGE_ERRORS[error]} Nothing was changed, so the fields are empty again.
+      {error === "locked" ? lockoutMessage(wait) : CHANGE_ERRORS[error]} Nothing was changed, so the
+      fields are empty again.
     </FormMessage>
   );
 }
 
 function isPasswordChangeError(value: string): value is PasswordChangeError {
-  return Object.hasOwn(CHANGE_ERRORS, value);
+  return value === "locked" || Object.hasOwn(CHANGE_ERRORS, value);
 }
 
 // The result of the last email change, read from the URL after the action's
 // redirect, like PasswordFormStatus above (the two share the `?error=`
 // query string; each only knows its own codes, so they can't collide).
 async function EmailFormStatus({ searchParams }: SearchParams) {
-  const { saved, error } = await searchParams;
+  const { saved, error, wait } = await searchParams;
   if (saved === "1") {
     return (
       <FormMessage key={crypto.randomUUID()} tone="success">
@@ -241,11 +247,12 @@ async function EmailFormStatus({ searchParams }: SearchParams) {
   if (typeof error !== "string" || !isEmailChangeError(error)) return null;
   return (
     <FormMessage key={crypto.randomUUID()} tone="error">
-      {EMAIL_ERRORS[error]} Nothing was changed, so the fields are empty again.
+      {error === "email-locked" ? lockoutMessage(wait) : EMAIL_ERRORS[error]} Nothing was changed, so
+      the fields are empty again.
     </FormMessage>
   );
 }
 
 function isEmailChangeError(value: string): value is EmailChangeError {
-  return Object.hasOwn(EMAIL_ERRORS, value);
+  return value === "email-locked" || Object.hasOwn(EMAIL_ERRORS, value);
 }

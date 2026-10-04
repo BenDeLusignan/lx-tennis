@@ -34,17 +34,16 @@ export async function hashPassword(password: string): Promise<string> {
   return ["scrypt", COST.N, COST.r, COST.p, salt.toString("base64url"), key.toString("base64url")].join("$");
 }
 
-// Hashed once, then used when there's no real hash to check against, so a
-// login attempt takes the same time whether or not the username exists.
-let dummyHash: Promise<string> | undefined;
-
 /**
  * Constant-time check of `password` against a stored hash. A null or
- * malformed hash still costs one full scrypt run and returns false.
+ * malformed hash still costs one full scrypt run, at the current cost and
+ * against a fixed salt, and returns false: so a login attempt takes the same
+ * time whether or not the account exists or has a password. (No dummy hash
+ * is made first: that would cost a second scrypt run on the first such
+ * attempt after a cold start, which is a timing difference of its own.)
  */
 export async function verifyPassword(password: string, storedHash: string | null): Promise<boolean> {
-  dummyHash ??= hashPassword(randomBytes(SALT_BYTES).toString("base64url"));
-  const hash = storedHash ?? (await dummyHash);
+  const hash = storedHash ?? "";
 
   const [scheme, N, r, p, salt, key] = hash.split("$");
   const params = { N: Number(N), r: Number(r), p: Number(p) };

@@ -18,9 +18,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, mock, type MockModuleOptions } from "node:test";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 // getDb reads DATABASE_URL on first use, not at import, so the order is safe.
 import { getDb } from "@/db/client";
+import { loginAttempt } from "@/db/schema";
 
 export const refreshedTags: string[] = [];
 
@@ -47,4 +49,10 @@ before(async () => {
 /** Empties `refreshedTags`, so a test sees only its own refreshes. */
 export function clearRefreshedTags(): void {
   refreshedTags.length = 0;
+}
+
+/** The limiter's stored counter for a hashed key, or undefined when there's no row. */
+export async function attemptRow(key: string) {
+  const [row] = await getDb().select().from(loginAttempt).where(eq(loginAttempt.attemptKey, key));
+  return row;
 }

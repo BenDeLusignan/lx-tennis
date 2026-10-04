@@ -23,11 +23,12 @@ export interface ReviewerCredentials extends Reviewer {
 }
 
 /**
- * Usernames are stored lowercase (the table has a CHECK for it) and matched
- * case-insensitively, because phone keyboards capitalise the first letter.
+ * Usernames and email addresses are both stored lowercase, and both are
+ * matched case-insensitively because phone keyboards capitalise the first
+ * letter.
  */
-function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
+function normalizeIdentifier(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 const credentialsColumns = {
@@ -43,7 +44,27 @@ export async function getReviewerCredentialsByUsername(
   const [row] = await getDb()
     .select(credentialsColumns)
     .from(reviewer)
-    .where(eq(reviewer.username, normalizeUsername(username)));
+    .where(eq(reviewer.username, normalizeIdentifier(username)));
+  return row;
+}
+
+/**
+ * A reviewer's credentials by what was typed in the login form's one field:
+ * an email address when it contains an `@`, otherwise a username. Emails
+ * are stored lowercase (the unique index folds case), and the input is
+ * lowercased here, so a plain compare finds the row.
+ *
+ * Not cached, and the select spells out its columns: no email rides out of
+ * here, and nothing here reaches a prerendered page.
+ */
+export async function getReviewerCredentialsByIdentifier(
+  identifier: string,
+): Promise<ReviewerCredentials | undefined> {
+  const value = normalizeIdentifier(identifier);
+  const [row] = await getDb()
+    .select(credentialsColumns)
+    .from(reviewer)
+    .where(eq(value.includes("@") ? reviewer.email : reviewer.username, value));
   return row;
 }
 
@@ -62,7 +83,7 @@ export async function setReviewerPasswordHash(
   const updated = await getDb()
     .update(reviewer)
     .set({ passwordHash })
-    .where(eq(reviewer.username, normalizeUsername(username)))
+    .where(eq(reviewer.username, normalizeIdentifier(username)))
     .returning({ id: reviewer.id });
   return updated.length > 0;
 }

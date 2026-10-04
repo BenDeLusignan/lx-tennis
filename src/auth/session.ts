@@ -1,6 +1,7 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { secretHmac } from "@/auth/secret";
 
 /**
  * Stateless session: an HMAC-signed cookie holding the reviewer id, an
@@ -26,28 +27,15 @@ export interface SessionPayload {
   pwd: string;
 }
 
-function sessionSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  // 32 characters of random base64 is 192+ bits: too long to brute-force the HMAC.
-  if (!secret || secret.length < 32) {
-    throw new Error("SESSION_SECRET must be at least 32 characters. See README (Environment).");
-  }
-  return secret;
-}
-
-// The purpose prefix keeps the two HMAC uses apart, so a signature can
-// never be passed off as a fingerprint or the other way round.
-function hmac(purpose: "session" | "password", value: string): string {
-  return createHmac("sha256", sessionSecret()).update(`${purpose}:${value}`).digest("base64url");
-}
-
+// The purpose prefix keeps the HMAC uses apart, so a signature can never be
+// passed off as a fingerprint or an attempt key, or the other way round.
 export function passwordFingerprint(passwordHash: string): string {
-  return hmac("password", passwordHash);
+  return secretHmac("password", passwordHash);
 }
 
 export function signSession(payload: SessionPayload): string {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${body}.${hmac("session", body)}`;
+  return `${body}.${secretHmac("session", body)}`;
 }
 
 /** The payload if the token is authentic and unexpired, otherwise null. */
@@ -55,7 +43,7 @@ export function verifySession(token: string, nowSeconds = Date.now() / 1000): Se
   const [body, signature, ...rest] = token.split(".");
   if (!body || !signature || rest.length > 0) return null;
 
-  const expected = Buffer.from(hmac("session", body));
+  const expected = Buffer.from(secretHmac("session", body));
   const actual = Buffer.from(signature);
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
 

@@ -1,12 +1,19 @@
 // Must be first: it sets up the test database and stands in for next/cache (see the file).
-import { clearRefreshedTags, refreshedTags } from "@/data/test-database";
+import { attemptRow, clearRefreshedTags, refreshedTags } from "@/data/test-database";
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
+import { eq, sql } from "drizzle-orm";
+import { reviewerAttemptKeys } from "@/auth/attempt-keys";
 import { hashPassword, verifyPassword } from "@/auth/password";
 import { passwordFingerprint, signSession, verifySession } from "@/auth/session";
-import { submitEmailChange, submitPasswordChange } from "@/auth/submit";
+import {
+  submitEmailChange as submitEmailChangeIn,
+  submitLogin,
+  submitPasswordChange as submitPasswordChangeIn,
+  type AttemptContext,
+} from "@/auth/submit";
 import { getDb } from "@/db/client";
-import { reviewer } from "@/db/schema";
+import { loginAttempt, reviewer } from "@/db/schema";
 import {
   getReviewerCredentialsById,
   getReviewerEmail,
@@ -14,7 +21,7 @@ import {
   setReviewerPasswordHash,
   type Reviewer,
 } from "@/data/reviewers";
-import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
+import { EMAIL_MAX_LENGTH, LOGIN_FAILURE_LIMIT, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
 
 // Fresh database: reviewer 1 is Ben, with no password set until a test sets one.
 const BEN: Reviewer = { id: 1, username: "ben", displayName: "Ben" };
@@ -23,6 +30,13 @@ const OLD_PASSWORD = "old-tennis-password";
 const NEW_PASSWORD = "new-tennis-password";
 const EMAIL = "ben@example.com";
 
+// A fixed clock and address, so these tests neither sleep nor read headers.
+// The submit functions take the context explicitly; the tests that aren't
+// about the limiter just use this one.
+const ATTEMPT: AttemptContext = { now: 1_700_000_000, ip: "198.51.100.4" };
+const submitPasswordChange = (r: Reviewer | null, f: FormData, c = ATTEMPT) => submitPasswordChangeIn(r, f, c);
+const submitEmailChange = (r: Reviewer | null, f: FormData, c = ATTEMPT) => submitEmailChangeIn(r, f, c);
+
 beforeEach(async () => {
   clearRefreshedTags();
   process.env.SESSION_SECRET = "test-secret-that-is-at-least-32-characters-long";
@@ -30,6 +44,8 @@ beforeEach(async () => {
   // The database is shared by the file's tests, so an email one test sets
   // would leak into the next; the seeded reviewers start with none.
   await getDb().update(reviewer).set({ email: null });
+  // Likewise the limiter's counters, so one test's failures can't lock another.
+  await getDb().delete(loginAttempt);
 });
 
 function form(fields: Record<string, string>): FormData {
@@ -246,4 +262,129 @@ test("an email change refreshes nothing cached", async () => {
   const result = await submitEmailChange(BEN, emailForm());
   assert.equal(result.saved, true);
   assert.deepEqual(refreshedTags, []);
+});
+
+// --- The failed-attempt limiter on the current-password checks ---
+
+
+
+test("wrong current passwords on the Change password form lock it", async () => {
+  for (let i = 0; i < LOGIN_FAILURE_LIMIT; i++) {
+    const result = await submitPasswordChange(
+      BEN,
+      changeForm({ currentPassword: "wrong-current-1" }),
+      ATTEMPT,
+    );
+    assert.equal(result.redirect, "/account?error=current");
+    assert.equal(result.changed, false);
+  }
+
+  // The next attempt isn't checked at all: even the right password is refused
+  // while the lock stands.
+  const locked = await submitPasswordChange(BEN, changeForm(), ATTEMPT);
+  assert.equal(locked.redirect, "/account?error=locked&wait=1");
+  assert.equal(locked.changed, false);
+  assert.equal(await verifyPassword(OLD_PASSWORD, await storedHash()), true);
+
+  // Once the lock lifts, the right current password works again.
+  const after = await submitPasswordChange(BEN, changeForm(), {
+    now: ATTEMPT.now + 61,
+    ip: ATTEMPT.ip,
+  });
+  assert.equal(after.redirect, "/account?changed=1");
+  assert.equal(after.changed, true);
+});
+
+test("wrong current passwords on the Email form count too", async () => {
+  for (let i = 0; i < LOGIN_FAILURE_LIMIT; i++) {
+    const result = await submitEmailChange(
+      BEN,
+      emailForm({ currentPassword: "wrong-current-1" }),
+      ATTEMPT,
+    );
+    assert.equal(result.redirect, "/account?error=email-current");
+    assert.equal(result.saved, false);
+  }
+
+  const locked = await submitEmailChange(BEN, emailForm(), ATTEMPT);
+  assert.equal(locked.redirect, "/account?error=email-locked&wait=1");
+  assert.equal(locked.saved, false);
+  assert.equal(await getReviewerEmail(BEN.id), null);
+
+  // Both forms check the same password, so they share the reviewer-and-address
+  // counter: the password form is locked by the same failures. A different
+  // address is untouched.
+  assert.equal(
+    (await submitPasswordChange(BEN, changeForm(), ATTEMPT)).redirect,
+    "/account?error=locked&wait=1",
+  );
+  assert.equal(
+    (await submitPasswordChange(BEN, changeForm(), { now: ATTEMPT.now, ip: "198.51.100.99" }))
+      .changed,
+    true,
+  );
+});
+
+test("a successful change clears that reviewer-and-address counter", async () => {
+  const wrongTwice = changeForm({ currentPassword: "wrong-current-1" });
+  await submitPasswordChange(BEN, wrongTwice, ATTEMPT);
+  await submitPasswordChange(BEN, wrongTwice, ATTEMPT);
+  const keys = reviewerAttemptKeys(BEN.id, ATTEMPT.ip);
+  assert.equal((await attemptRow(keys.pair.key))?.failures, 2);
+  assert.equal((await attemptRow(keys.ip.key))?.failures, 2);
+
+  assert.equal((await submitPasswordChange(BEN, changeForm(), ATTEMPT)).changed, true);
+  assert.equal(await attemptRow(keys.pair.key), undefined, "the success cleared the counter");
+  assert.equal((await attemptRow(keys.ip.key))?.failures, 2, "the IP counter isn't reset by it");
+
+  // A failure after a success starts from one, not from the old count.
+  await submitPasswordChange(BEN, changeForm({ currentPassword: "wrong-current-1" }), ATTEMPT);
+  assert.equal((await attemptRow(keys.pair.key))?.failures, 1);
+});
+
+test("the same address locked out of login is locked out of the forms too", async () => {
+  // Twenty wrong logins at twenty different identifiers lock the address.
+  for (let i = 0; i < 20; i++) {
+    const login = new FormData();
+    login.set("identifier", `spray-${i}`);
+    login.set("password", "wrong-password-here");
+    await submitLogin(login, ATTEMPT);
+  }
+  const result = await submitPasswordChange(BEN, changeForm());
+  assert.equal(result.redirect, "/account?error=locked&wait=1");
+  assert.equal(result.changed, false);
+  assert.equal(await verifyPassword(OLD_PASSWORD, await storedHash()), true);
+});
+
+test("a passwordless reviewer's wrong current passwords count and lock too", async () => {
+  await getDb().update(reviewer).set({ passwordHash: null }).where(eq(reviewer.id, BEN.id));
+  for (let i = 0; i < LOGIN_FAILURE_LIMIT; i++) {
+    assert.equal((await submitPasswordChange(BEN, changeForm())).redirect, "/account?error=current");
+  }
+  assert.equal((await submitPasswordChange(BEN, changeForm())).redirect, "/account?error=locked&wait=1");
+});
+
+test("a burst of simultaneous wrong current passwords gets exactly the limit checked", async () => {
+  const results = await Promise.all(
+    Array.from({ length: 20 }, () =>
+      submitPasswordChange(BEN, changeForm({ currentPassword: "wrong-current-1" })),
+    ),
+  );
+  assert.equal(results.filter((r) => r.redirect === "/account?error=current").length, LOGIN_FAILURE_LIMIT);
+  assert.equal(results.filter((r) => r.redirect === "/account?error=locked&wait=1").length, 20 - LOGIN_FAILURE_LIMIT);
+});
+
+test("fail closed: when the counters can't be written, the form refuses even the right password", async () => {
+  await getDb().run(sql`ALTER TABLE login_attempt RENAME TO login_attempt_away`);
+  try {
+    const result = await submitPasswordChange(BEN, changeForm());
+    assert.deepEqual(result, { redirect: "/account?error=locked&wait=0", changed: false });
+    assert.equal(await verifyPassword(OLD_PASSWORD, await storedHash()), true, "nothing changed");
+    assert.deepEqual(await submitEmailChange(BEN, emailForm()), {
+      redirect: "/account?error=email-locked&wait=0",
+      saved: false,
+    });
+  } finally {
+    await getDb().run(sql`ALTER TABLE login_attempt_away RENAME TO login_attempt`);
+  }
 });

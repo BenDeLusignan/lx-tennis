@@ -1,13 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { clientIp } from "@/auth/client-ip";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
-import { verifyPassword } from "@/auth/password";
-import { safeNextPath } from "@/auth/safe-next-path";
 import { endSession, startSession } from "@/auth/session";
-import { submitEmailChange, submitPasswordChange } from "@/auth/submit";
-import { PASSWORD_MAX_LENGTH } from "@/data/limits";
-import { getReviewerCredentialsById, getReviewerCredentialsByUsername } from "@/data/reviewers";
+import { submitEmailChange, submitLogin, submitPasswordChange } from "@/auth/submit";
+import { getReviewerCredentialsById } from "@/data/reviewers";
 
 // Both actions always end in redirect(), never by returning to render the
 // page. A form posted before the page's JavaScript has loaded is a plain
@@ -15,38 +13,19 @@ import { getReviewerCredentialsById, getReviewerCredentialsByUsername } from "@/
 // render would answer with only the streamed part of the page (no <html>,
 // no CSS), which shows as a blank screen.
 
-// Server Actions are public POST endpoints: bound what anyone can make
-// scrypt chew on. No real username or password comes near these.
-const MAX_USERNAME_LENGTH = 64;
-
+// The clock and the client's IP are read here and passed in, so the submit
+// functions can be tested with a fixed time and address. `clientIp` reads
+// the request headers (see it for which one is trusted, and why).
 export async function logIn(formData: FormData): Promise<never> {
-  // Re-checked here, not trusted from the page: the hidden field is user input.
-  const next = safeNextPath(formData.get("next"));
-  const username = formData.get("username");
-  const password = formData.get("password");
-
-  if (
-    typeof username === "string" &&
-    typeof password === "string" &&
-    username.length <= MAX_USERNAME_LENGTH &&
-    password.length <= PASSWORD_MAX_LENGTH
-  ) {
-    const reviewer = await getReviewerCredentialsByUsername(username);
-    // Always runs scrypt, even for an unknown username, so response time
-    // doesn't give away which usernames exist.
-    const passwordMatches = await verifyPassword(password, reviewer?.passwordHash ?? null);
-    if (reviewer?.passwordHash && passwordMatches) {
-      await startSession({ id: reviewer.id, passwordHash: reviewer.passwordHash });
-      redirect(next);
-    }
-  }
-
-  // Every failure gets the same flag, so the page shows one generic message
-  // and never reveals which usernames exist. The username isn't put in the
-  // URL: people sometimes type their password into that field by mistake.
-  const params = new URLSearchParams({ failed: "1" });
-  if (next !== "/") params.set("next", next);
-  redirect(`/login?${params}`);
+  const result = await submitLogin(formData, {
+    now: Math.floor(Date.now() / 1000),
+    ip: await clientIp(),
+  });
+  // Start the session only once the credentials are known to be right: the
+  // cookie can only be set from an action, so the submit function returns
+  // what to sign rather than signing it itself.
+  if (result.session) await startSession(result.session);
+  redirect(result.redirect);
 }
 
 // POST only (a Server Action), so a link or an <img> on another site can't
@@ -66,7 +45,10 @@ export async function logOut(): Promise<never> {
  */
 export async function changePassword(formData: FormData): Promise<never> {
   const reviewer = await getCurrentReviewer();
-  const result = await submitPasswordChange(reviewer, formData);
+  const result = await submitPasswordChange(reviewer, formData, {
+    now: Math.floor(Date.now() / 1000),
+    ip: await clientIp(),
+  });
   if (result.changed && reviewer) {
     // The new hash is in the database now; the fresh cookie must carry its
     // fingerprint, or this request's next page read would be logged out too.
@@ -85,6 +67,9 @@ export async function changePassword(formData: FormData): Promise<never> {
  */
 export async function changeEmail(formData: FormData): Promise<never> {
   const reviewer = await getCurrentReviewer();
-  const result = await submitEmailChange(reviewer, formData);
+  const result = await submitEmailChange(reviewer, formData, {
+    now: Math.floor(Date.now() / 1000),
+    ip: await clientIp(),
+  });
   redirect(result.redirect);
 }

@@ -32,9 +32,9 @@ Requires Node.js 20.9 or newer to run the site. `npm test` needs Node.js 25.9 or
    | --- | --- |
    | `DATABASE_URL` | `file:local.db` for a local SQLite file in the repo root (gitignored), or a `libsql://…turso.io` URL for Turso |
    | `DATABASE_AUTH_TOKEN` | Turso only; empty for a local file |
-   | `SESSION_SECRET` | At least 32 random characters; signs the login cookie. Changing it logs everyone out |
+   | `SESSION_SECRET` | At least 32 random characters; signs the login cookie and hashes the failed-login counters' keys. Changing it logs everyone out and forgets recent failed attempts |
 
-3. **Create the database:** applies the migrations in `drizzle/`, which create the `reviewer`, `racquet`, `string`, `setup` and `review` tables, add Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) with no password, and add the four racquets and Ben's ten starting strings. Run it again after pulling new migrations; it only applies the ones that are missing.
+3. **Create the database:** applies the migrations in `drizzle/`, which create the `reviewer`, `racquet`, `string`, `setup`, `review` and `login_attempt` tables, add Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) with no password, and add the four racquets and Ben's ten starting strings. Run it again after pulling new migrations; it only applies the ones that are missing.
 
    ```bash
    npm run db:migrate
@@ -57,7 +57,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build (lists which routes are static / partially prerendered)
 npm run start            # serve the production build
 npm run lint             # ESLint
-npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, database rules, setup/review (add, edit-own and delete-own)/string forms and actions (on throwaway databases, never local.db)
+npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, login by email or username, the failed-attempt limiter (lockouts, per-address keys, concurrency), database rules, setup/review (add, edit-own and delete-own)/string forms and actions (on throwaway databases, never local.db)
 npm run db:migrate       # apply pending migrations in drizzle/ to DATABASE_URL
 npm run db:generate      # after editing src/db/schema.ts: write the SQL migration into drizzle/
 npm run db:set-password -- <username>   # set or reset a reviewer's password

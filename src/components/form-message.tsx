@@ -18,7 +18,7 @@ interface FormMessageProps {
  * it's just the message, near the top of the form.
  *
  * Render it with a fresh `key` per response (as the login page does for
- * LoginFailed), so the same message twice in a row is focused again.
+ * LoginStatus), so the same message twice in a row is focused again.
  */
 export function FormMessage({ tone, children }: FormMessageProps) {
   const ref = useRef<HTMLParagraphElement>(null);

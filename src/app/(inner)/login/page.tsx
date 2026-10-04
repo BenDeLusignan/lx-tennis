@@ -7,7 +7,9 @@ import { Input } from "@/components/input";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
-import { LoginFailed } from "./login-failed";
+import { IDENTIFIER_MAX_LENGTH } from "@/data/limits";
+import { lockoutMessage } from "@/forms/lockout-message";
+import { LoginStatus } from "./login-status";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -19,8 +21,9 @@ type SearchParams = Pick<PageProps<"/login">, "searchParams">;
 
 // The form is in the static shell, so it shows straight away. Only the two
 // values that come from the URL stream in, each in its own small
-// <Suspense>: where to go afterwards (`?next=`) and whether the last
-// attempt failed (`?failed=1`, set by the logIn action).
+// <Suspense>: where to go afterwards (`?next=`) and how the last attempt
+// ended (`?failed=1` for wrong details, `?locked=<minutes>` for a lockout,
+// both set by the logIn action).
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <Panel aria-labelledby="login-heading" className={styles.panel}>
@@ -28,7 +31,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         Reviewer log in
       </SectionTitle>
       <p className={styles.intro}>
-        For Ben, Michal and Otavio. Everything on the site can be read without logging in.
+        For Ben, Michal and Otavio. Log in with your email address or your username. Everything on
+        the site can be read without logging in.
       </p>
 
       <form action={logIn} className={styles.form}>
@@ -36,13 +40,17 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           <NextInput searchParams={searchParams} />
         </Suspense>
 
-        <Field label="Username" htmlFor="username">
+        <Field label="Email or username" htmlFor="identifier">
+          {/* type="text", not "email": the field takes a username too. A
+              phone's keyboard still gets an @ key from inputmode. */}
           <Input
-            id="username"
-            name="username"
+            id="identifier"
+            name="identifier"
             type="text"
             required
+            maxLength={IDENTIFIER_MAX_LENGTH}
             autoComplete="username"
+            inputMode="email"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -62,11 +70,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </Field>
 
         {/* Always in the page (empty until an attempt fails) so screen readers
-            announce the message when it's inserted; LoginFailed also moves
-            focus to the password field, which reads it out again. */}
+            announce the message when it's inserted; LoginStatus also moves
+            focus to the identifier field, which reads it out again. */}
         <p id="login-error" role="alert">
           <Suspense fallback={null}>
-            <FailureMessage searchParams={searchParams} />
+            <StatusMessage searchParams={searchParams} />
           </Suspense>
         </p>
 
@@ -81,14 +89,28 @@ async function NextInput({ searchParams }: SearchParams) {
   return <input type="hidden" name="next" value={safeNextPath(next)} />;
 }
 
-async function FailureMessage({ searchParams }: SearchParams) {
-  const { failed } = await searchParams;
+async function StatusMessage({ searchParams }: SearchParams) {
+  const { failed, locked } = await searchParams;
+
+  // A lockout says how long the wait is. That reveals nothing about whether
+  // an account exists: failures are counted the same whether the identifier
+  // is known or not, so a stranger's own failures produce this and so do a
+  // reviewer's. The minutes come from the caller's own failure count, not
+  // from the database's contents. A fresh key per response remounts
+  // LoginStatus, so a second failure in a row (same URL, same text) is
+  // announced and focused again too.
+  if (typeof locked === "string") {
+    return (
+      <LoginStatus key={crypto.randomUUID()} className={styles.error}>
+        {lockoutMessage(locked)}
+      </LoginStatus>
+    );
+  }
+
   if (failed !== "1") return null;
-  // A fresh key per response remounts LoginFailed, so a second failure in a
-  // row (same URL, same text) is announced and focused again too.
   return (
-    <LoginFailed key={crypto.randomUUID()} className={styles.error}>
-      That username and password don&rsquo;t match. Check both and try again.
-    </LoginFailed>
+    <LoginStatus key={crypto.randomUUID()} className={styles.error}>
+      That email address or username and password don&rsquo;t match. Check both and try again.
+    </LoginStatus>
   );
 }
