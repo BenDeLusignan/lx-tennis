@@ -1,0 +1,67 @@
+/* The same bordered look as the string list's collapsed rows on /account/strings. */
+.disclosure {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.disclosure[open] {
+  border-color: var(--color-border-strong);
+}
+
+/*
+ * The whole row is the tap target: at least 2.75rem (44px) tall, and the
+ * heading's own line already fills most of that.
+ */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+/*
+ * A chevron instead of the default triangle: points right when closed and
+ * turns down when open, so the state is a shape, not a colour. Decorative
+ * (empty alt); the browser tells assistive technology expanded or collapsed.
+ * Fixed width so the heading doesn't shift as the glyph turns.
+ */
+.summary::before {
+  content: "›" / "";
+  flex: none;
+  inline-size: 1em;
+  color: var(--color-link);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  transition: transform var(--duration-fast) ease;
+}
+
+.disclosure[open] > .summary::before {
+  transform: rotate(90deg);
+}
+
+.summary:hover::before {
+  text-shadow: var(--text-glow-cyan);
+}
+
+/*
+ * SectionTitle's own bottom margin is for a heading above content; here the
+ * summary's padding does the spacing. The two-class selector beats
+ * SectionTitle's one-class rule whichever stylesheet loads last.
+ */
+.summary .title {
+  margin-block-end: 0;
+}
+
+.body {
+  padding: var(--space-2) var(--space-4) var(--space-4);
+}

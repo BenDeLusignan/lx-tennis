@@ -33,20 +33,26 @@
   color: var(--color-text-muted);
 }
 
-/* Same flow as the login form: one column, fields a space apart. */
+/* The Email and Change password disclosures, a little apart; Log out sits below. */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-end: var(--space-6);
+}
+
+/*
+ * Same flow as the login form: one column, fields a space apart. The empty
+ * #email-form-message and #password-form-message divs are still flex items,
+ * so their two gaps are the space above the button when there's no message.
+ * The disclosure around it supplies the outer spacing.
+ */
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin-block-end: var(--space-6);
 }
 
 .hint {
   color: var(--color-text-muted);
 }
-
-/*
- * The empty #password-form-message element is still a flex item, so its
- * two gaps are the space above the Change password button when there's no
- * message (as on the login page).
- */

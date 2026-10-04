@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ReactElement } from "react";
 import { Suspense } from "react";
 import { changeEmail, changePassword } from "@/auth/actions";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
 import type { EmailChangeError, PasswordChangeError } from "@/auth/submit";
+import { Disclosure } from "@/components/disclosure";
 import { Field } from "@/components/field";
 import { FormMessage } from "@/components/form-message";
 import { Input } from "@/components/input";
@@ -24,6 +26,7 @@ export const metadata: Metadata = {
 };
 
 type SearchParams = Pick<PageProps<"/account">, "searchParams">;
+type Params = Awaited<PageProps<"/account">["searchParams"]>;
 
 // The codes the changePassword action redirects with, each with its own
 // message. "locked" isn't listed: its message carries the minutes left, from
@@ -67,14 +70,65 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
         delete a string no setup uses.
       </p>
 
-      <SectionTitle as="h2" id="email-heading" size="lg">
-        Email
-      </SectionTitle>
-      {/* The form is in the static shell, so it shows straight away; the
-          field stays empty there on purpose — the current address is
-          private, so it streams in with the details panel above. Only the
-          result of the last change streams in, from ?saved=1 or
-          ?error=<flag> in the URL. */}
+      {/* Email and Change password each start collapsed and open themselves
+          when their form has a result to show, so the choice depends on the
+          URL's ?saved=1, ?changed=1 or ?error=<flag>, which is only read per
+          request. The section therefore streams in as a whole. Its fallback
+          is the same section, closed, so the forms are in the static shell
+          and nothing moves when the streamed one arrives (closed, the usual
+          case). After a submit it arrives open and grows by the form's
+          height; that can't be avoided for a section that must start open,
+          and FormMessage scrolls to its message anyway. */}
+      <div className={styles.sections}>
+        <Suspense fallback={<EmailSection />}>
+          <EmailSectionWithResult searchParams={searchParams} />
+        </Suspense>
+        <Suspense fallback={<PasswordSection />}>
+          <PasswordSectionWithResult searchParams={searchParams} />
+        </Suspense>
+      </div>
+
+      <LogOutButton />
+    </Panel>
+  );
+}
+
+async function CurrentAccountDetails() {
+  // The real check. The proxy only looks at the cookie, so a session ended
+  // by a password reset still gets this far and is sent to log in here.
+  const reviewer = await getCurrentReviewer();
+  if (!reviewer) redirect(loginPath("/account"));
+
+  // The email is private, so it's read here per request, never in the
+  // static shell (the panel above renders before the session is known).
+  const email = await getReviewerEmail(reviewer.id);
+  return <AccountDetails reviewer={reviewer} email={email} />;
+}
+
+function AccountDetails({ reviewer, email }: { reviewer?: Reviewer; email?: string | null }) {
+  return (
+    <dl className={styles.details}>
+      <dt className={styles.label}>Name</dt>
+      <dd className={styles.value}>{reviewer?.displayName}</dd>
+      <dt className={styles.label}>Username</dt>
+      <dd className={styles.value}>{reviewer?.username}</dd>
+      <dt className={styles.label}>Email</dt>
+      {/* "No email yet" is also the streaming fallback's text, so the row
+          keeps its height while the panel loads. */}
+      <dd className={styles.value}>{email ?? "No email yet"}</dd>
+    </dl>
+  );
+}
+
+// The two sections below are the same markup in the static shell (closed, no
+// message) and once streamed in (open when there's a message). Keep them
+// that way: the swap should only ever add the message and the `open`.
+
+// The field stays empty in the static shell on purpose: the current address
+// is private, so it streams in with the details panel above.
+function EmailSection({ message = null }: { message?: ReactElement | null }) {
+  return (
+    <Disclosure title="Email" open={message !== null}>
       <form action={changeEmail} className={styles.form}>
         <Field label="Email address" htmlFor="email-address">
           <Input
@@ -103,24 +157,21 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
           />
         </Field>
 
-        {/* Always here (empty until a change fails) so the message's
+        {/* Always here (empty until a change has a result) so the fields'
             aria-describedby stays valid; FormMessage moves focus to itself
-            when it's inserted, as with the password form below. */}
-        <div id="email-form-message">
-          <Suspense fallback={null}>
-            <EmailFormStatus searchParams={searchParams} />
-          </Suspense>
-        </div>
+            when it's inserted, as with the password form below. A div, not
+            a p: FormMessage renders its own <p>, and a p can't contain one. */}
+        <div id="email-form-message">{message}</div>
 
         <SubmitButton pendingLabel="Saving…">Save email</SubmitButton>
       </form>
+    </Disclosure>
+  );
+}
 
-      <SectionTitle as="h2" id="change-password-heading" size="lg">
-        Change password
-      </SectionTitle>
-      {/* The form is in the static shell, so it shows straight away; only
-          the result of the last change streams in, from ?changed=1 or
-          ?error=<flag> in the URL. */}
+function PasswordSection({ message = null }: { message?: ReactElement | null }) {
+  return (
+    <Disclosure title="Change password" open={message !== null}>
       <form action={changePassword} className={styles.form}>
         <Field label="Current password" htmlFor="current-password">
           <Input
@@ -161,56 +212,28 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
           />
         </Field>
 
-        {/* Always here (empty until a change fails) so the message's
-            aria-describedby stays valid; FormMessage moves focus to itself
-            when it's inserted. A div, not a p: FormMessage renders its own
-            <p>, and a p can't contain one. */}
-        <div id="password-form-message">
-          <Suspense fallback={null}>
-            <PasswordFormStatus searchParams={searchParams} />
-          </Suspense>
-        </div>
+        {/* Always here, for the same reason as the email form's. */}
+        <div id="password-form-message">{message}</div>
 
         <SubmitButton pendingLabel="Changing…">Change password</SubmitButton>
       </form>
-
-      <LogOutButton />
-    </Panel>
+    </Disclosure>
   );
 }
 
-async function CurrentAccountDetails() {
-  // The real check. The proxy only looks at the cookie, so a session ended
-  // by a password reset still gets this far and is sent to log in here.
-  const reviewer = await getCurrentReviewer();
-  if (!reviewer) redirect(loginPath("/account"));
-
-  // The email is private, so it's read here per request, never in the
-  // static shell (the panel above renders before the session is known).
-  const email = await getReviewerEmail(reviewer.id);
-  return <AccountDetails reviewer={reviewer} email={email} />;
+// Each form reads only its own result from the URL after the action's
+// redirect (the two share the `?error=` query string; each only knows its own
+// codes, so they can't collide). A fresh key per response remounts
+// FormMessage, so the same message twice in a row is focused again.
+async function EmailSectionWithResult({ searchParams }: SearchParams) {
+  return <EmailSection message={emailFormMessage(await searchParams)} />;
 }
 
-function AccountDetails({ reviewer, email }: { reviewer?: Reviewer; email?: string | null }) {
-  return (
-    <dl className={styles.details}>
-      <dt className={styles.label}>Name</dt>
-      <dd className={styles.value}>{reviewer?.displayName}</dd>
-      <dt className={styles.label}>Username</dt>
-      <dd className={styles.value}>{reviewer?.username}</dd>
-      <dt className={styles.label}>Email</dt>
-      {/* "No email yet" is also the streaming fallback's text, so the row
-          keeps its height while the panel loads. */}
-      <dd className={styles.value}>{email ?? "No email yet"}</dd>
-    </dl>
-  );
+async function PasswordSectionWithResult({ searchParams }: SearchParams) {
+  return <PasswordSection message={passwordFormMessage(await searchParams)} />;
 }
 
-// The result of the last change, read from the URL after the action's
-// redirect; a fresh key per response remounts FormMessage, so the same
-// message twice in a row is focused again.
-async function PasswordFormStatus({ searchParams }: SearchParams) {
-  const { changed, error, wait } = await searchParams;
+function passwordFormMessage({ changed, error, wait }: Params): ReactElement | null {
   if (changed === "1") {
     return (
       <FormMessage key={crypto.randomUUID()} tone="success">
@@ -233,11 +256,7 @@ function isPasswordChangeError(value: string): value is PasswordChangeError {
   return value === "locked" || Object.hasOwn(CHANGE_ERRORS, value);
 }
 
-// The result of the last email change, read from the URL after the action's
-// redirect, like PasswordFormStatus above (the two share the `?error=`
-// query string; each only knows its own codes, so they can't collide).
-async function EmailFormStatus({ searchParams }: SearchParams) {
-  const { saved, error, wait } = await searchParams;
+function emailFormMessage({ saved, error, wait }: Params): ReactElement | null {
   if (saved === "1") {
     return (
       <FormMessage key={crypto.randomUUID()} tone="success">
