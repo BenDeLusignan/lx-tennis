@@ -19,3 +19,6 @@ export const PASSWORD_MIN_LENGTH = 12;
  * make scrypt chew on. The same cap the login action applies.
  */
 export const PASSWORD_MAX_LENGTH = 1024;
+
+/** A reviewer's email address; 254 is the practical RFC 5321 limit. */
+export const EMAIL_MAX_LENGTH = 254;

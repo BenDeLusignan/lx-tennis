@@ -1,5 +1,5 @@
 import "server-only";
-import { STRING_FIELD_MAX_LENGTH } from "@/data/limits";
+import { EMAIL_MAX_LENGTH, STRING_FIELD_MAX_LENGTH } from "@/data/limits";
 import { STRING_TYPES, type StringFields } from "@/data/strings";
 
 /**
@@ -48,4 +48,30 @@ export function parseStringFields(brand: unknown, name: unknown, type: unknown):
   const stringType = STRING_TYPES.find((option) => option.value === type)?.value;
   if (!stringType) return null;
   return { brand: trimmedBrand, name: trimmedName, type: stringType };
+}
+
+/**
+ * An email address, checked the way the account page's rule wants it: one
+ * `@` with something on either side, a dot in the domain, no spaces, at
+ * most `EMAIL_MAX_LENGTH`. Trimmed and lowercased, the form the reviewer
+ * table stores (its checks pin trimmed and the length; the unique index
+ * folds case, see `src/db/schema.ts`). Deliberately not a full RFC 5322
+ * grammar check: this only needs to be an address a human can read back
+ * and that a future password-reset mail can reach. Null if any check fails.
+ */
+export function parseEmail(value: unknown): string | null {
+  // The length cap bounds the string work before it starts.
+  if (typeof value !== "string" || value.length > EMAIL_MAX_LENGTH) return null;
+  const email = value.trim().toLowerCase();
+  if (!email || email.length > EMAIL_MAX_LENGTH) return null;
+  if (email.includes(" ")) return null;
+  // Exactly one @, with a non-empty local part before it.
+  const at = email.indexOf("@");
+  if (at < 1 || email.indexOf("@", at + 1) !== -1) return null;
+  // The domain has a dot with a character on each side ("x.com"), so "a@b"
+  // and "a@.com" are out but "ben+tag@example.co.uk" is in.
+  const domain = email.slice(at + 1);
+  const dot = domain.indexOf(".");
+  if (dot < 1 || dot === domain.length - 1) return null;
+  return email;
 }

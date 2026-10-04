@@ -1,0 +1,584 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "14a146ae-6089-4312-86df-f2ea9ba7077b",
+  "prevId": "65ea8656-cf92-4e75-af93-2d006984c824",
+  "tables": {
+    "racquet": {
+      "name": "racquet",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "racquet_slug_unique": {
+          "name": "racquet_slug_unique",
+          "columns": [
+            "slug"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "racquet_slug_format": {
+          "name": "racquet_slug_format",
+          "value": "length(\"racquet\".\"slug\") > 0 AND \"racquet\".\"slug\" NOT GLOB '*[^a-z0-9-]*'"
+        }
+      }
+    },
+    "review": {
+      "name": "review",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "setup_id": {
+          "name": "setup_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewer_id": {
+          "name": "reviewer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "power": {
+          "name": "power",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "control": {
+          "name": "control",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "comfort": {
+          "name": "comfort",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "spin": {
+          "name": "spin",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "feel": {
+          "name": "feel",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "review_setup_reviewer_unique": {
+          "name": "review_setup_reviewer_unique",
+          "columns": [
+            "setup_id",
+            "reviewer_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "review_setup_id_setup_id_fk": {
+          "name": "review_setup_id_setup_id_fk",
+          "tableFrom": "review",
+          "tableTo": "setup",
+          "columnsFrom": [
+            "setup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "review_reviewer_id_reviewer_id_fk": {
+          "name": "review_reviewer_id_reviewer_id_fk",
+          "tableFrom": "review",
+          "tableTo": "reviewer",
+          "columnsFrom": [
+            "reviewer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "review_power_valid": {
+          "name": "review_power_valid",
+          "value": "typeof(\"review\".\"power\") = 'integer' AND \"review\".\"power\" BETWEEN 1 AND 10"
+        },
+        "review_control_valid": {
+          "name": "review_control_valid",
+          "value": "typeof(\"review\".\"control\") = 'integer' AND \"review\".\"control\" BETWEEN 1 AND 10"
+        },
+        "review_comfort_valid": {
+          "name": "review_comfort_valid",
+          "value": "typeof(\"review\".\"comfort\") = 'integer' AND \"review\".\"comfort\" BETWEEN 1 AND 10"
+        },
+        "review_spin_valid": {
+          "name": "review_spin_valid",
+          "value": "typeof(\"review\".\"spin\") = 'integer' AND \"review\".\"spin\" BETWEEN 1 AND 10"
+        },
+        "review_feel_valid": {
+          "name": "review_feel_valid",
+          "value": "typeof(\"review\".\"feel\") = 'integer' AND \"review\".\"feel\" BETWEEN 1 AND 10"
+        },
+        "review_body_not_blank": {
+          "name": "review_body_not_blank",
+          "value": "\"review\".\"body\" IS NULL OR length(trim(\"review\".\"body\", ' ' || char(9, 10, 13))) > 0"
+        }
+      }
+    },
+    "reviewer": {
+      "name": "reviewer",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "reviewer_username_unique": {
+          "name": "reviewer_username_unique",
+          "columns": [
+            "username"
+          ],
+          "isUnique": true
+        },
+        "reviewer_email_unique": {
+          "name": "reviewer_email_unique",
+          "columns": [
+            "lower(\"email\")"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "reviewer_username_lowercase": {
+          "name": "reviewer_username_lowercase",
+          "value": "\"reviewer\".\"username\" = lower(\"reviewer\".\"username\")"
+        },
+        "reviewer_display_name_not_blank": {
+          "name": "reviewer_display_name_not_blank",
+          "value": "length(trim(\"reviewer\".\"display_name\")) > 0"
+        },
+        "reviewer_email_trimmed": {
+          "name": "reviewer_email_trimmed",
+          "value": "\"reviewer\".\"email\" IS NULL OR \"reviewer\".\"email\" = trim(\"reviewer\".\"email\")"
+        },
+        "reviewer_email_length": {
+          "name": "reviewer_email_length",
+          "value": "\"reviewer\".\"email\" IS NULL OR length(\"reviewer\".\"email\") <= 254"
+        }
+      }
+    },
+    "setup": {
+      "name": "setup",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "racquet_id": {
+          "name": "racquet_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "strung_on": {
+          "name": "strung_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tension_unit": {
+          "name": "tension_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mains_string_id": {
+          "name": "mains_string_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mains_gauge_hundredths_mm": {
+          "name": "mains_gauge_hundredths_mm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mains_tension_tenths": {
+          "name": "mains_tension_tenths",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mains_tension_tenths_kg": {
+          "name": "mains_tension_tenths_kg",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "generated": {
+            "as": "(CASE \"tension_unit\" WHEN 'kg' THEN \"mains_tension_tenths\" WHEN 'lb' THEN CAST(round(\"mains_tension_tenths\" * 0.45359237) AS INTEGER) END)",
+            "type": "stored"
+          }
+        },
+        "crosses_string_id": {
+          "name": "crosses_string_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "crosses_gauge_hundredths_mm": {
+          "name": "crosses_gauge_hundredths_mm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "crosses_tension_tenths": {
+          "name": "crosses_tension_tenths",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "crosses_tension_tenths_kg": {
+          "name": "crosses_tension_tenths_kg",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "generated": {
+            "as": "(CASE \"tension_unit\" WHEN 'kg' THEN \"crosses_tension_tenths\" WHEN 'lb' THEN CAST(round(\"crosses_tension_tenths\" * 0.45359237) AS INTEGER) END)",
+            "type": "stored"
+          }
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "setup_stringing_unique": {
+          "name": "setup_stringing_unique",
+          "columns": [
+            "racquet_id",
+            "strung_on",
+            "mains_string_id",
+            "mains_gauge_hundredths_mm",
+            "mains_tension_tenths_kg",
+            "crosses_string_id",
+            "crosses_gauge_hundredths_mm",
+            "crosses_tension_tenths_kg"
+          ],
+          "isUnique": true
+        },
+        "setup_mains_string_id_idx": {
+          "name": "setup_mains_string_id_idx",
+          "columns": [
+            "mains_string_id"
+          ],
+          "isUnique": false
+        },
+        "setup_crosses_string_id_idx": {
+          "name": "setup_crosses_string_id_idx",
+          "columns": [
+            "crosses_string_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "setup_racquet_id_racquet_id_fk": {
+          "name": "setup_racquet_id_racquet_id_fk",
+          "tableFrom": "setup",
+          "tableTo": "racquet",
+          "columnsFrom": [
+            "racquet_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "setup_mains_string_id_string_id_fk": {
+          "name": "setup_mains_string_id_string_id_fk",
+          "tableFrom": "setup",
+          "tableTo": "string",
+          "columnsFrom": [
+            "mains_string_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "setup_crosses_string_id_string_id_fk": {
+          "name": "setup_crosses_string_id_string_id_fk",
+          "tableFrom": "setup",
+          "tableTo": "string",
+          "columnsFrom": [
+            "crosses_string_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "setup_created_by_reviewer_id_fk": {
+          "name": "setup_created_by_reviewer_id_fk",
+          "tableFrom": "setup",
+          "tableTo": "reviewer",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "setup_tension_unit_valid": {
+          "name": "setup_tension_unit_valid",
+          "value": "\"setup\".\"tension_unit\" IN ('lb', 'kg')"
+        },
+        "setup_strung_on_valid": {
+          "name": "setup_strung_on_valid",
+          "value": "date(\"setup\".\"strung_on\") IS \"setup\".\"strung_on\""
+        },
+        "setup_mains_gauge_valid": {
+          "name": "setup_mains_gauge_valid",
+          "value": "typeof(\"setup\".\"mains_gauge_hundredths_mm\") = 'integer' AND \"setup\".\"mains_gauge_hundredths_mm\" BETWEEN 100 AND 150"
+        },
+        "setup_crosses_gauge_valid": {
+          "name": "setup_crosses_gauge_valid",
+          "value": "typeof(\"setup\".\"crosses_gauge_hundredths_mm\") = 'integer' AND \"setup\".\"crosses_gauge_hundredths_mm\" BETWEEN 100 AND 150"
+        },
+        "setup_mains_tension_valid": {
+          "name": "setup_mains_tension_valid",
+          "value": "typeof(\"setup\".\"mains_tension_tenths\") = 'integer' AND CASE \"setup\".\"tension_unit\"\n    WHEN 'lb' THEN \"setup\".\"mains_tension_tenths\" BETWEEN 300 AND 800\n    WHEN 'kg' THEN \"setup\".\"mains_tension_tenths\" BETWEEN 136 AND 363 END"
+        },
+        "setup_crosses_tension_valid": {
+          "name": "setup_crosses_tension_valid",
+          "value": "typeof(\"setup\".\"crosses_tension_tenths\") = 'integer' AND CASE \"setup\".\"tension_unit\"\n    WHEN 'lb' THEN \"setup\".\"crosses_tension_tenths\" BETWEEN 300 AND 800\n    WHEN 'kg' THEN \"setup\".\"crosses_tension_tenths\" BETWEEN 136 AND 363 END"
+        }
+      }
+    },
+    "string": {
+      "name": "string",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "string_brand_name_unique": {
+          "name": "string_brand_name_unique",
+          "columns": [
+            "lower(\"brand\")",
+            "lower(\"name\")"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "string_brand_trimmed": {
+          "name": "string_brand_trimmed",
+          "value": "length(\"string\".\"brand\") > 0 AND \"string\".\"brand\" = trim(\"string\".\"brand\", ' ' || char(9, 10, 13))"
+        },
+        "string_name_trimmed": {
+          "name": "string_name_trimmed",
+          "value": "length(\"string\".\"name\") > 0 AND \"string\".\"name\" = trim(\"string\".\"name\", ' ' || char(9, 10, 13))"
+        },
+        "string_type_valid": {
+          "name": "string_type_valid",
+          "value": "\"string\".\"type\" IN ('polyester', 'co-polyester', 'multifilament', 'synthetic-gut', 'natural-gut', 'kevlar-aramid')"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "reviewer_email_unique": {
+        "columns": {
+          "lower(\"email\")": {
+            "isExpression": true
+          }
+        }
+      },
+      "string_brand_name_unique": {
+        "columns": {
+          "lower(\"brand\")": {
+            "isExpression": true
+          },
+          "lower(\"name\")": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}

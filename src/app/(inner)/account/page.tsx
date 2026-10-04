@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { changePassword } from "@/auth/actions";
+import { changeEmail, changePassword } from "@/auth/actions";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
-import type { PasswordChangeError } from "@/auth/submit";
+import type { EmailChangeError, PasswordChangeError } from "@/auth/submit";
 import { Field } from "@/components/field";
 import { FormMessage } from "@/components/form-message";
 import { Input } from "@/components/input";
@@ -13,8 +13,8 @@ import { LogOutButton } from "@/components/log-out-button";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
-import type { Reviewer } from "@/data/reviewers";
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
+import { getReviewerEmail, type Reviewer } from "@/data/reviewers";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -31,6 +31,17 @@ const CHANGE_ERRORS: Record<PasswordChangeError, string> = {
   mismatch: "The two new passwords don’t match.",
   same: "The new password has to be different from your current one.",
   invalid: "Check the form and try again.",
+};
+
+// The codes the changeEmail action redirects with, each with its own message.
+const EMAIL_ERRORS: Record<EmailChangeError, string> = {
+  "email-current": "That’s not your current password.",
+  "email-invalid": "That doesn’t look like an email address.",
+  // With the site's three reviewers, naming the clash tells a reviewer
+  // (who already knows who the others are) that it's a typo'd address of
+  // their own, without giving anyone outside anything they could use.
+  "email-used": "Another reviewer already uses that email address.",
+  "email-same": "That’s already your email address.",
 };
 
 // Reviewers only. Visitors never get here: src/proxy.ts sends them to the
@@ -50,6 +61,53 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
         <Link href="/account/strings">Edit the string list</Link>: fix a brand, name or type, or
         delete a string no setup uses.
       </p>
+
+      <SectionTitle as="h2" id="email-heading" size="lg">
+        Email
+      </SectionTitle>
+      {/* The form is in the static shell, so it shows straight away; the
+          field stays empty there on purpose — the current address is
+          private, so it streams in with the details panel above. Only the
+          result of the last change streams in, from ?saved=1 or
+          ?error=<flag> in the URL. */}
+      <form action={changeEmail} className={styles.form}>
+        <Field label="Email address" htmlFor="email-address">
+          <Input
+            id="email-address"
+            name="email"
+            type="email"
+            required
+            maxLength={EMAIL_MAX_LENGTH}
+            autoComplete="email"
+            aria-describedby="email-hint email-form-message"
+          />
+          <p id="email-hint" className={styles.hint}>
+            Used later to reset a forgotten password. No email is sent yet.
+          </p>
+        </Field>
+        <Field label="Current password" htmlFor="email-current-password">
+          <Input
+            id="email-current-password"
+            name="currentPassword"
+            type="password"
+            required
+            maxLength={PASSWORD_MAX_LENGTH}
+            autoComplete="current-password"
+            aria-describedby="email-form-message"
+          />
+        </Field>
+
+        {/* Always here (empty until a change fails) so the message's
+            aria-describedby stays valid; FormMessage moves focus to itself
+            when it's inserted, as with the password form below. */}
+        <div id="email-form-message">
+          <Suspense fallback={null}>
+            <EmailFormStatus searchParams={searchParams} />
+          </Suspense>
+        </div>
+
+        <SubmitButton pendingLabel="Saving…">Save email</SubmitButton>
+      </form>
 
       <SectionTitle as="h2" id="change-password-heading" size="lg">
         Change password
@@ -121,16 +179,23 @@ async function CurrentAccountDetails() {
   const reviewer = await getCurrentReviewer();
   if (!reviewer) redirect(loginPath("/account"));
 
-  return <AccountDetails reviewer={reviewer} />;
+  // The email is private, so it's read here per request, never in the
+  // static shell (the panel above renders before the session is known).
+  const email = await getReviewerEmail(reviewer.id);
+  return <AccountDetails reviewer={reviewer} email={email} />;
 }
 
-function AccountDetails({ reviewer }: { reviewer?: Reviewer }) {
+function AccountDetails({ reviewer, email }: { reviewer?: Reviewer; email?: string | null }) {
   return (
     <dl className={styles.details}>
       <dt className={styles.label}>Name</dt>
       <dd className={styles.value}>{reviewer?.displayName}</dd>
       <dt className={styles.label}>Username</dt>
       <dd className={styles.value}>{reviewer?.username}</dd>
+      <dt className={styles.label}>Email</dt>
+      {/* "No email yet" is also the streaming fallback's text, so the row
+          keeps its height while the panel loads. */}
+      <dd className={styles.value}>{email ?? "No email yet"}</dd>
     </dl>
   );
 }
@@ -159,4 +224,28 @@ async function PasswordFormStatus({ searchParams }: SearchParams) {
 
 function isPasswordChangeError(value: string): value is PasswordChangeError {
   return Object.hasOwn(CHANGE_ERRORS, value);
+}
+
+// The result of the last email change, read from the URL after the action's
+// redirect, like PasswordFormStatus above (the two share the `?error=`
+// query string; each only knows its own codes, so they can't collide).
+async function EmailFormStatus({ searchParams }: SearchParams) {
+  const { saved, error } = await searchParams;
+  if (saved === "1") {
+    return (
+      <FormMessage key={crypto.randomUUID()} tone="success">
+        Your email address has been saved.
+      </FormMessage>
+    );
+  }
+  if (typeof error !== "string" || !isEmailChangeError(error)) return null;
+  return (
+    <FormMessage key={crypto.randomUUID()} tone="error">
+      {EMAIL_ERRORS[error]} Nothing was changed, so the fields are empty again.
+    </FormMessage>
+  );
+}
+
+function isEmailChangeError(value: string): value is EmailChangeError {
+  return Object.hasOwn(EMAIL_ERRORS, value);
 }

@@ -29,6 +29,14 @@ export const reviewer = sqliteTable(
      * `npm run db:set-password` sets it; a null hash can never log in.
      */
     passwordHash: text("password_hash"),
+    /**
+     * The reviewer's email, for a future password-reset link; null until
+     * the reviewer sets one on /account. Private: no public reader ever
+     * selects it (`getReviewers` spells out its columns), and the account
+     * page reads it per request. Stored trimmed and lowercased (as
+     * usernames are), so later a reset can look the address up as typed.
+     */
+    email: text("email"),
   },
   (table) => [
     // Login lowercases what's typed (phones capitalise the first letter), so
@@ -39,6 +47,19 @@ export const reviewer = sqliteTable(
     // passes; unlike `trimWhitespace` below. It's in an applied migration
     // and SQLite can't alter a check, so fixing it needs a table rebuild.
     check("reviewer_display_name_not_blank", sql`length(trim(${table.displayName})) > 0`),
+    // Like the string table's trimmed checks: " ben@x.com" stored raw would
+    // dodge the unique index below (lower() keeps its space) and be a
+    // second address. Plain trim() for the same reason as the name check.
+    check("reviewer_email_trimmed", sql`${table.email} IS NULL OR ${table.email} = trim(${table.email})`),
+    // The form enforces the same cap via EMAIL_MAX_LENGTH in
+    // src/data/limits.ts; this pins it against a raw insert.
+    check("reviewer_email_length", sql`${table.email} IS NULL OR length(${table.email}) <= 254`),
+    // Case-insensitive, so "Ben@x.com" and "ben@x.com" are one address
+    // (SQLite's lower() folds ASCII only, which covers the emails in play).
+    // An email is stored lowercased and trimmed by the app; the index, not
+    // a CHECK, is what stops a case variant sneaking past as a duplicate.
+    // Multiple NULLs are fine: the seeded reviewers have no email yet.
+    uniqueIndex("reviewer_email_unique").on(sql`lower(${table.email})`),
   ],
 );
 

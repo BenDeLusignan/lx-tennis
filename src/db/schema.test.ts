@@ -142,6 +142,57 @@ test("seeds Ben's ten strings as the manufacturer writes them, with their types"
   ]);
 });
 
+// --- Reviewer emails ---
+
+test("the seeded reviewers have no email until one is set", async () => {
+  const rows = await db
+    .select({ email: schema.reviewer.email })
+    .from(schema.reviewer)
+    .orderBy(asc(schema.reviewer.id));
+  assert.deepEqual(rows, [{ email: null }, { email: null }, { email: null }]);
+});
+
+test("an email is unique ignoring case, even from a raw insert that skips the app's checks", async () => {
+  // Set one for Ben the way the app does: trimmed and lowercased.
+  await db.update(schema.reviewer).set({ email: "ben@example.com" }).where(eq(schema.reviewer.id, BEN));
+  // A raw insert of the same address, or any casing of it, can't take it:
+  // the unique index folds case itself, so the app's lowercasing isn't the
+  // only thing standing between Ben and a duplicate.
+  for (const [i, email] of ["ben@example.com", "BEN@example.com", "Ben@Example.com"].entries()) {
+    await assertRefused(
+      rawInsert("reviewer", { username: `raw${i}`, display_name: "Raw", password_hash: null, email }),
+      /UNIQUE constraint failed: index 'reviewer_email_unique'/,
+    );
+  }
+  // NULLs don't collide: Michal can still set his own address.
+  await db.update(schema.reviewer).set({ email: "michal@example.com" }).where(eq(schema.reviewer.id, MICHAL));
+});
+
+test("a reviewer email can't be blank or over the length cap, and NULL needs no value", async () => {
+  for (const [i, email] of [" ", " ben@example.com", "ben@example.com "].entries()) {
+    await assertRefused(
+      rawInsert("reviewer", { username: `blank${i}`, display_name: "Raw", password_hash: null, email }),
+      /reviewer_email_trimmed/,
+    );
+  }
+  await assertRefused(
+    rawInsert("reviewer", {
+      username: "long",
+      display_name: "Raw",
+      password_hash: null,
+      email: `${"a".repeat(243)}@example.com`, // 255 characters
+    }),
+    /reviewer_email_length/,
+  );
+  // 254 characters is the cap, as in src/data/limits.ts.
+  await rawInsert("reviewer", {
+    username: "at460",
+    display_name: "Raw",
+    password_hash: null,
+    email: `${"a".repeat(242)}@example.com`, // 254 characters
+  });
+});
+
 // --- Strings ---
 
 test("a string's brand and name are unique regardless of case", async () => {

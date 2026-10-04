@@ -5,7 +5,7 @@ import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { verifyPassword } from "@/auth/password";
 import { safeNextPath } from "@/auth/safe-next-path";
 import { endSession, startSession } from "@/auth/session";
-import { submitPasswordChange } from "@/auth/submit";
+import { submitEmailChange, submitPasswordChange } from "@/auth/submit";
 import { PASSWORD_MAX_LENGTH } from "@/data/limits";
 import { getReviewerCredentialsById, getReviewerCredentialsByUsername } from "@/data/reviewers";
 
@@ -75,5 +75,16 @@ export async function changePassword(formData: FormData): Promise<never> {
       await startSession({ id: credentials.id, passwordHash: credentials.passwordHash });
     }
   }
+  redirect(result.redirect);
+}
+
+/**
+ * Sets or changes the logged-in reviewer's own email. Unlike a password
+ * change it doesn't touch the session: the session is bound to the hash,
+ * not the email, so every device stays logged in.
+ */
+export async function changeEmail(formData: FormData): Promise<never> {
+  const reviewer = await getCurrentReviewer();
+  const result = await submitEmailChange(reviewer, formData);
   redirect(result.redirect);
 }
