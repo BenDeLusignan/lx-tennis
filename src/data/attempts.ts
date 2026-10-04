@@ -12,7 +12,7 @@ import {
 
 /**
  * Storage for the failed-attempt limiter: one row per key (an
- * (identifier, IP) pair, or one IP across every identifier). The rules are
+ * (typed email, IP) pair, or one IP across every email typed). The rules are
  * in `src/data/attempt-rules.ts`; the keys are built in
  * `src/auth/attempt-keys.ts`. Nothing here knows about passwords.
  *
@@ -122,7 +122,7 @@ export async function admitAttempt(
 }
 
 /**
- * The right password was given: forgets the (identifier, IP) counter and
+ * The right password was given: forgets the (typed email, IP) counter and
  * gives back the attempt the IP counter was charged, so a success leaves the
  * IP counter where it was (one address can't reset it by getting one account
  * in, and a real login doesn't use up its budget either).

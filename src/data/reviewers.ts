@@ -27,7 +27,7 @@ export interface ReviewerCredentials extends Reviewer {
  * matched case-insensitively because phone keyboards capitalise the first
  * letter.
  */
-function normalizeIdentifier(value: string): string {
+function normalizeLower(value: string): string {
   return value.trim().toLowerCase();
 }
 
@@ -44,27 +44,27 @@ export async function getReviewerCredentialsByUsername(
   const [row] = await getDb()
     .select(credentialsColumns)
     .from(reviewer)
-    .where(eq(reviewer.username, normalizeIdentifier(username)));
+    .where(eq(reviewer.username, normalizeLower(username)));
   return row;
 }
 
 /**
- * A reviewer's credentials by what was typed in the login form's one field:
- * an email address when it contains an `@`, otherwise a username. Emails
- * are stored lowercase (the unique index folds case), and the input is
- * lowercased here, so a plain compare finds the row.
+ * A reviewer's credentials by the email address typed in the login form.
+ * Log in is by email only: usernames are public, so they never identify a
+ * login. Emails are stored lowercase (the unique index folds case), and the
+ * input is trimmed and lowercased here, so a plain compare finds the row. A
+ * username, or any text that isn't a stored address, finds nothing.
  *
  * Not cached, and the select spells out its columns: no email rides out of
  * here, and nothing here reaches a prerendered page.
  */
-export async function getReviewerCredentialsByIdentifier(
-  identifier: string,
+export async function getReviewerCredentialsByEmail(
+  email: string,
 ): Promise<ReviewerCredentials | undefined> {
-  const value = normalizeIdentifier(identifier);
   const [row] = await getDb()
     .select(credentialsColumns)
     .from(reviewer)
-    .where(eq(value.includes("@") ? reviewer.email : reviewer.username, value));
+    .where(eq(reviewer.email, normalizeLower(email)));
   return row;
 }
 
@@ -83,7 +83,7 @@ export async function setReviewerPasswordHash(
   const updated = await getDb()
     .update(reviewer)
     .set({ passwordHash })
-    .where(eq(reviewer.username, normalizeIdentifier(username)))
+    .where(eq(reviewer.username, normalizeLower(username)))
     .returning({ id: reviewer.id });
   return updated.length > 0;
 }

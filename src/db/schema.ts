@@ -30,8 +30,8 @@ export const reviewer = sqliteTable(
      */
     passwordHash: text("password_hash"),
     /**
-     * The reviewer's email, for a future password-reset link; null until
-     * the reviewer sets one on /account. Private: no public reader ever
+     * What the reviewer logs in with, and later the password-reset address;
+     * null until the reviewer sets one on /account. Private: no public reader ever
      * selects it (`getReviewers` spells out its columns), and the account
      * page reads it per request. Stored trimmed and lowercased (as
      * usernames are), so later a reset can look the address up as typed.
@@ -318,8 +318,8 @@ export const review = sqliteTable(
 /**
  * Failed password attempts, so the limiter can survive Vercel's serverless
  * functions sharing no memory (docs/vision.md, "Limits on password
- * attempts"). One row per key: an (identifier, IP) pair, or one IP across
- * every identifier. The key is an HMAC of both (`src/auth/attempt-keys.ts`),
+ * attempts"). One row per key: a (typed email, IP) pair, or one IP across
+ * every email typed. The key is an HMAC of both (`src/auth/attempt-keys.ts`),
  * so the table holds no email address and no IP address, only an opaque
  * digest — a database leak exposes neither.
  *

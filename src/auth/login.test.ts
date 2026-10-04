@@ -36,7 +36,7 @@ beforeEach(async () => {
 
 function form(overrides: Record<string, string> = {}): FormData {
   const formData = new FormData();
-  formData.set("identifier", BEN_EMAIL);
+  formData.set("email", BEN_EMAIL);
   formData.set("password", PASSWORD);
   formData.set("next", "/account");
   for (const [name, value] of Object.entries(overrides)) formData.set(name, value);
@@ -50,38 +50,29 @@ function attempt(overrides: Record<string, string>, now: number, ip: string) {
 /** `times` wrong-password attempts at one instant from one address, one after another. */
 async function failTimes(
   times: number,
-  { now, ip, identifier = BEN_EMAIL }: { now: number; ip: string; identifier?: string },
+  { now, ip, email = BEN_EMAIL }: { now: number; ip: string; email?: string },
 ) {
-  let result = await attempt({ identifier, password: WRONG_PASSWORD }, now, ip);
+  let result = await attempt({ email, password: WRONG_PASSWORD }, now, ip);
   for (let i = 1; i < times; i++) {
-    result = await attempt({ identifier, password: WRONG_PASSWORD }, now, ip);
+    result = await attempt({ email, password: WRONG_PASSWORD }, now, ip);
   }
   return result;
 }
 
-// --- Logging in by email or username ---
-
-test("logs in with the username, whatever the capitals and spacing", async () => {
-  for (const identifier of ["ben", "BEN", "  Ben  "]) {
-    const result = await attempt({ identifier }, NOW, IP_A);
-    assert.equal(result.redirect, "/account");
-    assert.equal(result.session?.id, BEN_ID);
-  }
-});
+// --- Logging in by email ---
 
 test("logs in with the email address, whatever the capitals and spacing", async () => {
-  for (const identifier of [BEN_EMAIL, "  Ben@Example.COM  "]) {
-    const result = await attempt({ identifier }, NOW, IP_A);
+  for (const email of [BEN_EMAIL, "  Ben@Example.COM  "]) {
+    const result = await attempt({ email }, NOW, IP_A);
     assert.equal(result.redirect, "/account");
     assert.equal(result.session?.id, BEN_ID);
   }
 });
 
-test("an email address is never matched against usernames, nor a username against emails", async () => {
-  // Michal has no email; "@" routes to the email column only.
-  assert.equal((await attempt({ identifier: "ben@", password: PASSWORD }, NOW, IP_A)).redirect, FAILED);
-  // Ben's local part alone is his username, not his email.
-  assert.equal((await attempt({ identifier: "ben" }, NOW, IP_A)).redirect, "/account");
+test("a username is refused even with the right password, and starts no session", async () => {
+  for (const email of ["ben", "BEN", "  Ben  ", "ben@", "michal"]) {
+    assert.deepEqual(await attempt({ email, password: PASSWORD }, NOW, IP_A), { redirect: FAILED }, email);
+  }
 });
 
 test("a failure keeps ?next=, and an unsafe one is dropped", async () => {
@@ -94,28 +85,38 @@ test("a failure keeps ?next=, and an unsafe one is dropped", async () => {
 
 // --- Unknown, wrong and passwordless are indistinguishable ---
 
-test("an unknown identifier, a wrong password and a passwordless reviewer all answer the same", async () => {
+test("an unknown email, a username, a wrong password and a passwordless reviewer all answer the same", async () => {
+  await setReviewerEmail(2, "michal@example.com");
   const results = [
-    await attempt({ identifier: "nobody@example.com", password: PASSWORD }, NOW, IP_A),
-    await attempt({ identifier: "nobody", password: PASSWORD }, NOW, IP_A),
-    await attempt({ identifier: "ben", password: WRONG_PASSWORD }, NOW, IP_A),
-    // Michal has no password set: the no-stored-hash path.
-    await attempt({ identifier: "michal", password: PASSWORD }, NOW, IP_A),
-    await attempt({ identifier: "michal", password: WRONG_PASSWORD }, NOW, IP_A),
+    await attempt({ email: "nobody@example.com", password: PASSWORD }, NOW, IP_A),
+    await attempt({ email: "nobody", password: PASSWORD }, NOW, IP_A),
+    await attempt({ email: "ben", password: PASSWORD }, NOW, IP_A),
+    await attempt({ email: BEN_EMAIL, password: WRONG_PASSWORD }, NOW, IP_A),
+    // Michal has an email but no password set: the no-stored-hash path.
+    await attempt({ email: "michal@example.com", password: PASSWORD }, NOW, IP_A),
+    await attempt({ email: "michal@example.com", password: WRONG_PASSWORD }, NOW, IP_A),
   ];
   for (const result of results) {
     assert.deepEqual(result, { redirect: FAILED }, "the same result, and no session started");
   }
 });
 
-test("a hand-made request without an identifier, or with over-long fields, fails the same way", async () => {
-  const noIdentifier = new FormData();
-  noIdentifier.set("password", PASSWORD);
-  assert.deepEqual(await submitLogin(noIdentifier, { now: NOW, ip: IP_A }), {
+test("a reviewer with no email can't log in", async () => {
+  // Otavio has a password but no email: nothing typed can name him.
+  await setReviewerPasswordHash("otavio", await hashPassword(PASSWORD));
+  for (const email of ["otavio", "", "   "]) {
+    assert.deepEqual(await attempt({ email, password: PASSWORD }, NOW, IP_A), { redirect: FAILED }, email);
+  }
+});
+
+test("a hand-made request without an email, or with over-long fields, fails the same way", async () => {
+  const noEmail = new FormData();
+  noEmail.set("password", PASSWORD);
+  assert.deepEqual(await submitLogin(noEmail, { now: NOW, ip: IP_A }), {
     redirect: "/login?failed=1",
   });
 
-  const overLong = await attempt({ identifier: "x".repeat(300), password: "y".repeat(2000) }, NOW, IP_A);
+  const overLong = await attempt({ email: "x".repeat(300), password: "y".repeat(2000) }, NOW, IP_A);
   assert.deepEqual(overLong, { redirect: FAILED });
 });
 
@@ -169,44 +170,60 @@ test("after a quiet half hour the steps start over from a minute", async () => {
   assert.equal((await attempt({}, later, IP_A)).redirect, LOCKED(1));
 });
 
-test("the same identifier typed another way is the same counter", async () => {
-  for (const identifier of [BEN_EMAIL, "BEN@example.com", " ben@Example.com", "Ben@example.COM ", BEN_EMAIL]) {
-    await failTimes(1, { now: NOW, ip: IP_A, identifier });
+test("the same email typed another way is the same counter", async () => {
+  for (const email of [BEN_EMAIL, "BEN@example.com", " ben@Example.com", "Ben@example.COM ", BEN_EMAIL]) {
+    await failTimes(1, { now: NOW, ip: IP_A, email });
   }
   assert.equal((await attempt({}, NOW, IP_A)).redirect, LOCKED(1));
 });
 
-test("a stranger's failures from another address can't lock a reviewer out", async () => {
-  // The stranger doesn't know Ben's email; they use his public username. Their
-  // failures are keyed to their own address.
-  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_A, identifier: "ben" });
-  // That address is locked out of Ben's username...
-  assert.equal((await attempt({ identifier: "ben" }, NOW, IP_A)).redirect, LOCKED(1));
-  // ...but Ben, with the right password from his own address, gets in, by
-  // username and by email alike.
-  for (const identifier of ["ben", BEN_EMAIL]) {
-    const result = await attempt({ identifier }, NOW, IP_B);
-    assert.equal(result.redirect, "/account");
-    assert.equal(result.session?.id, BEN_ID);
+test("a username is counted by the limiter like any unknown email, and can't lock Ben's email", async () => {
+  // Right password every time: a username never gets as far as a match.
+  for (let i = 0; i < LOGIN_FAILURE_LIMIT; i++) {
+    assert.equal((await attempt({ email: "ben", password: PASSWORD }, NOW, IP_A)).redirect, FAILED);
   }
+  assert.deepEqual(await attempt({ email: "ben", password: PASSWORD }, NOW, IP_A), { redirect: LOCKED(1) });
+
+  // Same rows as an unknown email failing the same way.
+  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_A, email: "nobody@example.com" });
+  const username = await attemptRow(loginAttemptKeys("ben", IP_A).pair.key);
+  const unknown = await attemptRow(loginAttemptKeys("nobody@example.com", IP_A).pair.key);
+  assert.equal(username?.lockedUntil, unknown?.lockedUntil);
+  assert.equal(username?.lockoutLevel, unknown?.lockoutLevel);
+  assert.equal(username?.failures, unknown?.failures);
+
+  // The public username is a different counter from Ben's email, so
+  // hammering it locks nobody out of the real login, even from that address.
+  assert.equal((await attempt({}, NOW, IP_A)).redirect, "/account");
 });
 
-test("one address spraying many identifiers hits the per-IP counter", async () => {
+test("a stranger's failures from another address can't lock a reviewer out", async () => {
+  // The stranger's failures are keyed to their own address.
+  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_A });
+  // That address is locked out of Ben's email...
+  assert.equal((await attempt({}, NOW, IP_A)).redirect, LOCKED(1));
+  // ...but Ben, with the right password from his own address, gets in.
+  const result = await attempt({}, NOW, IP_B);
+  assert.equal(result.redirect, "/account");
+  assert.equal(result.session?.id, BEN_ID);
+});
+
+test("one address spraying many emails hits the per-IP counter", async () => {
   for (let i = 0; i < IP_FAILURE_LIMIT; i++) {
-    const result = await failTimes(1, { now: NOW, ip: IP_A, identifier: `spray-${i}@example.com` });
+    const result = await failTimes(1, { now: NOW, ip: IP_A, email: `spray-${i}@example.com` });
     assert.equal(result.redirect, FAILED);
   }
 
-  // The address is now locked out of every identifier, even with the right
+  // The address is now locked out of every email, even with the right
   // password for one of them.
-  const blocked = await attempt({ identifier: "ben", password: PASSWORD }, NOW, IP_A);
+  const blocked = await attempt({ password: PASSWORD }, NOW, IP_A);
   assert.deepEqual(blocked, { redirect: LOCKED(1) });
 
   // Another address is unaffected.
-  assert.equal((await attempt({ identifier: "ben", password: PASSWORD }, NOW, IP_B)).redirect, "/account");
+  assert.equal((await attempt({ password: PASSWORD }, NOW, IP_B)).redirect, "/account");
 });
 
-test("a success clears the (identifier, IP) counter but leaves the IP one where it was", async () => {
+test("a success clears the (email, IP) counter but leaves the IP one where it was", async () => {
   await failTimes(2, { now: NOW, ip: IP_A });
   const keys = loginAttemptKeys(BEN_EMAIL, IP_A);
   assert.equal((await attemptRow(keys.pair.key))?.failures, 2);
@@ -224,35 +241,35 @@ test("a success clears the (identifier, IP) counter but leaves the IP one where 
 });
 
 test("a successful login doesn't use up the IP counter's budget", async () => {
-  // IP_FAILURE_LIMIT - 1 failures across identifiers, one real login between.
+  // IP_FAILURE_LIMIT - 1 failures across emails, one real login between.
   for (let i = 0; i < IP_FAILURE_LIMIT - 1; i++) {
-    await failTimes(1, { now: NOW, ip: IP_A, identifier: `spray-${i}@example.com` });
+    await failTimes(1, { now: NOW, ip: IP_A, email: `spray-${i}@example.com` });
   }
-  assert.equal((await attempt({ identifier: "ben" }, NOW, IP_A)).redirect, "/account");
+  assert.equal((await attempt({}, NOW, IP_A)).redirect, "/account");
   // One more failure is the IP limit's last attempt: it's let through, the one after is refused.
-  assert.equal((await failTimes(1, { now: NOW, ip: IP_A, identifier: "spray-last@example.com" })).redirect, FAILED);
-  assert.equal((await attempt({ identifier: "ben" }, NOW, IP_A)).redirect, LOCKED(1));
+  assert.equal((await failTimes(1, { now: NOW, ip: IP_A, email: "spray-last@example.com" })).redirect, FAILED);
+  assert.equal((await attempt({}, NOW, IP_A)).redirect, LOCKED(1));
 });
 
-test("an unknown identifier is counted exactly like a known one", async () => {
+test("an unknown email is counted exactly like a known one", async () => {
   const unknown = "nobody@example.com";
-  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_A, identifier: unknown });
+  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_A, email: unknown });
 
   const state = await attemptRow(loginAttemptKeys(unknown, IP_A).pair.key);
-  assert.ok((state?.lockedUntil ?? 0) > NOW, "the unknown identifier is locked too");
+  assert.ok((state?.lockedUntil ?? 0) > NOW, "the unknown email is locked too");
   assert.equal(state?.lockoutLevel, 1);
 
   // The same rows, the same answers, for a known account failing the same way.
-  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_B, identifier: BEN_EMAIL });
+  await failTimes(LOGIN_FAILURE_LIMIT, { now: NOW, ip: IP_B, email: BEN_EMAIL });
   const known = await attemptRow(loginAttemptKeys(BEN_EMAIL, IP_B).pair.key);
   assert.equal(known?.lockedUntil, state?.lockedUntil);
   assert.equal(known?.lockoutLevel, state?.lockoutLevel);
   assert.equal(known?.failures, state?.failures);
 
-  assert.deepEqual(await attempt({ identifier: unknown, password: PASSWORD }, NOW, IP_A), {
+  assert.deepEqual(await attempt({ email: unknown, password: PASSWORD }, NOW, IP_A), {
     redirect: LOCKED(1),
   });
-  assert.deepEqual(await attempt({ identifier: BEN_EMAIL }, NOW, IP_B), { redirect: LOCKED(1) });
+  assert.deepEqual(await attempt({ email: BEN_EMAIL }, NOW, IP_B), { redirect: LOCKED(1) });
 });
 
 test("a no-address request is its own bucket and can't lock a reviewer who has an address", async () => {
@@ -264,10 +281,10 @@ test("a no-address request is its own bucket and can't lock a reviewer who has a
 
 test("a burst of simultaneous wrong guesses gets exactly the limit checked, the rest refused", async () => {
   // Thirty parallel guesses, at one instant, from one address at Ben's
-  // username. Each is counted before its password is checked, so exactly the
+  // email. Each is counted before its password is checked, so exactly the
   // limit are checked (and fail); the other 25 are refused unchecked.
   const results = await Promise.all(
-    Array.from({ length: 30 }, () => attempt({ identifier: "ben", password: WRONG_PASSWORD }, NOW, IP_A)),
+    Array.from({ length: 30 }, () => attempt({ password: WRONG_PASSWORD }, NOW, IP_A)),
   );
   assert.equal(results.filter((r) => r.redirect === FAILED).length, LOGIN_FAILURE_LIMIT);
   assert.equal(results.filter((r) => r.redirect === LOCKED(1)).length, 30 - LOGIN_FAILURE_LIMIT);

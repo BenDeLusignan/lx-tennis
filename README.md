@@ -57,7 +57,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build (lists which routes are static / partially prerendered)
 npm run start            # serve the production build
 npm run lint             # ESLint
-npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, login by email or username, the failed-attempt limiter (lockouts, per-address keys, concurrency), database rules, setup/review (add, edit-own and delete-own)/string forms and actions (on throwaway databases, never local.db)
+npm test                 # unit tests (node:test via tsx): password hashing, session cookie, login redirect, login by email, the failed-attempt limiter (lockouts, per-address keys, concurrency), database rules, setup/review (add, edit-own and delete-own)/string forms and actions (on throwaway databases, never local.db)
 npm run db:migrate       # apply pending migrations in drizzle/ to DATABASE_URL
 npm run db:generate      # after editing src/db/schema.ts: write the SQL migration into drizzle/
 npm run db:set-password -- <username>   # set or reset a reviewer's password

@@ -343,10 +343,10 @@ test("a successful change clears that reviewer-and-address counter", async () =>
 });
 
 test("the same address locked out of login is locked out of the forms too", async () => {
-  // Twenty wrong logins at twenty different identifiers lock the address.
+  // Twenty wrong logins at twenty different emails lock the address.
   for (let i = 0; i < 20; i++) {
     const login = new FormData();
-    login.set("identifier", `spray-${i}`);
+    login.set("email", `spray-${i}@example.com`);
     login.set("password", "wrong-password-here");
     await submitLogin(login, ATTEMPT);
   }

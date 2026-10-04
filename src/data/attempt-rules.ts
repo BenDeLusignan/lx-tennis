@@ -4,8 +4,8 @@
  * on their own, with time passed in rather than slept through; the storage
  * is in `src/data/attempts.ts` and the thresholds in `src/data/limits.ts`.
  *
- * One counter is one key: either an (identifier, IP) pair, or one IP across
- * every identifier. See `src/data/limits.ts` for why both exist.
+ * One counter is one key: either a (typed email, IP) pair, or one IP across
+ * every email typed. See `src/data/limits.ts` for why both exist.
  */
 
 import { FAILURE_WINDOW_MINUTES, LOCKOUT_STEPS_MINUTES } from "@/data/limits";
@@ -54,7 +54,7 @@ export function lockoutWaitMinutes(remainingSeconds: number): number {
 
 /**
  * The counter after one more attempt is admitted at `now`. `limit` is the
- * attempts that trigger a lockout (5 for one (identifier, IP) pair, 20 for
+ * attempts that trigger a lockout (5 for one (typed email, IP) pair, 20 for
  * one IP alone). The caller has already refused anything that arrives while
  * the key is locked, so this never sees a live lock.
  *

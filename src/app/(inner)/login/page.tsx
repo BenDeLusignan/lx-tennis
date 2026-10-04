@@ -7,7 +7,7 @@ import { Input } from "@/components/input";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
-import { IDENTIFIER_MAX_LENGTH } from "@/data/limits";
+import { EMAIL_MAX_LENGTH } from "@/data/limits";
 import { lockoutMessage } from "@/forms/lockout-message";
 import { LoginStatus } from "./login-status";
 import styles from "./page.module.css";
@@ -31,8 +31,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         Reviewer log in
       </SectionTitle>
       <p className={styles.intro}>
-        For Ben, Michal and Otavio. Log in with your email address or your username. Everything on
-        the site can be read without logging in.
+        For Ben, Michal and Otavio. Log in with your email address. Everything on the site can be
+        read without logging in.
       </p>
 
       <form action={logIn} className={styles.form}>
@@ -40,17 +40,14 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           <NextInput searchParams={searchParams} />
         </Suspense>
 
-        <Field label="Email or username" htmlFor="identifier">
-          {/* type="text", not "email": the field takes a username too. A
-              phone's keyboard still gets an @ key from inputmode. */}
+        <Field label="Email" htmlFor="email">
           <Input
-            id="identifier"
-            name="identifier"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             required
-            maxLength={IDENTIFIER_MAX_LENGTH}
+            maxLength={EMAIL_MAX_LENGTH}
             autoComplete="username"
-            inputMode="email"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -71,7 +68,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
         {/* Always in the page (empty until an attempt fails) so screen readers
             announce the message when it's inserted; LoginStatus also moves
-            focus to the identifier field, which reads it out again. */}
+            focus to the email field, which reads it out again. */}
         <p id="login-error" role="alert">
           <Suspense fallback={null}>
             <StatusMessage searchParams={searchParams} />
@@ -93,7 +90,7 @@ async function StatusMessage({ searchParams }: SearchParams) {
   const { failed, locked } = await searchParams;
 
   // A lockout says how long the wait is. That reveals nothing about whether
-  // an account exists: failures are counted the same whether the identifier
+  // an account exists: failures are counted the same whether the email
   // is known or not, so a stranger's own failures produce this and so do a
   // reviewer's. The minutes come from the caller's own failure count, not
   // from the database's contents. A fresh key per response remounts
@@ -110,7 +107,7 @@ async function StatusMessage({ searchParams }: SearchParams) {
   if (failed !== "1") return null;
   return (
     <LoginStatus key={crypto.randomUUID()} className={styles.error}>
-      That email address or username and password don&rsquo;t match. Check both and try again.
+      That email address and password don&rsquo;t match. Check both and try again.
     </LoginStatus>
   );
 }

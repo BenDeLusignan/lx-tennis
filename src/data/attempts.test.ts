@@ -144,7 +144,7 @@ test("a lock still standing keeps its row even after the window", async () => {
 });
 
 test("concurrent attempts on one pair: exactly the limit get a password check, the rest are refused", async () => {
-  // Thirty requests at the same instant against one (identifier, IP) pair.
+  // Thirty requests at the same instant against one (typed email, IP) pair.
   // The count is taken inside the write transaction, ahead of any password
   // check, and writers queue, so each sees the previous one's count: exactly
   // LOGIN_FAILURE_LIMIT are admitted and the other 25 are refused unchecked.

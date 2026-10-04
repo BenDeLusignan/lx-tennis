@@ -14,10 +14,10 @@ import { IP_FAILURE_LIMIT, LOGIN_FAILURE_LIMIT } from "@/data/limits";
  * swept once they expire), so all counters and lockouts start afresh. That's
  * acceptable: changing it already logs everyone out.
  *
- * An (identifier, IP) pair is what stops a stranger who doesn't know a
+ * An (email, IP) pair is what stops a stranger who doesn't know a
  * reviewer's email from locking that reviewer out: their failures land on
- * (that identifier, their IP), and the reviewer's own address is a different
- * key. The IP counter is shared by every identifier and every form, so one
+ * (that email, their IP), and the reviewer's own address is a different
+ * key. The IP counter is shared by every email typed and every form, so one
  * address spraying many accounts hits it, at `IP_FAILURE_LIMIT`.
  */
 
@@ -30,9 +30,9 @@ import { IP_FAILURE_LIMIT, LOGIN_FAILURE_LIMIT } from "@/data/limits";
 const NO_IP = "unknown";
 
 export interface AttemptKeys {
-  /** (identifier, IP): wrong passwords for one account from one address. */
+  /** (typed email, IP): wrong passwords for one account from one address. */
   pair: AttemptCounter;
-  /** IP alone: attempts across every identifier from one address. */
+  /** IP alone: attempts across every email typed, from one address. */
   ip: AttemptCounter;
 }
 
@@ -44,15 +44,19 @@ function keys(pairValue: string, ip: string | null): AttemptKeys {
   };
 }
 
-/** Keys for a login attempt: the typed identifier (username or email) and the IP. */
-export function loginAttemptKeys(identifier: string, ip: string | null): AttemptKeys {
-  return keys(`login:${identifier.trim().toLowerCase()}`, ip);
+/**
+ * Keys for a login attempt: whatever was typed in the email field, trimmed
+ * and lowercased (so a username typed there is counted like any unknown
+ * email), and the IP.
+ */
+export function loginAttemptKeys(email: string, ip: string | null): AttemptKeys {
+  return keys(`login:${email.trim().toLowerCase()}`, ip);
 }
 
 /**
  * Keys for a current-password check by a logged-in reviewer (change
- * password, email). Keyed by reviewer id rather than the identifier they
- * typed, because nothing was typed: the reviewer comes from the session.
+ * password, email). Keyed by reviewer id rather than anything typed,
+ * because nothing was typed: the reviewer comes from the session.
  * Both forms share it, so they share one budget of wrong passwords.
  */
 export function reviewerAttemptKeys(reviewerId: number, ip: string | null): AttemptKeys {

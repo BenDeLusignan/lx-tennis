@@ -87,7 +87,8 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
             aria-describedby="email-hint email-form-message"
           />
           <p id="email-hint" className={styles.hint}>
-            Used later to reset a forgotten password. No email is sent yet.
+            The email address you log in with. Later it will also reset a forgotten
+            password; no email is sent yet.
           </p>
         </Field>
         <Field label="Current password" htmlFor="email-current-password">

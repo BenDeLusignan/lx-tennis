@@ -13,7 +13,7 @@ import { LOCKOUT_STEPS_MINUTES } from "@/data/limits";
  * all, which is an outage, not a lockout, so it says so.
  *
  * Neither reveals anything about accounts: the minutes come from the
- * requester's own counters, which count known and unknown identifiers alike.
+ * requester's own counters, which count known and unknown emails alike.
  */
 const LONGEST_LOCKOUT_MINUTES = Math.max(...LOCKOUT_STEPS_MINUTES);
 

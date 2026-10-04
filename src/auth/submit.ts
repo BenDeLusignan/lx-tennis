@@ -4,10 +4,10 @@ import { hashPassword, verifyPassword } from "@/auth/password";
 import { loginPath, safeNextPath } from "@/auth/safe-next-path";
 import { admitAttempt, settleSuccess, type Reservation } from "@/data/attempts";
 import { lockoutWaitMinutes } from "@/data/attempt-rules";
-import { EMAIL_MAX_LENGTH, IDENTIFIER_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/data/limits";
 import {
   getReviewerCredentialsById,
-  getReviewerCredentialsByIdentifier,
+  getReviewerCredentialsByEmail,
   getReviewerEmail,
   setReviewerEmail,
   setReviewerPasswordHash,
@@ -53,7 +53,7 @@ async function admit(
 }
 
 /**
- * The right password was given: forget the (identifier, IP) counter and give
+ * The right password was given: forget the (typed email, IP) counter and give
  * back the attempt the IP counter was charged. If that write fails the
  * attempt still counts as made, which is the safe side (a little less
  * headroom, never more), and a correct password isn't turned away for it.
@@ -79,38 +79,40 @@ export interface LoginResult {
  * posted form and the request's clock and IP. Returns where to redirect and,
  * on success, the session to start.
  *
- * An unknown identifier, a wrong password and a reviewer with no password
- * are indistinguishable: all three get the same `?failed=1` redirect, and
- * all three cost one full scrypt run (`verifyPassword` runs the same scrypt
- * against nothing when there's no stored hash, so an unknown identifier isn't
- * the cheap one). They're also counted the same way, before the identifier is
- * even looked up, so a lockout never says whether an account exists. The
- * identifier never reaches the URL.
+ * An unknown email, a username typed in its place, a wrong password and a
+ * reviewer with no password are indistinguishable: all get the same
+ * `?failed=1` redirect, and all cost one full scrypt run (`verifyPassword`
+ * runs the same scrypt against nothing when there's no stored hash, so an
+ * unknown email isn't the cheap one). They're also counted the same way,
+ * before the email is even looked up, so a lockout never says whether an
+ * account exists or whether what was typed is a valid username. The email
+ * never reaches the URL.
  */
 export async function submitLogin(formData: FormData, context: AttemptContext): Promise<LoginResult> {
   // Re-checked here, not trusted from the page: the hidden field is user input.
   const next = safeNextPath(formData.get("next"));
   // `unknown` until checked: a hand-made request can send anything. The
-  // identifier is bounded before it's hashed into a limiter key, and the
-  // password before scrypt sees it.
-  const typed = formData.get("identifier");
-  const identifier = (typeof typed === "string" ? typed : "").slice(0, IDENTIFIER_MAX_LENGTH);
+  // typed email is bounded before it's hashed into a limiter key, and the
+  // password before scrypt sees it. Not validated as an address: anything
+  // that isn't a stored email fails the same way and is counted the same way.
+  const typed = formData.get("email");
+  const email = (typeof typed === "string" ? typed : "").slice(0, EMAIL_MAX_LENGTH);
   const postedPassword = formData.get("password");
   const password =
     typeof postedPassword === "string" && postedPassword.length <= PASSWORD_MAX_LENGTH
       ? postedPassword
       : "";
 
-  const gate = await admit(loginAttemptKeys(identifier, context.ip), context.now);
+  const gate = await admit(loginAttemptKeys(email, context.ip), context.now);
   if (!gate.admitted) return { redirect: lockedLoginPath(next, gate.minutes) };
 
-  const reviewer = await getReviewerCredentialsByIdentifier(identifier);
-  // Always runs scrypt, even for an unknown identifier or an account with no
+  const reviewer = await getReviewerCredentialsByEmail(email);
+  // Always runs scrypt, even for an unknown email or an account with no
   // stored hash, so response time doesn't give either away.
   const passwordMatches = await verifyPassword(password, reviewer?.passwordHash ?? null);
 
   // Every failure gets the same flag, so the page shows one generic message
-  // and never reveals which identifiers exist. The identifier isn't put in
+  // and never reveals which emails exist. The email isn't put in
   // the URL: people sometimes type their password into that field by mistake.
   // The failure is already counted (see `admit`), so nothing more to record.
   if (!reviewer?.passwordHash || !passwordMatches) return { redirect: failedLoginPath(next) };
@@ -233,12 +235,13 @@ export type EmailChangeError =
  * the login page for a visitor, otherwise /account with `?saved=1` or an
  * `?error=<flag>`. Nothing is written until every check has passed.
  *
- * Why the current password is required: the email will later be the way to
- * reset a forgotten password (docs/vision.md, Open questions), so anyone
- * who can change it can take over the account. A stolen logged-in session
- * alone must not be enough. The check is the same constant-time verify as
- * login and change-password, so a guess costs a full scrypt run, and a
- * wrong one counts towards the limiter, keyed by reviewer id and IP.
+ * Why the current password is required: the email is how the reviewer logs
+ * in, and will later be the way to reset a forgotten password (docs/vision.md,
+ * Open questions), so anyone who can change it can take over the account. A
+ * stolen logged-in session alone must not be enough. The check is the same
+ * constant-time verify as login and change-password, so a guess costs a full
+ * scrypt run, and a wrong one counts towards the limiter, keyed by reviewer
+ * id and IP.
  *
  * The password is verified before the email is even looked at, so a wrong
  * password never reveals whether an address is in use.
