@@ -243,7 +243,7 @@ What exists in the code today:
     - `setups`: every racquet's setups. Refreshed by a string edit, because the cards show string names.
     - `strings`: the string list and which strings are in use. Refreshed by any string change, by every new setup and by a review delete that removes its setup (its strings may no longer be in use).
 - Not built yet (Ben hasn't decided them): editing setups, public `/strings` or `/setups/[id]` pages, and a list of a reviewer's own reviews on `/account`.
-- No CI, not deployed.
+- Deployed on Vercel at https://tennis-setups-website.vercel.app/ with the database on Turso. No CI.
 
 ## Other decisions by Ben
 
@@ -251,12 +251,20 @@ What exists in the code today:
 - **The repo is private.**
 - **The site is called "LX Tennis".** Ben renamed it from "LX Tennis Setups" to leave room for more than setups (a "what racquet is right for you" quiz, say). Write it exactly "LX Tennis" in text: page and tab titles, metadata, alt text, docs and messages. On the site itself, headings and the header brand may display it in all caps through CSS (`text-transform: uppercase`), as they do now. Ben likes that look. Racquet and string setups are still what the site mostly is, so descriptions can keep talking about setups; only the name changed. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
 - **Photo copyright is not an issue.** The manufacturers' official racquet photos stay, hosted or not: the site is only for a few people. Ben's call.
+- **Changes Ben wants next (decided, not built yet).** Ben's words: "when you are logged in and go to a page it takes a second for your name and account to appear on screen why the delay? Also the background at the base of the page is animated, can that be made static. When adding a review the first question is what date did you string it, add a 'Today' button that automatically sets it to today's date. Users should be able to change their passwords in the website if they are logged in, not sure how a forgot my password would work. However in terms of function we need to have the ability to add a racquet and force the user to attach an image of the racquet when they register it." As a list:
+  - **Header name and Account link appear late.** Team's answer, not Ben's words: the page itself is prerendered, but the logged-in state needs the session cookie, so `AuthStatus` renders per request and streams in after the static shell (Cache Components, see Rendering). It is a design trade-off, not a fault. Whether to remove the delay, and at what cost, is for Ben once he's read the options.
+  - **The animated background at the base of the page becomes static.** The scrolling grid in `globals.css` (`grid-scroll`) stops moving; the look stays.
+  - **A "Today" button next to the date-strung field** on the new-setup form sets it to today's date.
+  - **A logged-in reviewer can change their own password on the site.** Today passwords are set only with `npm run db:set-password`. A "forgot my password" flow is open (see Open questions).
+  - **A reviewer can add a racquet, and must attach an image of it when registering it.** An image is required; the form refuses to save without one. The rest of the design is open (see Open questions).
 
 ## Open questions (Ben hasn't answered; don't decide these)
 
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
-- **Account page extras.** Whether the account page also gets a change-password form and/or a list of the reviewer's own reviews.
+- **Account page extras.** Whether the account page gets a list of the reviewer's own reviews. (A change-password form is decided, above.)
+- **Forgot my password.** Ben isn't sure how it would work. The site has no email address for any reviewer, so the usual emailed reset link isn't available. Options to put to Ben: Ben resets it with `npm run db:set-password`, or the site stores an email per reviewer.
+- **Adding a racquet.** An image is required (decided, above). Open: who can add one (only Ben, or any reviewer); which details it has (brand, name, the five specs); where uploaded images are stored (Vercel has no permanent disk, so it needs file storage); whether the image must meet the team's photo format (1000 × 1500 transparent WebP) or is resized by the site; whether reviewers can add new brands or only pick from the fixed list; and whether racquets and specs move from `src/data/racquets.ts` into the database.
 
 ## Proposals awaiting Ben (not decided)
 
