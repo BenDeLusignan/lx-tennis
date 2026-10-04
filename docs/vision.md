@@ -125,7 +125,7 @@ The Racquets step has its own page, `/racquets`.
 
 **Next.js App Router + TypeScript.** (The code is on Next.js 16 and React 19, and needs Node.js 20.9 or newer. This Next version differs from older training data, so read the guides in `node_modules/next/dist/docs/` before writing Next code.)
 
-**Database: SQLite.** During development it's a single local file, so the site works offline. Where it lives once hosted is decided together with the hosting provider: Turso (hosted SQLite) if the site goes on Vercel, or a plain SQLite file on a host with a permanent disk.
+**Database: SQLite.** During development it's a single local file, so the site works offline. Once hosted on Vercel (Ben's decision, below) it's Turso, hosted SQLite: `DATABASE_URL` and `DATABASE_AUTH_TOKEN` point at it, with no code change.
 
 **Data model.** Stable ids are the keys, not slugs, and the database enforces the product rules where it can:
 
@@ -247,7 +247,7 @@ What exists in the code today:
 
 ## Other decisions by Ben
 
-- **Hosting is postponed on purpose.** Ben is on limited Wi-Fi. (Which host is still open.) The site is paused as it is (Ben is happy with how it works) until he's back from holiday, when he'll sort out hosting.
+- **Hosting: Vercel with Turso for the database.** Ben was offered Vercel + Turso or a host with a permanent disk and chose the first: "route A". Hosting is no longer postponed. The team's note, not Ben's words: the build reads the database to prerender pages, so the Turso database must be migrated (`npm run db:migrate`) before a deploy's build runs, or the build fails with `no such table`.
 - **The repo is private.**
 - **The site is called "LX Tennis".** Ben renamed it from "LX Tennis Setups" to leave room for more than setups (a "what racquet is right for you" quiz, say). Write it exactly "LX Tennis" in text: page and tab titles, metadata, alt text, docs and messages. On the site itself, headings and the header brand may display it in all caps through CSS (`text-transform: uppercase`), as they do now. Ben likes that look. Racquet and string setups are still what the site mostly is, so descriptions can keep talking about setups; only the name changed. The repo, folder and package are still named `tennis-setups-website` (whether to rename them is open).
 - **Photo copyright is not an issue.** The manufacturers' official racquet photos stay, hosted or not: the site is only for a few people. Ben's call.
@@ -255,7 +255,6 @@ What exists in the code today:
 ## Open questions (Ben hasn't answered; don't decide these)
 
 - **More reviewer accounts.** How accounts beyond the first three (Ben, Michal, Otavio) get added.
-- **Hosting provider.** Probably Vercel, not final. This also settles where the database lives (see Stack and code).
 - **Repo name.** Keep `tennis-setups-website` or rename it (which would also mean the local folder, git remote URL and `package.json` name).
 - **Account page extras.** Whether the account page also gets a change-password form and/or a list of the reviewer's own reviews.
 
