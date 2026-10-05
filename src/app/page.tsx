@@ -26,14 +26,10 @@ export default function Home() {
       </header>
 
       <main id="main">
-        <p className={styles.intro}>
-          Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
-        </p>
-
         <ul className={styles.entries}>
           <li>
             {/* Named by its heading and described by its blurb, so a screen
-                reader's link list says "Racquet reviews" rather than a sentence. */}
+                reader's link list says "Racquet Reviews" rather than a sentence. */}
             <Panel
               href="/racquets"
               className={`${styles.card} ${styles.live}`}
@@ -41,7 +37,7 @@ export default function Home() {
               aria-describedby="entry-racquets-text"
             >
               <h2 id="entry-racquets-title" className={styles.cardTitle}>
-                Racquet reviews
+                Racquet Reviews
               </h2>
               <p id="entry-racquets-text" className={styles.cardText}>
                 Every racquet we&rsquo;ve tested, with its official specs and everyone&rsquo;s reviews.
@@ -51,10 +47,10 @@ export default function Home() {
               </span>
             </Panel>
           </li>
-          <ComingSoonEntry id="strings" title="String reviews">
+          <ComingSoonEntry id="strings" title="String Reviews">
             The strings we&rsquo;ve tried, and how they play.
           </ComingSoonEntry>
-          <ComingSoonEntry id="quiz" title="Tennis quiz">
+          <ComingSoonEntry id="quiz" title="Tennis Quiz">
             A few questions to help find the racquet that suits you.
           </ComingSoonEntry>
         </ul>

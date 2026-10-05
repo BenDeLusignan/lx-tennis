@@ -26,17 +26,6 @@
   text-shadow: var(--glow-pink);
 }
 
-/* Site description, centred under the centred hero, with room before the cards. */
-.intro {
-  max-inline-size: 40rem;
-  margin-inline: auto;
-  margin-block-end: var(--space-8);
-  text-align: center;
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-  text-wrap: balance;
-}
-
 /* One column on a phone, three equal cards from 48rem. */
 .entries {
   list-style: none;

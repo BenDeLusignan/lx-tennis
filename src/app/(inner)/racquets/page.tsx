@@ -28,6 +28,9 @@ export default async function RacquetsPage() {
           <AddRacquetButton />
         </Suspense>
       </div>
+      <p className={styles.intro}>
+        Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
+      </p>
       <RacquetsByBrand sections={brands} />
     </>
   );
