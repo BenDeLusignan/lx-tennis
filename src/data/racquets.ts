@@ -12,11 +12,11 @@ import { racquet, RACQUET_BRANDS } from "@/db/schema";
  * from) and every racquet a reviewer adds live in the `racquet` table, so
  * there is one source. Pages only talk to the async accessors below.
  *
- * Specs come only from the manufacturer's official product page, with its
- * source URL (Product rules 10 and 11). Every racquet has the same five
+ * Specs come only from the manufacturer's official product page (Product
+ * rules 10 and 11); no source link is kept. Every racquet has the same five
  * specs; one the manufacturer doesn't publish is `null`, left out rather
- * than guessed or converted. Extras (Babolat's swingweight, stiffness) are
- * deliberately not stored.
+ * than guessed. Extras (Babolat's swingweight, stiffness) are deliberately
+ * not stored.
  *
  * Images are 1000x1500 WebP: the official face-on product shot, scaled to
  * fit and centred at the top of a transparent canvas. The canvas is the same
@@ -35,9 +35,8 @@ export type Brand = (typeof BRANDS)[number];
 export interface RacquetSpecs {
   /** Head size in square inches. */
   headSizeSqIn: number | null;
-  /** Unstrung, as published. Grams and ounces are separate because neither is converted from the other. */
+  /** Unstrung, in grams, as published. Grams only, never ounces (Product rule 11). */
   weightGrams: number | null;
-  weightOunces: number | null;
   /** Balance point in millimetres from the butt cap. */
   balanceMm: number | null;
   lengthIn: number | null;
@@ -70,8 +69,6 @@ export interface Racquet {
   generation: string | null;
   image: RacquetImage;
   specs: RacquetSpecs;
-  /** The official page (or its Internet Archive copy) the specs come from; null only when there are no specs. */
-  sourceUrl: string | null;
 }
 
 const racquetColumns = {
@@ -84,12 +81,10 @@ const racquetColumns = {
   imageAlt: racquet.imageAlt,
   headSizeSqIn: racquet.headSizeSqIn,
   weightGrams: racquet.weightGrams,
-  weightOunces: racquet.weightOunces,
   balanceMm: racquet.balanceMm,
   lengthIn: racquet.lengthIn,
   stringMains: racquet.stringMains,
   stringCrosses: racquet.stringCrosses,
-  sourceUrl: racquet.sourceUrl,
 };
 
 type RacquetRow = Pick<typeof racquet.$inferSelect, keyof typeof racquetColumns>;
@@ -105,7 +100,6 @@ function toRacquet(row: RacquetRow): Racquet {
     specs: {
       headSizeSqIn: row.headSizeSqIn,
       weightGrams: row.weightGrams,
-      weightOunces: row.weightOunces,
       balanceMm: row.balanceMm,
       lengthIn: row.lengthIn,
       // The table keeps the pair together (`racquet_string_pattern_pair`).
@@ -114,7 +108,6 @@ function toRacquet(row: RacquetRow): Racquet {
           ? { mains: row.stringMains, crosses: row.stringCrosses }
           : null,
     },
-    sourceUrl: row.sourceUrl,
   };
 }
 
@@ -170,7 +163,6 @@ export interface NewRacquet {
   year: number;
   image: { src: string; alt: string };
   specs: RacquetSpecs;
-  sourceUrl: string | null;
 }
 
 export type CreateRacquetResult = { status: "created"; slug: string } | { status: "exists" };
@@ -195,12 +187,10 @@ export async function createRacquet(input: NewRacquet, author: Reviewer): Promis
       imageAlt: input.image.alt,
       headSizeSqIn: specs.headSizeSqIn,
       weightGrams: specs.weightGrams,
-      weightOunces: specs.weightOunces,
       balanceMm: specs.balanceMm,
       lengthIn: specs.lengthIn,
       stringMains: specs.stringPattern?.mains ?? null,
       stringCrosses: specs.stringPattern?.crosses ?? null,
-      sourceUrl: input.sourceUrl,
       createdBy: author.id,
     });
     return { status: "created", slug: input.slug };

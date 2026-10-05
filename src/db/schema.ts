@@ -113,20 +113,14 @@ export const racquet = sqliteTable(
     imageAlt: text("image_alt").notNull(),
     /** Square inches. */
     headSizeSqIn: integer("head_size_sq_in"),
-    /** Unstrung, as the manufacturer publishes it. Grams and ounces are stored as published, never converted. */
+    /** Unstrung, grams, as the manufacturer publishes it. Grams only, never ounces (Product rule 11). */
     weightGrams: integer("weight_grams"),
-    weightOunces: real("weight_ounces"),
     /** Millimetres from the butt cap. */
     balanceMm: integer("balance_mm"),
     lengthIn: real("length_in"),
     /** Both or neither: a pattern is "16 × 19", not half of it. */
     stringMains: integer("string_mains"),
     stringCrosses: integer("string_crosses"),
-    /**
-     * The official manufacturer page (or its Internet Archive copy) the specs
-     * come from (Product rule 10). Required when any spec is given.
-     */
-    sourceUrl: text("source_url"),
     /** The reviewer who added it; null for the built-in racquets. */
     createdBy: integer("created_by").references(() => reviewer.id, { onDelete: "restrict" }),
     createdAt: integer("created_at", { mode: "timestamp" })
@@ -162,10 +156,6 @@ export const racquet = sqliteTable(
     ),
     check("racquet_head_size_valid", nullableInRange(sql`${table.headSizeSqIn}`, "'integer'", 70, 140)),
     check("racquet_weight_grams_valid", nullableInRange(sql`${table.weightGrams}`, "'integer'", 150, 450)),
-    check(
-      "racquet_weight_ounces_valid",
-      nullableInRange(sql`${table.weightOunces}`, "'real', 'integer'", 5, 16),
-    ),
     check("racquet_balance_valid", nullableInRange(sql`${table.balanceMm}`, "'integer'", 200, 450)),
     check("racquet_length_valid", nullableInRange(sql`${table.lengthIn}`, "'real', 'integer'", 17, 29)),
     check("racquet_string_mains_valid", nullableInRange(sql`${table.stringMains}`, "'integer'", 12, 24)),
@@ -173,16 +163,6 @@ export const racquet = sqliteTable(
     check(
       "racquet_string_pattern_pair",
       sql`(${table.stringMains} IS NULL) = (${table.stringCrosses} IS NULL)`,
-    ),
-    // Product rule 10 (proposal awaiting Ben): no spec without its source.
-    // An https link with no whitespace, of a sane length.
-    check(
-      "racquet_source_url_valid",
-      sql`${table.sourceUrl} IS NULL OR (${table.sourceUrl} LIKE 'https://_%' AND length(${table.sourceUrl}) <= 500 AND ${table.sourceUrl} NOT GLOB '*[ ' || char(9, 10, 13) || ']*')`,
-    ),
-    check(
-      "racquet_specs_have_source",
-      sql`${table.sourceUrl} IS NOT NULL OR (${table.headSizeSqIn} IS NULL AND ${table.weightGrams} IS NULL AND ${table.weightOunces} IS NULL AND ${table.balanceMm} IS NULL AND ${table.lengthIn} IS NULL AND ${table.stringMains} IS NULL)`,
     ),
   ],
 );

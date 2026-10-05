@@ -21,12 +21,10 @@ const EZONE = {
   specs: {
     headSizeSqIn: 98,
     weightGrams: 305,
-    weightOunces: 10.8,
     balanceMm: 315,
     lengthIn: 27,
     stringPattern: { mains: 16, crosses: 19 },
   },
-  sourceUrl: "https://web.archive.org/web/20220129095929/https://www.yonex.com/tennis/racquets/ezone-98-07ez98",
 };
 
 test("the four line-up racquets come back from the database as they were in code", async () => {
@@ -42,13 +40,12 @@ test("the four line-up racquets come back from the database as they were in code
   assert.deepEqual(percept?.specs, {
     headSizeSqIn: 97,
     weightGrams: 310,
-    weightOunces: 10.9,
     balanceMm: 310,
     lengthIn: 27,
     stringPattern: { mains: 16, crosses: 19 },
   });
   const aero = await getRacquet("babolat-pure-aero-98-2023");
-  assert.equal(aero?.specs.weightOunces, 10.7586);
+  assert.equal(aero?.specs.weightGrams, 305);
   assert.deepEqual(aero?.specs.stringPattern, { mains: 16, crosses: 20 });
   assert.equal(aero?.generation, "8th gen");
 });

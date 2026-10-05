@@ -17,15 +17,20 @@ import {
  * Without JavaScript none of this runs and the server's checks catch the same
  * mistakes (the page's messages explain each).
  *
- * - Source link: required as soon as any spec has a value (Product rule 10).
+ * - Photo: a file or a link, one of the two. Neither input is `required`
+ *   (that would announce both as required and send the first complaint to
+ *   the file field, even for someone pasting a link), so when neither is
+ *   given the file input carries the message "Upload a file or paste an
+ *   image link." Both at once is refused, and a file over the upload limit
+ *   is refused with a message that says so. (A linked image's size can only
+ *   be checked by the server, which fetches it.)
  * - String pattern: mains and crosses are both required once either is filled.
- * - Photo: a file over the upload limit is refused with a message that says so.
  * - Year: capped at next year, by the same UTC-year rule as the server
  *   (`maxRacquetYear`). Not in the HTML, so the prerendered page doesn't
  *   freeze a year in.
  *
- * The fields are found by `data-*` markers that the page puts on them, so
- * this file doesn't need to know which specs there are.
+ * The string pattern's fields are found by the `data-pattern` marker the page
+ * puts on them; the year and the photo's two inputs by their form field names.
  */
 export function RacquetFormConstraints() {
   const ref = useRef<HTMLSpanElement>(null);
@@ -35,10 +40,6 @@ export function RacquetFormConstraints() {
     if (!form) return;
 
     function sync(form: HTMLFormElement) {
-      const specs = Array.from(form.querySelectorAll<HTMLInputElement>("[data-spec]"));
-      const source = form.elements.namedItem(RACQUET_FIELDS.sourceUrl);
-      if (source instanceof HTMLInputElement) source.required = specs.some((field) => field.value.trim() !== "");
-
       const pattern = Array.from(form.querySelectorAll<HTMLInputElement>("[data-pattern]"));
       const eitherGiven = pattern.some((field) => field.value.trim() !== "");
       for (const field of pattern) field.required = eitherGiven;
@@ -47,14 +48,30 @@ export function RacquetFormConstraints() {
       if (year instanceof HTMLInputElement) year.max = String(maxRacquetYear());
 
       const image = form.elements.namedItem(RACQUET_FIELDS.image);
-      if (image instanceof HTMLInputElement) {
-        const file = image.files?.[0];
-        image.setCustomValidity(
-          file && file.size > IMAGE_MAX_BYTES
-            ? `That photo is ${(file.size / 1_000_000).toFixed(1)} MB. The limit is ${IMAGE_MAX_BYTES / 1_000_000} MB: choose a smaller one.`
-            : "",
-        );
+      const imageUrl = form.elements.namedItem(RACQUET_FIELDS.imageUrl);
+      if (!(image instanceof HTMLInputElement) || !(imageUrl instanceof HTMLInputElement)) return;
+
+      // The photo is a file or a link. Messages are re-set on every sync, with
+      // "" when nothing is wrong, so a fixed mistake stops blocking the submit.
+      // A 0-byte file counts as no file, as it does on the server (submit.ts).
+      // "Both" goes on the link (the field the reviewer can clear by typing;
+      // the file has its own "Remove the chosen file" button). "Neither" and
+      // "too big" go on the file input, the first field of the group.
+      const picked = image.files?.[0];
+      const file = picked && picked.size > 0 ? picked : null;
+      const hasLink = imageUrl.value.trim() !== "";
+      imageUrl.setCustomValidity(
+        file && hasLink
+          ? "Use a file or a link, not both: clear this link, or remove the chosen file."
+          : "",
+      );
+      let imageMessage = "";
+      if (file && file.size > IMAGE_MAX_BYTES) {
+        imageMessage = `That photo is ${(file.size / 1_000_000).toFixed(1)} MB. The limit is ${IMAGE_MAX_BYTES / 1_000_000} MB: choose a smaller one.`;
+      } else if (!file && !hasLink) {
+        imageMessage = "Upload a file or paste an image link.";
       }
+      image.setCustomValidity(imageMessage);
     }
 
     const onChange = () => sync(form);

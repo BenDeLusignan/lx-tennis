@@ -6,6 +6,7 @@ import type { Reviewer } from "@/data/reviewers";
 import { parseScaledDecimal } from "@/forms/fields";
 import { getImageStore, type ImageStore } from "@/racquets/image-store";
 import { toRacquetWebp } from "@/racquets/process-image";
+import { fetchImageFromLink, parseImageLink, type ImageFetchResult } from "@/racquets/image-fetch";
 import {
   IMAGE_MAX_BYTES,
   maxRacquetYear,
@@ -23,9 +24,10 @@ import {
  * flag (`RACQUET_ERROR_FLAGS`), never what was typed.
  *
  * Everything that can be checked without side effects is checked first, then
- * the image is converted, stored, and the row inserted last: if the row can't
- * be saved the stored image is removed again, so a refusal leaves neither a
- * row nor an orphaned file.
+ * the photo is read (an upload) or fetched (an image link; the site keeps its
+ * own copy, so it can't rot), converted, stored, and the row inserted last:
+ * if the row can't be saved the stored image is removed again, so a refusal
+ * leaves neither a row nor an orphaned file. The link is never put in a URL.
  */
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: RacquetErrorFlag };
@@ -60,18 +62,6 @@ function optionalNumber(
   return value >= min && value <= max ? value : undefined;
 }
 
-/** An https link to a public host: what a manufacturer's page (or its archive copy) looks like. */
-function parseSourceUrl(text: string): string | null {
-  if (text.length > RACQUET_LIMITS.sourceUrl.maxLength || /\s/.test(text)) return null;
-  try {
-    const url = new URL(text);
-    const ok = url.protocol === "https:" && url.hostname.includes(".") && !url.username && !url.password;
-    return ok ? text : null;
-  } catch {
-    return null;
-  }
-}
-
 interface ParsedFields {
   brand: Brand;
   model: string;
@@ -79,7 +69,6 @@ interface ParsedFields {
   year: number;
   slug: string;
   specs: RacquetSpecs;
-  sourceUrl: string | null;
 }
 
 function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
@@ -109,12 +98,11 @@ function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
   const slug = racquetSlug(brand, model, year);
   if (!slug || slug.length > RACQUET_SLUG_MAX_LENGTH) return fail("model");
 
-  const { headSize, weightGrams, weightOunces, balanceMm, lengthIn, stringPattern } = RACQUET_LIMITS;
+  const { headSize, weightGrams, balanceMm, lengthIn, stringPattern } = RACQUET_LIMITS;
   const headSizeSqIn = optionalNumber(formData, RACQUET_FIELDS.headSize, 0, headSize.min, headSize.max);
   if (headSizeSqIn === undefined) return fail("head-size");
   const grams = optionalNumber(formData, RACQUET_FIELDS.weightGrams, 0, weightGrams.min, weightGrams.max);
-  const ounces = optionalNumber(formData, RACQUET_FIELDS.weightOunces, 4, weightOunces.min, weightOunces.max);
-  if (grams === undefined || ounces === undefined) return fail("weight");
+  if (grams === undefined) return fail("weight");
   const balance = optionalNumber(formData, RACQUET_FIELDS.balanceMm, 0, balanceMm.min, balanceMm.max);
   if (balance === undefined) return fail("balance");
   const length = optionalNumber(formData, RACQUET_FIELDS.lengthIn, 2, lengthIn.min, lengthIn.max);
@@ -130,33 +118,35 @@ function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
   const specs: RacquetSpecs = {
     headSizeSqIn,
     weightGrams: grams,
-    weightOunces: ounces,
     balanceMm: balance,
     lengthIn: length,
     stringPattern: mains !== null && crosses !== null ? { mains, crosses } : null,
   };
 
-  // Product rule 10: specs only from an official source, so the link comes with them.
-  const sourceText = textField(formData, RACQUET_FIELDS.sourceUrl);
-  if (sourceText === null) return fail("invalid");
-  const trimmedSource = sourceText.trim();
-  const sourceUrl = trimmedSource === "" ? null : parseSourceUrl(trimmedSource);
-  if (trimmedSource !== "" && !sourceUrl) return fail("source");
-  const hasSpecs = Object.values(specs).some((spec) => spec !== null);
-  if (hasSpecs && !sourceUrl) return fail("source");
-
-  return { ok: true, value: { brand, model, name: `${brand} ${model}`, year, slug, specs, sourceUrl } };
+  return { ok: true, value: { brand, model, name: `${brand} ${model}`, year, slug, specs } };
 }
 
-/** The uploaded file's bytes, or the flag for why there are none. */
-async function readImage(formData: FormData): Promise<Parsed<Buffer>> {
+type ImageSource = { kind: "file"; file: File } | { kind: "link"; url: URL };
+
+/**
+ * Which of the two photo sources the reviewer gave. Exactly one is needed:
+ * neither is `image-missing`; both is `image-both`, not a guess. Nothing is
+ * read or fetched yet.
+ */
+function chooseImageSource(formData: FormData): Parsed<ImageSource> {
   const file = formData.get(RACQUET_FIELDS.image);
+  const linkText = textField(formData, RACQUET_FIELDS.imageUrl);
+  if (linkText === null) return fail("invalid");
   // A browser sends an empty, nameless file when none was chosen.
-  if (file === null) return fail("image-missing");
-  if (typeof file === "string") return fail(file === "" ? "image-missing" : "invalid");
-  if (file.size === 0) return fail("image-missing");
-  if (file.size > IMAGE_MAX_BYTES) return fail("image-size");
-  return { ok: true, value: Buffer.from(await file.arrayBuffer()) };
+  if (typeof file === "string" && file !== "") return fail("invalid");
+  const upload = file !== null && typeof file !== "string" && file.size > 0 ? file : null;
+  const hasLink = linkText.trim() !== "";
+
+  if (upload && hasLink) return fail("image-both");
+  if (upload) return { ok: true, value: { kind: "file", file: upload } };
+  if (!hasLink) return fail("image-missing");
+  const url = parseImageLink(linkText);
+  return url ? { ok: true, value: { kind: "link", url } } : fail("image-link");
 }
 
 /** Cleanup must never hide the real outcome, so a failed removal is logged, not thrown. */
@@ -170,30 +160,44 @@ async function removeQuietly(store: ImageStore, src: string): Promise<void> {
 
 /**
  * Adds a racquet for the logged-in reviewer: success goes to the new
- * racquet's page. `store` is the image store; only tests pass their own.
+ * racquet's page. `store` is the image store and `fetchLink` gets the bytes
+ * behind an image link; only tests pass their own.
  */
 export async function submitAddRacquet(
   reviewer: Reviewer | null,
   formData: FormData,
   store: ImageStore = getImageStore(),
   now: Date = new Date(),
+  fetchLink: (url: URL) => Promise<ImageFetchResult> = fetchImageFromLink,
 ): Promise<string> {
   if (!reviewer) return loginPath(NEW_RACQUET_PATH);
   const refuse = (error: RacquetErrorFlag) => `${NEW_RACQUET_PATH}?error=${error}`;
 
   const fields = parseFields(formData, now);
   if (!fields.ok) return refuse(fields.error);
-  const { brand, name, year, slug, specs, sourceUrl } = fields.value;
+  const { brand, name, year, slug, specs } = fields.value;
 
-  // The image is required, and checked before any work is done for it.
-  const upload = await readImage(formData);
-  if (!upload.ok) return refuse(upload.error);
+  // The photo is required: one source, checked before any work is done for it.
+  const source = chooseImageSource(formData);
+  if (!source.ok) return refuse(source.error);
+  if (source.value.kind === "file" && source.value.file.size > IMAGE_MAX_BYTES) return refuse("image-size");
 
-  // Cheap duplicate check before the expensive conversion and upload. The
-  // insert checks again inside its transaction, which is what decides a race.
+  // Cheap duplicate check before the expensive conversion and upload, and
+  // before any request goes out to another website. The insert checks again
+  // inside its transaction, which is what decides a race.
   if (await racquetSlugExists(slug)) return refuse("exists");
 
-  const webp = await toRacquetWebp(upload.value);
+  let original: Buffer;
+  if (source.value.kind === "file") {
+    original = Buffer.from(await source.value.file.arrayBuffer());
+  } else {
+    const fetched = await fetchLink(source.value.url);
+    if (!fetched.ok) return refuse(fetched.error);
+    original = fetched.bytes;
+  }
+
+  // Whatever the source, only sharp's reading of the bytes decides they are a photo.
+  const webp = await toRacquetWebp(original);
   if (!webp) return refuse("image-type");
 
   let src: string;
@@ -206,7 +210,7 @@ export async function submitAddRacquet(
 
   try {
     const result = await createRacquet(
-      { slug, brand, name, year, image: { src, alt: `${name} (${year}) racquet` }, specs, sourceUrl },
+      { slug, brand, name, year, image: { src, alt: `${name} (${year}) racquet` }, specs },
       reviewer,
     );
     if (result.status === "exists") {

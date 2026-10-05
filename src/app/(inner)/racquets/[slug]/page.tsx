@@ -42,13 +42,6 @@ export async function generateMetadata({
   };
 }
 
-// The data keeps the manufacturer's number as published (Babolat gives
-// 10.7586 oz); the page always shows 1 dp, matching Yonex's published values.
-const oneDecimal = new Intl.NumberFormat("en", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-
 export default async function RacquetPage({ params }: PageProps<"/racquets/[slug]">) {
   const { slug } = await params;
   const racquet = await getRacquet(slug);
@@ -59,17 +52,11 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
   const [setups, reviewers] = await Promise.all([getRacquetSetups(slug), getReviewers()]);
 
   // A spec the manufacturer doesn't publish is null and its row is left out,
-  // never guessed (Product rule 11).
+  // never guessed (Product rule 11). Weight is grams only (Ben's decision).
   const { specs } = racquet;
-  const weight = [
-    specs.weightGrams !== null ? `${specs.weightGrams} g` : null,
-    specs.weightOunces !== null ? `${oneDecimal.format(specs.weightOunces)} oz` : null,
-  ]
-    .filter(Boolean)
-    .join(" / ");
   const specRows: [label: string, value: string | null][] = [
     ["Head size", specs.headSizeSqIn !== null ? `${specs.headSizeSqIn} sq in` : null],
-    ["Weight (unstrung)", weight || null],
+    ["Weight (unstrung)", specs.weightGrams !== null ? `${specs.weightGrams} g` : null],
     ["Balance", specs.balanceMm !== null ? `${specs.balanceMm} mm` : null],
     ["Length", specs.lengthIn !== null ? `${specs.lengthIn} in` : null],
     [
@@ -161,23 +148,9 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
             No official specs have been entered for this racquet.
           </EmptyState>
         )}
-        {racquet.sourceUrl && (
-          <p className={styles.source}>
-            Source:{" "}
-            <a href={racquet.sourceUrl} rel="noopener noreferrer">
-              {sourceHost(racquet.sourceUrl)}
-            </a>
-          </p>
-        )}
       </Panel>
     </div>
   );
-}
-
-// The link text is the source's site ("yonex.com"), so a reader sees where the
-// specs came from, or that it's an Internet Archive copy, before tapping.
-function sourceHost(url: string) {
-  return new URL(url).hostname.replace(/^www\./, "");
 }
 
 // Reviewers only, and only a way in: the form's page and its action check

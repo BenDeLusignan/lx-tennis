@@ -123,32 +123,29 @@ const DUPLICATE_SETUP =
 
 // --- Seeds ---
 
-test("seeds the four line-up racquets with their specs, photos and sources", async () => {
+test("seeds the four line-up racquets with their specs in grams and their photos", async () => {
   const rows = await db
     .select()
     .from(schema.racquet)
     .orderBy(asc(schema.racquet.id));
   assert.deepEqual(
-    rows.map(({ id, slug, brand, name, year, generation, imageSrc, headSizeSqIn, weightGrams, weightOunces, balanceMm, lengthIn, stringMains, stringCrosses, createdBy }) => ({
-      id, slug, brand, name, year, generation, imageSrc, headSizeSqIn, weightGrams, weightOunces, balanceMm, lengthIn, stringMains, stringCrosses, createdBy,
+    rows.map(({ id, slug, brand, name, year, generation, imageSrc, headSizeSqIn, weightGrams, balanceMm, lengthIn, stringMains, stringCrosses, createdBy }) => ({
+      id, slug, brand, name, year, generation, imageSrc, headSizeSqIn, weightGrams, balanceMm, lengthIn, stringMains, stringCrosses, createdBy,
     })),
     [
-      { id: 1, slug: "yonex-ezone-98-2022", brand: "Yonex", name: "Yonex EZONE 98", year: 2022, generation: "7th gen", imageSrc: "/images/racquets/yonex-ezone-98-2022.webp", headSizeSqIn: 98, weightGrams: 305, weightOunces: 10.8, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
-      { id: 2, slug: "yonex-vcore-98-2023", brand: "Yonex", name: "Yonex VCORE 98", year: 2023, generation: "7th gen", imageSrc: "/images/racquets/yonex-vcore-98-2023.webp", headSizeSqIn: 98, weightGrams: 305, weightOunces: 10.8, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
-      { id: 3, slug: "yonex-percept-97-2023", brand: "Yonex", name: "Yonex PERCEPT 97", year: 2023, generation: null, imageSrc: "/images/racquets/yonex-percept-97-2023.webp", headSizeSqIn: 97, weightGrams: 310, weightOunces: 10.9, balanceMm: 310, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
-      { id: 4, slug: "babolat-pure-aero-98-2023", brand: "Babolat", name: "Babolat Pure Aero 98", year: 2023, generation: "8th gen", imageSrc: "/images/racquets/babolat-pure-aero-98-2023.webp", headSizeSqIn: 98, weightGrams: 305, weightOunces: 10.7586, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 20, createdBy: null },
+      { id: 1, slug: "yonex-ezone-98-2022", brand: "Yonex", name: "Yonex EZONE 98", year: 2022, generation: "7th gen", imageSrc: "/images/racquets/yonex-ezone-98-2022.webp", headSizeSqIn: 98, weightGrams: 305, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
+      { id: 2, slug: "yonex-vcore-98-2023", brand: "Yonex", name: "Yonex VCORE 98", year: 2023, generation: "7th gen", imageSrc: "/images/racquets/yonex-vcore-98-2023.webp", headSizeSqIn: 98, weightGrams: 305, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
+      { id: 3, slug: "yonex-percept-97-2023", brand: "Yonex", name: "Yonex PERCEPT 97", year: 2023, generation: null, imageSrc: "/images/racquets/yonex-percept-97-2023.webp", headSizeSqIn: 97, weightGrams: 310, balanceMm: 310, lengthIn: 27, stringMains: 16, stringCrosses: 19, createdBy: null },
+      { id: 4, slug: "babolat-pure-aero-98-2023", brand: "Babolat", name: "Babolat Pure Aero 98", year: 2023, generation: "8th gen", imageSrc: "/images/racquets/babolat-pure-aero-98-2023.webp", headSizeSqIn: 98, weightGrams: 305, balanceMm: 315, lengthIn: 27, stringMains: 16, stringCrosses: 20, createdBy: null },
     ],
   );
-  // Product rule 10: every built-in racquet carries its source link, and an alt text.
-  for (const row of rows) {
-    assert.match(row.sourceUrl ?? "", /^https:\/\/web\.archive\.org\/web\/\d+\/https:\/\/www\.(yonex|babolat)\.com\//);
-    assert.ok(row.imageAlt.startsWith(row.name));
-  }
+  // Every built-in racquet has an alt text that starts with its name.
+  for (const row of rows) assert.ok(row.imageAlt.startsWith(row.name));
 });
 
 // --- Racquets ---
 
-/** A valid added racquet with no specs (so no source needed); override what a test is about. */
+/** A valid added racquet with no specs; override what a test is about. */
 function racquetRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     slug: "head-speed-mp-2024",
@@ -161,15 +158,12 @@ function racquetRow(overrides: Record<string, unknown> = {}): Record<string, unk
   };
 }
 
-const SOURCE = "https://www.head.com/en/speed-mp";
-
-test("a racquet can be added with no specs and no source, and the specs it lacks stay null", async () => {
+test("a racquet can be added with no specs, and the specs it lacks stay null", async () => {
   await rawInsert("racquet", racquetRow());
   const [row] = await db.select().from(schema.racquet).where(eq(schema.racquet.slug, "head-speed-mp-2024"));
   assert.equal(row.id, 5);
   assert.equal(row.headSizeSqIn, null);
   assert.equal(row.stringMains, null);
-  assert.equal(row.sourceUrl, null);
   assert.equal(row.createdBy, null);
 });
 
@@ -189,37 +183,32 @@ test("a racquet's brand is one of the line-up's brands, and its name starts with
   await assertRefused(rawInsert("racquet", racquetRow({ year: 2024.5 })), /racquet_year_valid/);
 });
 
-test("a racquet's specs are range-checked, and any spec needs its source (Product rules 10 and 11)", async () => {
-  const withSource = (overrides: Record<string, unknown>) =>
-    racquetRow({ source_url: SOURCE, ...overrides });
-  await assertRefused(rawInsert("racquet", racquetRow({ head_size_sq_in: 100 })), /racquet_specs_have_source/);
-  await assertRefused(rawInsert("racquet", racquetRow({ string_mains: 16, string_crosses: 19 })), /racquet_specs_have_source/);
-  await assertRefused(rawInsert("racquet", withSource({ head_size_sq_in: 20 })), /racquet_head_size_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ weight_grams: 5000 })), /racquet_weight_grams_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ weight_ounces: 100 })), /racquet_weight_ounces_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ balance_mm: 10 })), /racquet_balance_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ length_in: 40 })), /racquet_length_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ head_size_sq_in: 98.5 })), /racquet_head_size_valid/);
-  await assertRefused(rawInsert("racquet", withSource({ string_mains: 16 })), /racquet_string_pattern_pair/);
-  await assertRefused(rawInsert("racquet", withSource({ string_mains: 3, string_crosses: 19 })), /racquet_string_mains_valid/);
+test("a racquet's specs are range-checked, grams only, and need no source (Product rules 10 and 11)", async () => {
+  await assertRefused(rawInsert("racquet", racquetRow({ head_size_sq_in: 20 })), /racquet_head_size_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ weight_grams: 5000 })), /racquet_weight_grams_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ weight_grams: 305.5 })), /racquet_weight_grams_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ balance_mm: 10 })), /racquet_balance_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ length_in: 40 })), /racquet_length_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ head_size_sq_in: 98.5 })), /racquet_head_size_valid/);
+  await assertRefused(rawInsert("racquet", racquetRow({ string_mains: 16 })), /racquet_string_pattern_pair/);
+  await assertRefused(rawInsert("racquet", racquetRow({ string_mains: 3, string_crosses: 19 })), /racquet_string_mains_valid/);
+  // Ounces and a source link are not columns any more.
+  await assertRefused(rawInsert("racquet", racquetRow({ weight_ounces: 10.5 })), /no column named weight_ounces/);
+  await assertRefused(rawInsert("racquet", racquetRow({ source_url: "https://www.head.com/en/speed-mp" })), /no column named source_url/);
+  const columns = (await client.execute("SELECT name FROM pragma_table_info('racquet')")).rows.map((row) => row.name);
+  assert.ok(!columns.includes("weight_ounces") && !columns.includes("source_url"));
+  // Specs with no source at all are fine.
   await rawInsert(
     "racquet",
-    withSource({
+    racquetRow({
       head_size_sq_in: 100,
       weight_grams: 300,
-      weight_ounces: 10.5821,
       balance_mm: 320,
       length_in: 27.25,
       string_mains: 16,
       string_crosses: 19,
     }),
   );
-});
-
-test("a racquet's source is an https link without spaces", async () => {
-  for (const bad of ["http://www.head.com/speed", "www.head.com", "https://", "https://www.head.com/a b", `https://x.com/${"a".repeat(500)}`]) {
-    await assertRefused(rawInsert("racquet", racquetRow({ source_url: bad })), /racquet_source_url_valid/);
-  }
 });
 
 test("a racquet in use by a setup can't be deleted, and the reviewer who added one can't be deleted", async () => {
@@ -237,22 +226,40 @@ test("a racquet in use by a setup can't be deleted, and the reviewer who added o
   await assertRefused(client.execute(`DELETE FROM reviewer WHERE id = ${MICHAL}`), /FOREIGN KEY constraint failed/);
 });
 
-test("migration 0006 keeps the racquets' ids and the setups and reviews that point at them", async () => {
-  // The deployed database already has setups and reviews on racquets when
-  // 0006 runs, and its table rebuild must not lose, renumber or orphan them.
+/**
+ * Runs `body` on a database migrated only up to just before the newest
+ * migrations, `dropped` being their tags (newest first), to test an upgrade
+ * the way Turso gets it. `migrateRest` then applies those migrations from the
+ * real drizzle/ folder on the same file, as `npm run db:migrate` does.
+ */
+async function upgradingFrom(
+  dropped: string[],
+  body: (oldClient: Client, migrateRest: () => Promise<void>) => Promise<void>,
+): Promise<void> {
   const upgradeDir = mkdtempSync(path.join(dir, "upgrade-"));
   const folder = path.join(upgradeDir, "drizzle");
   cpSync(path.join(process.cwd(), "drizzle"), folder, { recursive: true });
   const journalPath = path.join(folder, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf8"));
-  const last = journal.entries.pop();
-  assert.equal(last.tag, "0006_racquets_in_database");
+  const taken = dropped.map(() => journal.entries.pop());
+  assert.deepEqual(taken.map((entry) => entry.tag), dropped);
   writeFileSync(journalPath, JSON.stringify(journal));
 
   const oldClient = createClient({ url: `file:${path.join(upgradeDir, "old.db")}` });
   try {
     const oldDb = drizzle(oldClient, { schema });
     await migrate(oldDb, { migrationsFolder: folder });
+    await body(oldClient, () => migrate(oldDb, { migrationsFolder: path.join(process.cwd(), "drizzle") }));
+  } finally {
+    oldClient.close();
+  }
+}
+
+test("migrations 0006 and 0007 keep the racquets' ids and the setups and reviews that point at them", async () => {
+  // The deployed database already has setups and reviews on racquets when
+  // 0006 runs, and its table rebuild (and 0007's after it, applied in the same
+  // run as Turso will get them) must not lose, renumber or orphan them.
+  await upgradingFrom(["0007_racquet_grams_only_no_source", "0006_racquets_in_database"], async (oldClient, migrateRest) => {
     await oldClient.execute(
       `INSERT INTO setup (racquet_id, strung_on, tension_unit, mains_string_id, mains_gauge_hundredths_mm, mains_tension_tenths,
          crosses_string_id, crosses_gauge_hundredths_mm, crosses_tension_tenths, created_by)
@@ -263,8 +270,8 @@ test("migration 0006 keeps the racquets' ids and the setups and reviews that poi
     );
     const sequenceBefore = await oldClient.execute("SELECT seq FROM sqlite_sequence WHERE name = 'racquet'");
 
-    // The same migrations plus 0006, on the same file, as `npm run db:migrate` does.
-    await migrate(oldDb, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+    // 0006 and 0007 together, on the same file.
+    await migrateRest();
 
     const racquets = await oldClient.execute("SELECT id, slug FROM racquet ORDER BY id");
     assert.deepEqual(
@@ -284,9 +291,77 @@ test("migration 0006 keeps the racquets' ids and the setups and reviews that poi
     assert.equal((await oldClient.execute("SELECT max(id) AS id FROM racquet")).rows[0].id, 5);
     // The rebuilt table keeps its foreign keys on: the racquet is still in use.
     await assertRefused(oldClient.execute("DELETE FROM racquet WHERE id = 4"), /FOREIGN KEY constraint failed/);
-  } finally {
-    oldClient.close();
-  }
+  });
+});
+
+test("migration 0007 drops ounces and the source link, keeping every racquet row and the setups and reviews on them", async () => {
+  // The state a database is in after 0006: racquets with ounces and a source
+  // link, a reviewer-added one among them, and setups and reviews on both.
+  await upgradingFrom(["0007_racquet_grams_only_no_source"], async (oldClient, migrateRest) => {
+    const before = await oldClient.execute("SELECT name FROM pragma_table_info('racquet')");
+    const beforeColumns = before.rows.map((row) => row.name);
+    assert.ok(beforeColumns.includes("weight_ounces") && beforeColumns.includes("source_url"), "0006 still has both");
+
+    await oldClient.execute(
+      `INSERT INTO racquet (slug, brand, name, year, generation, image_src, image_alt, head_size_sq_in, weight_grams, weight_ounces,
+         balance_mm, length_in, string_mains, string_crosses, source_url, created_by, created_at)
+       VALUES ('head-speed-mp-2024', 'Head', 'Head Speed MP', 2024, '2nd gen', 'https://x.public.blob.vercel-storage.com/a.webp', 'Head Speed MP (2024) racquet',
+         100, 300, 10.5821, 320, 27.25, 16, 19, 'https://www.head.com/en/speed-mp', 2, 1700000000)`,
+    );
+    await oldClient.execute(
+      `INSERT INTO racquet (slug, brand, name, year, image_src, image_alt) VALUES ('head-bare-2024', 'Head', 'Head Bare', 2024, '/b.webp', 'b')`,
+    );
+    const insertSetup = (racquetId: number, date: string) =>
+      oldClient.execute({
+        sql: `INSERT INTO setup (racquet_id, strung_on, tension_unit, mains_string_id, mains_gauge_hundredths_mm, mains_tension_tenths,
+           crosses_string_id, crosses_gauge_hundredths_mm, crosses_tension_tenths, created_by)
+           VALUES (?, ?, 'lb', 1, 125, 550, 1, 125, 550, 1)`,
+        args: [racquetId, date],
+      });
+    await insertSetup(4, "2026-09-01"); // a built-in racquet
+    await insertSetup(5, "2026-09-02"); // the reviewer-added one
+    await oldClient.execute(`INSERT INTO review (setup_id, reviewer_id, power, control, comfort, spin, feel) VALUES (1, 1, 7, 8, 6, 9, 7)`);
+    await oldClient.execute(`INSERT INTO review (setup_id, reviewer_id, power, control, comfort, spin, feel) VALUES (2, 2, 5, 5, 5, 5, 5)`);
+    const rowsBefore = (await oldClient.execute(
+      "SELECT id, slug, brand, name, year, generation, image_src, image_alt, head_size_sq_in, weight_grams, balance_mm, length_in, string_mains, string_crosses, created_by, created_at FROM racquet ORDER BY id",
+    )).rows.map((row) => ({ ...row }));
+    const sequenceBefore = await oldClient.execute("SELECT seq FROM sqlite_sequence WHERE name = 'racquet'");
+    assert.equal(sequenceBefore.rows[0].seq, 6);
+
+    await migrateRest();
+
+    const columns = (await oldClient.execute("SELECT name FROM pragma_table_info('racquet')")).rows.map((row) => row.name);
+    assert.ok(!columns.includes("weight_ounces") && !columns.includes("source_url"), columns.join(", "));
+    assert.ok(columns.includes("weight_grams"));
+    const rowsAfter = (await oldClient.execute(
+      "SELECT id, slug, brand, name, year, generation, image_src, image_alt, head_size_sq_in, weight_grams, balance_mm, length_in, string_mains, string_crosses, created_by, created_at FROM racquet ORDER BY id",
+    )).rows.map((row) => ({ ...row }));
+    assert.deepEqual(rowsAfter, rowsBefore, "same ids, same values, grams kept");
+    assert.equal(rowsAfter.length, 6);
+
+    const joined = await oldClient.execute(
+      "SELECT racquet.slug, review.power FROM setup JOIN racquet ON racquet.id = setup.racquet_id JOIN review ON review.setup_id = setup.id ORDER BY setup.id",
+    );
+    assert.deepEqual(joined.rows.map((row) => [row.slug, row.power]), [["babolat-pure-aero-98-2023", 7], ["head-speed-mp-2024", 5]]);
+    assert.equal((await oldClient.execute("PRAGMA foreign_key_check")).rows.length, 0);
+    // The rebuilt table keeps foreign keys: a racquet with setups can't be deleted, nor a reviewer who added one.
+    await assertRefused(oldClient.execute("DELETE FROM racquet WHERE id = 4"), /FOREIGN KEY constraint failed/);
+    await assertRefused(oldClient.execute("DELETE FROM racquet WHERE id = 5"), /FOREIGN KEY constraint failed/);
+    await assertRefused(oldClient.execute("DELETE FROM reviewer WHERE id = 2"), /FOREIGN KEY constraint failed/);
+    // AUTOINCREMENT carries on past the old rows.
+    await oldClient.execute(
+      `INSERT INTO racquet (slug, brand, name, year, image_src, image_alt) VALUES ('head-next-2024', 'Head', 'Head Next', 2024, '/n.webp', 'n')`,
+    );
+    assert.equal((await oldClient.execute("SELECT max(id) AS id FROM racquet")).rows[0].id, 7);
+    // The slug stays unique, and specs no longer need a source.
+    await assertRefused(
+      oldClient.execute(`INSERT INTO racquet (slug, brand, name, year, image_src, image_alt) VALUES ('head-next-2024', 'Head', 'Head Next', 2024, '/n.webp', 'n')`),
+      /UNIQUE constraint failed: racquet\.slug/,
+    );
+    await oldClient.execute(
+      `INSERT INTO racquet (slug, brand, name, year, image_src, image_alt, head_size_sq_in, weight_grams) VALUES ('head-spec-2024', 'Head', 'Head Spec', 2024, '/s.webp', 's', 98, 300)`,
+    );
+  });
 });
 
 test("seeds Ben's ten strings as the manufacturer writes them, with their types", async () => {

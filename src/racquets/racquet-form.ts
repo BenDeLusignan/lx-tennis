@@ -19,13 +19,14 @@ export const RACQUET_FIELDS = {
   year: "year",
   headSize: "headSize",
   weightGrams: "weightGrams",
-  weightOunces: "weightOunces",
   balanceMm: "balanceMm",
   lengthIn: "lengthIn",
   stringMains: "stringMains",
   stringCrosses: "stringCrosses",
-  sourceUrl: "sourceUrl",
+  /** The photo as an upload. Exactly one of `image` and `imageUrl` is needed. */
   image: "image",
+  /** The photo as an https link to an image on another website, copied by the reviewer. */
+  imageUrl: "imageUrl",
 } as const;
 
 /**
@@ -40,17 +41,16 @@ export const RACQUET_LIMITS = {
   year: { min: 1990, step: 1 },
   /** Square inches. */
   headSize: { min: 70, max: 140, step: 1 },
-  /** Unstrung, grams, as the manufacturer publishes it. */
+  /** Unstrung, grams, as the manufacturer publishes it. Grams only, never ounces (Product rule 11). */
   weightGrams: { min: 150, max: 450, step: 1 },
-  /** Unstrung, ounces, as published: up to 4 decimals (Babolat publishes 10.7586). */
-  weightOunces: { min: 5, max: 16, step: 0.0001 },
   /** Millimetres from the butt cap. */
   balanceMm: { min: 200, max: 450, step: 1 },
   /** Inches, up to 2 decimals (27.25). */
   lengthIn: { min: 17, max: 29, step: 0.01 },
   /** Mains and crosses, each. Both or neither. */
   stringPattern: { min: 12, max: 24, step: 1 },
-  sourceUrl: { maxLength: 500 },
+  /** The image link, characters as typed (after trimming). */
+  imageUrl: { maxLength: 2000 },
 } as const;
 
 /** The latest model year accepted: next year, since racquets are announced ahead. */
@@ -62,7 +62,9 @@ export function maxRacquetYear(now: Date = new Date()): number {
  * The image's limit is the size of the upload: Vercel refuses a function
  * request body over 4.5 MB, so the file is capped below that (the other
  * fields are a few hundred bytes). `serverActions.bodySizeLimit` in
- * `next.config.ts` sits just above this so our own message shows first.
+ * `next.config.ts` sits just above this so our own message shows first. A
+ * photo fetched from an image link is held to the same limit, though it
+ * doesn't travel in the request: one pipeline, one rule.
  */
 export const IMAGE_MAX_BYTES = 4_000_000;
 
@@ -95,14 +97,23 @@ export const IMAGE_ACCEPT = IMAGE_TYPES.map((type) => type.mime).join(",");
  * - `model`: blank, too long, or nothing in it a URL can carry (all symbols),
  *   or so long that its slug would exceed `RACQUET_SLUG_MAX_LENGTH`.
  * - `year`: not a whole year from 1990 to next year.
- * - `head-size`, `weight` (grams or ounces), `balance`, `length`:
+ * - `head-size`, `weight` (grams), `balance`, `length`:
  *   not a number, too many decimals, or out of range.
  * - `string-pattern`: only one of mains and crosses given, or out of range.
- * - `source`: specs were given without an official source link, or the link
- *   isn't an https address (Product rule 10).
- * - `image-missing`: no file chosen.
- * - `image-type`: not a readable JPEG, PNG, WebP, GIF or AVIF.
- * - `image-size`: over `IMAGE_MAX_BYTES`.
+ * - `image-missing`: neither a file nor an image link was given.
+ * - `image-both`: both a file and an image link were given. The server
+ *   doesn't guess which one is meant; the reviewer gives one.
+ * - `image-link`: the link isn't something to fetch: not a web address, not
+ *   https, has a user name or password in it, or is longer than
+ *   `RACQUET_LIMITS.imageUrl.maxLength`.
+ * - `image-fetch`: the site couldn't get an image from the link. One flag for
+ *   every cause (the host doesn't exist, it points somewhere the site won't
+ *   connect to, too many redirects, a timeout, an error status, an empty
+ *   answer), so the form can't be used to probe the network behind the
+ *   server. Nothing in the URL or the message says which.
+ * - `image-type`: the file, or what the link served, is not a readable JPEG,
+ *   PNG, WebP, GIF or AVIF.
+ * - `image-size`: over `IMAGE_MAX_BYTES` (the uploaded file, or what the link served).
  * - `exists`: a racquet with the same brand, model and year is already on the site.
  * - `storage`: the image couldn't be stored (no Blob token on the server, or
  *   the store refused it).
@@ -117,8 +128,10 @@ export const RACQUET_ERROR_FLAGS = [
   "balance",
   "length",
   "string-pattern",
-  "source",
   "image-missing",
+  "image-both",
+  "image-link",
+  "image-fetch",
   "image-type",
   "image-size",
   "exists",

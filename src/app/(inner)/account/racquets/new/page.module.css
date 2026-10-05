@@ -17,7 +17,7 @@
   color: var(--color-text-muted);
 }
 
-.optional {
+.qualifier {
   font-weight: 400;
   color: var(--color-text-muted);
 }
@@ -43,27 +43,59 @@
 }
 
 /*
- * The specs sit in a bordered box like the Mains and Crosses areas on the
- * new-setup form, so "official specs, leave out what you don't have" reads
- * as one block with its source link at the foot.
+ * The photo and the specs each sit in a bordered box like the Mains and
+ * Crosses areas on the new-setup form, so "pick one way to give the photo" and
+ * "official specs, leave out what you don't have" each read as one block.
  */
-.specs {
+.box {
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
-.specsLegend {
+.boxLegend {
   padding-inline: var(--space-2);
   margin-inline-start: calc(-1 * var(--space-2));
   font-family: var(--font-display);
   color: var(--color-accent);
 }
 
+/* The one sentence a reader must not miss ("one way, not both"). */
+.hint strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/*
+ * "or" between the two photo options, with a rule either side. It's a look
+ * only (aria-hidden): the box's hint already says "one way, not both".
+ */
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  border-block-start: 1px solid var(--color-border);
+}
+
 /* One column on a phone; two from 48rem, where the short number fields fit side by side. */
 .specGrid {
   display: grid;
   gap: var(--space-4);
+}
+
+/* A button in a column of fields stretches unless told otherwise. */
+.clearFile {
+  align-self: flex-start;
 }
 
 /* String pattern: "16 × 19" is two small fields that always share a row. */

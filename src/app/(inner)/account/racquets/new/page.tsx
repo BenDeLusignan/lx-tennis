@@ -24,6 +24,7 @@ import {
   RACQUET_LIMITS,
   type RacquetErrorFlag,
 } from "@/racquets/racquet-form";
+import { ClearFileButton } from "./clear-file-button";
 import { RacquetFormConstraints } from "./racquet-form-constraints";
 import styles from "./page.module.css";
 
@@ -31,18 +32,20 @@ export const metadata: Metadata = {
   title: "Add a racquet",
 };
 
-const { year, headSize, weightGrams, weightOunces, balanceMm, lengthIn, stringPattern } =
-  RACQUET_LIMITS;
+const { year, headSize, weightGrams, balanceMm, lengthIn, stringPattern } = RACQUET_LIMITS;
 const imageMegabytes = IMAGE_MAX_BYTES / 1_000_000;
 
 // Browser-side twins of the server's checks, so a mistake is caught before a
 // submit empties the form and the photo (the server stays the authority, see
-// parseSourceUrl and parseFields in submit.ts). A `pattern` must match the whole
-// value. Model: at least one non-space character. Source link: https, then a
-// host (no / ? # or @ in it) that contains a dot, then anything but spaces; this
-// refuses https://localhost, which type="url" alone lets through.
+// parseFields and the image-link check in submit.ts). A `pattern` must match
+// the whole value. Model: at least one non-space character. Image link: https
+// (any letter case, as the server's URL parsing allows), then a host (no / ? #
+// @ or : in it, so no user:password and no port) that contains a dot, then
+// anything but spaces; this refuses https://localhost, which type="url" alone
+// lets through (as it does http://). The server also refuses a port, except the
+// default :443 that it quietly drops; the client simply refuses every port.
 const MODEL_PATTERN = ".*\\S.*";
-const SOURCE_PATTERN = "https://[^\\s\\/?#@]+\\.[^\\s\\/?#@]+(?:[\\/?#]\\S*)?";
+const HTTPS_PATTERN = "[Hh][Tt][Tt][Pp][Ss]://[^\\s\\/?#@:]+\\.[^\\s\\/?#@:]+(?:[\\/?#]\\S*)?";
 
 // One message per flag the action redirects with. `Record<RacquetErrorFlag, …>`
 // makes a flag added in racquet-form.ts a type error here until it has its
@@ -53,14 +56,16 @@ const ERRORS: Record<RacquetErrorFlag, ReactNode> = {
   model: `Enter the model without the brand (for example EZONE 98), up to ${RACQUET_LIMITS.model.maxLength} characters.`,
   year: `The model year must be a whole year from ${year.min} to next year.`,
   "head-size": `Head size must be a whole number of square inches, ${headSize.min}–${headSize.max}.`,
-  weight: `Weight must be ${weightGrams.min}–${weightGrams.max} g (a whole number) and ${weightOunces.min}–${weightOunces.max} oz (up to 4 decimal places). Leave either empty if the manufacturer doesn't publish it.`,
+  weight: `Unstrung weight must be a whole number of grams, ${weightGrams.min}–${weightGrams.max}. Leave it empty if the manufacturer doesn't publish it.`,
   balance: `Balance must be a whole number of millimetres, ${balanceMm.min}–${balanceMm.max}.`,
   length: `Length must be ${lengthIn.min}–${lengthIn.max} inches, with at most two decimal places.`,
   "string-pattern": `Enter both the mains and the crosses (each ${stringPattern.min}–${stringPattern.max}), or leave both empty.`,
-  source: `The source link is missing or can't be used. If you filled in any spec, add the link to the manufacturer's official page: an https address with no spaces, up to ${RACQUET_LIMITS.sourceUrl.maxLength} characters (an Internet Archive copy of it is fine). If you don't have the link, leave the specs empty.`,
-  "image-missing": "Choose a photo of the racquet: it's required.",
-  "image-type": "That file couldn't be read as a photo. Use a JPEG, PNG, WebP, GIF or AVIF.",
-  "image-size": `That photo is too big. The limit is ${imageMegabytes} MB, so choose a smaller one.`,
+  "image-missing": "The photo is required: upload a file or paste an image link.",
+  "image-both": "You gave both a photo file and an image link. Use one or the other, not both.",
+  "image-link": `That image link can't be used. It must be a complete address starting with https://, up to ${RACQUET_LIMITS.imageUrl.maxLength} characters, with no username, password or port.`,
+  "image-fetch": "The site couldn't get an image from that link. It may have moved, be blocked, or be a link to a page rather than to the image itself. Copy the image address instead, or upload the file.",
+  "image-type": "That file or link didn't give a photo the site can read. Use a JPEG, PNG, WebP, GIF or AVIF.",
+  "image-size": `That photo is too big, whether uploaded or linked. The limit is ${imageMegabytes} MB, so use a smaller one.`,
   exists: (
     <>
       A racquet with that brand, model and year is already on the site. Look for it under{" "}
@@ -153,29 +158,71 @@ export default function NewRacquetPage({ searchParams }: PageProps<"/account/rac
             </p>
           </Field>
 
-          <Field label="Photo" htmlFor={RACQUET_FIELDS.image}>
-            <Input
-              id={RACQUET_FIELDS.image}
-              name={RACQUET_FIELDS.image}
-              type="file"
-              accept={IMAGE_ACCEPT}
-              required
-              className={styles.file}
-              aria-describedby="image-hint"
-            />
-            <p id="image-hint" className={styles.hint}>
-              Required. The manufacturer&rsquo;s official photo, face-on, with the whole frame in view.
-              JPEG, PNG, WebP, GIF or AVIF, up to {imageMegabytes} MB. A photo straight from a phone
-              camera is often bigger than that, so shrink it first. Without JavaScript, a file well
-              over the limit may show a plain error page instead of a message here. It&rsquo;s scaled
-              to fit a {IMAGE_SIZE.width} × {IMAGE_SIZE.height} picture, centred at the top. The
+          {/* The photo is one required thing with two ways in. Neither input can
+              be `required` (each is only needed while the other is empty, and a
+              `required` pair would send a reviewer who wants to paste a link to
+              the file field first, and be announced as two required fields). So
+              RacquetFormConstraints puts a custom validity on the file input when
+              neither is given, and the server's `image-missing` / `image-both`
+              catch it before JavaScript has loaded. */}
+          <fieldset className={`${styles.group} ${styles.box}`} aria-describedby="photo-hint">
+            <legend className={`${styles.legend} ${styles.boxLegend}`}>
+              Photo <span className={styles.qualifier}>(required)</span>
+            </legend>
+            <p id="photo-hint" className={styles.hint}>
+              Give the photo <strong>one way: upload a file, or paste an image link. Not both.</strong>{" "}
+              Either way it should be the manufacturer&rsquo;s official photo, face-on, with the whole
+              frame in view: JPEG, PNG, WebP, GIF or AVIF, up to {imageMegabytes} MB. It&rsquo;s scaled to
+              fit a {IMAGE_SIZE.width} × {IMAGE_SIZE.height} picture, centred at the top. The
               background isn&rsquo;t removed, so a photo with a transparent one looks best.
             </p>
-          </Field>
 
-          <fieldset className={`${styles.group} ${styles.specs}`} aria-describedby="specs-hint">
-            <legend className={`${styles.legend} ${styles.specsLegend}`}>
-              Official specs <span className={styles.optional}>(optional)</span>
+            <Field label="Upload a file" htmlFor={RACQUET_FIELDS.image}>
+              <Input
+                id={RACQUET_FIELDS.image}
+                name={RACQUET_FIELDS.image}
+                type="file"
+                accept={IMAGE_ACCEPT}
+                className={styles.file}
+                aria-describedby="image-hint"
+              />
+              <ClearFileButton inputId={RACQUET_FIELDS.image} className={styles.clearFile} />
+              <p id="image-hint" className={styles.hint}>
+                A photo straight from a phone camera is often bigger than {imageMegabytes} MB, so shrink
+                it first.
+              </p>
+            </Field>
+
+            {/* The legend's hint already says "one way … not both" to a screen reader. */}
+            <p className={styles.or} aria-hidden="true">
+              or
+            </p>
+
+            <Field label="Paste an image link" htmlFor={RACQUET_FIELDS.imageUrl}>
+              <Input
+                id={RACQUET_FIELDS.imageUrl}
+                name={RACQUET_FIELDS.imageUrl}
+                type="url"
+                inputMode="url"
+                maxLength={RACQUET_LIMITS.imageUrl.maxLength}
+                pattern={HTTPS_PATTERN}
+                title="A web address starting with https://, with no spaces and no port"
+                autoComplete="off"
+                aria-describedby="image-url-hint"
+              />
+              <p id="image-url-hint" className={styles.hint}>
+                Must start with https:// and point straight at the image itself, not at a page that
+                shows it. On a computer, right-click the photo on the other website and choose
+                &ldquo;Copy image address&rdquo;; on a phone, press and hold the photo. LX Tennis
+                fetches it once and saves its own copy, so the photo stays even if that website
+                removes it. The same {imageMegabytes} MB limit applies.
+              </p>
+            </Field>
+          </fieldset>
+
+          <fieldset className={`${styles.group} ${styles.box}`} aria-describedby="specs-hint">
+            <legend className={`${styles.legend} ${styles.boxLegend}`}>
+              Official specs <span className={styles.qualifier}>(optional)</span>
             </legend>
             <p id="specs-hint" className={styles.hint}>
               Copy these from the manufacturer&rsquo;s official page, as published. Leave out any it
@@ -194,13 +241,6 @@ export default function NewRacquetPage({ searchParams }: PageProps<"/account/rac
                 name={RACQUET_FIELDS.weightGrams}
                 limits={weightGrams}
                 hint="Grams, as published, e.g. 305."
-              />
-              <SpecField
-                label="Unstrung weight (oz)"
-                name={RACQUET_FIELDS.weightOunces}
-                limits={weightOunces}
-                decimal
-                hint="Ounces, as published, e.g. 10.7586. Don't convert it from the grams."
               />
               <SpecField
                 label="Balance (mm)"
@@ -234,24 +274,6 @@ export default function NewRacquetPage({ searchParams }: PageProps<"/account/rac
                 </p>
               </fieldset>
             </div>
-
-            <Field label="Source link" htmlFor={RACQUET_FIELDS.sourceUrl}>
-              <Input
-                id={RACQUET_FIELDS.sourceUrl}
-                name={RACQUET_FIELDS.sourceUrl}
-                type="url"
-                inputMode="url"
-                maxLength={RACQUET_LIMITS.sourceUrl.maxLength}
-                pattern={SOURCE_PATTERN}
-                title="A web address starting with https://, with no spaces"
-                autoComplete="off"
-                aria-describedby="source-hint"
-              />
-              <p id="source-hint" className={styles.hint}>
-                Needed if you filled in any spec: the manufacturer&rsquo;s official page for this
-                racquet (an address starting with https://). An Internet Archive copy of that page is fine.
-              </p>
-            </Field>
           </fieldset>
 
           {/* Cancel is only a link back to the list: nothing is saved, and it
@@ -279,8 +301,7 @@ interface SpecFieldProps {
   decimal?: boolean;
 }
 
-// An optional number. `data-spec` is how RacquetFormConstraints knows a spec
-// was filled in, which is what makes the source link required.
+// An optional number.
 function SpecField({ label, name, limits, hint, decimal = false }: SpecFieldProps) {
   return (
     <Field label={label} htmlFor={name}>
@@ -292,7 +313,6 @@ function SpecField({ label, name, limits, hint, decimal = false }: SpecFieldProp
         min={limits.min}
         max={limits.max}
         step={limits.step}
-        data-spec=""
         aria-describedby={`${name}-hint`}
       />
       <p id={`${name}-hint`} className={styles.hint}>
@@ -303,7 +323,7 @@ function SpecField({ label, name, limits, hint, decimal = false }: SpecFieldProp
 }
 
 // Optional, but only as a pair: RacquetFormConstraints makes both required
-// once either has a value. It's a spec too, for the source link.
+// once either has a value.
 function PatternInput({ name }: { name: string }) {
   return (
     <Input
@@ -314,7 +334,6 @@ function PatternInput({ name }: { name: string }) {
       min={stringPattern.min}
       max={stringPattern.max}
       step={stringPattern.step}
-      data-spec=""
       data-pattern=""
     />
   );
@@ -332,8 +351,8 @@ async function FormStatus({ searchParams }: Pick<PageProps<"/account/racquets/ne
   if (!flag) return null;
   return (
     <FormMessage key={crypto.randomUUID()} tone="error">
-      {ERRORS[flag]} Nothing was saved, so the form is empty again and the photo needs choosing
-      again.
+      {ERRORS[flag]} Nothing was saved, so the form is empty again and the photo (or its link)
+      needs adding again.
     </FormMessage>
   );
 }

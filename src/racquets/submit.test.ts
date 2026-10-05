@@ -10,6 +10,7 @@ import type { Reviewer } from "@/data/reviewers";
 import { getDb } from "@/db/client";
 import { racquet } from "@/db/schema";
 import type { ImageStore } from "@/racquets/image-store";
+import type { ImageFetchResult } from "@/racquets/image-fetch";
 import { parseRacquetSlug } from "@/reviews/setup-form";
 import { toRacquetWebp } from "@/racquets/process-image";
 import { IMAGE_MAX_BYTES, RACQUET_ERROR_FLAGS, racquetSlug } from "@/racquets/racquet-form";
@@ -17,7 +18,6 @@ import { submitAddRacquet } from "@/racquets/submit";
 
 const BEN: Reviewer = { id: 1, username: "ben", displayName: "Ben" };
 const FORM_PATH = "/account/racquets/new";
-const SOURCE = "https://www.head.com/en/speed-mp";
 
 // Tests share one database, so "nothing saved" is measured against the rows at the start of each.
 let rowsAtStart = 0;
@@ -25,6 +25,8 @@ let rowsAtStart = 0;
 beforeEach(async () => {
   clearRefreshedTags();
   store.reset();
+  fetched.length = 0;
+  linkResult = { ok: false, error: "image-fetch" };
   rowsAtStart = await rowCount();
 });
 
@@ -59,6 +61,13 @@ class FakeStore implements ImageStore {
 
 const store = new FakeStore();
 
+const fetched: URL[] = [];
+let linkResult: ImageFetchResult = { ok: false, error: "image-fetch" };
+async function fakeFetch(url: URL): Promise<ImageFetchResult> {
+  fetched.push(url);
+  return linkResult;
+}
+
 /** A real image: a solid colour of the given size and format. */
 async function image(
   width = 600,
@@ -80,8 +89,9 @@ async function form(fields: Record<string, string> = {}, file?: Buffer | null): 
   return formData;
 }
 
+/** The upload path: `fakeFetch` records any link fetch and answers with `linkResult`, so no test reaches the network. */
 async function submit(fields: Record<string, string> = {}, file?: Buffer | null): Promise<string> {
-  return submitAddRacquet(BEN, await form(fields, file), store);
+  return submitAddRacquet(BEN, await form(fields, file), store, undefined, fakeFetch);
 }
 
 async function rowCount(): Promise<number> {
@@ -112,16 +122,15 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
       model: "Speed MP",
       headSize: "100",
       weightGrams: "300",
-      weightOunces: "10.5821",
       balanceMm: "320",
       lengthIn: "27.25",
       stringMains: "16",
       stringCrosses: "19",
-      sourceUrl: ` ${SOURCE} `,
     },
     await image(600, 400, "jpeg"),
   );
   assert.equal(url, "/racquets/head-speed-mp-2024");
+  assert.equal(fetched.length, 0, "an upload fetches nothing");
 
   const found = await getRacquet("head-speed-mp-2024");
   assert.ok(found);
@@ -129,11 +138,9 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
   assert.equal(found.name, "Head Speed MP");
   assert.equal(found.year, 2024);
   assert.equal(found.generation, null);
-  assert.equal(found.sourceUrl, SOURCE);
   assert.deepEqual(found.specs, {
     headSizeSqIn: 100,
     weightGrams: 300,
-    weightOunces: 10.5821,
     balanceMm: 320,
     lengthIn: 27.25,
     stringPattern: { mains: 16, crosses: 19 },
@@ -166,23 +173,21 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
   assert.deepEqual(refreshedTags.sort(), ["racquets", "setups:head-speed-mp-2024"]);
 });
 
-test("every spec is optional: a racquet with none is saved without a source", async () => {
+test("every spec is optional: a racquet with none is saved", async () => {
   const url = await submit({ model: "No Specs", year: "2025" });
   assert.equal(url, "/racquets/head-no-specs-2025");
   const found = await getRacquet("head-no-specs-2025");
   assert.deepEqual(found?.specs, {
     headSizeSqIn: null,
     weightGrams: null,
-    weightOunces: null,
     balanceMm: null,
     lengthIn: null,
     stringPattern: null,
   });
-  assert.equal(found?.sourceUrl, null);
 });
 
 test("a spec left blank stays out while the others are kept", async () => {
-  await submit({ model: "Partial", headSize: "98", weightGrams: "", sourceUrl: SOURCE });
+  await submit({ model: "Partial", headSize: "98", weightGrams: "" });
   const specs = (await getRacquet("head-partial-2024"))?.specs;
   assert.equal(specs?.headSizeSqIn, 98);
   assert.equal(specs?.weightGrams, null);
@@ -194,7 +199,13 @@ test("a missing image is refused and nothing is saved", async () => {
   // A browser with no file chosen sends an empty, nameless file.
   const formData = await form({}, null);
   formData.set("image", new File([], ""));
-  assert.equal(await submitAddRacquet(BEN, formData, store), refused("image-missing"));
+  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), refused("image-missing"));
+  // Not a file at all (a hand-made request): invalid, not missing.
+  formData.set("image", "not a file");
+  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), refused("invalid"));
+  const linkAsFile = await form({}, null);
+  linkAsFile.set("imageUrl", new File(["https://x.com/a.png"], "link.txt"));
+  assert.equal(await submitAddRacquet(BEN, linkAsFile, store, undefined, fakeFetch), refused("invalid"));
   await assertNothingSaved();
 });
 
@@ -211,6 +222,95 @@ test("a file that isn't a readable image is refused and nothing is saved", async
 test("an image over the size limit is refused and nothing is saved", async () => {
   assert.equal(await submit({}, Buffer.alloc(IMAGE_MAX_BYTES + 1)), refused("image-size"));
   await assertNothingSaved();
+});
+
+// --- The photo as an image link ---
+
+const LINK = "https://images.example.com/racquets/speed-mp.png";
+
+test("an image link is fetched, stored as the site's own 1000x1500 WebP, and the racquet is saved", async () => {
+  linkResult = { ok: true, bytes: await image(600, 400, "jpeg") };
+  const url = await submit({ model: "Linked", imageUrl: `  ${LINK}  ` }, null);
+  assert.equal(url, "/racquets/head-linked-2024");
+  assert.deepEqual(fetched.map((link) => link.href), [LINK]);
+
+  const found = await getRacquet("head-linked-2024");
+  assert.ok(found);
+  // The row holds the site's own copy, never the other site's address.
+  assert.ok(found.image.src.startsWith("https://fake.public.blob.vercel-storage.com/"));
+  const webp = store.saved.get(found.image.src);
+  assert.ok(webp);
+  const meta = await sharp(webp).metadata();
+  assert.deepEqual([meta.format, meta.width, meta.height], ["webp", 1000, 1500]);
+  assert.deepEqual(refreshedTags.sort(), ["racquets", "setups:head-linked-2024"]);
+});
+
+test("exactly one photo source: a file and a link together are refused, not guessed", async () => {
+  linkResult = { ok: true, bytes: await image() };
+  assert.equal(await submit({ model: "Both", imageUrl: LINK }), refused("image-both"));
+  // Even when the link is nonsense, the request is ambiguous first.
+  assert.equal(await submit({ model: "Both", imageUrl: "nonsense" }), refused("image-both"));
+  assert.equal(fetched.length, 0, "nothing was fetched");
+  await assertNothingSaved();
+  // Neither is still image-missing; a blank link counts as none.
+  assert.equal(await submit({ model: "Neither", imageUrl: "   " }, null), refused("image-missing"));
+  // An empty, nameless file (no file chosen) beside a link is just the link.
+  const formData = await form({ model: "Empty file", imageUrl: LINK }, null);
+  formData.set("image", new File([], ""));
+  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), "/racquets/head-empty-file-2024");
+});
+
+test("a link that isn't a plain https address is refused before anything is fetched", async () => {
+  linkResult = { ok: true, bytes: await image() };
+  for (const bad of [
+    "http://images.example.com/a.png",
+    "images.example.com/a.png",
+    "//images.example.com/a.png",
+    "ftp://images.example.com/a.png",
+    "javascript:alert(1)",
+    "data:image/png;base64,AAAA",
+    "file:///etc/passwd",
+    "https://",
+    "https://user:pass@images.example.com/a.png",
+    "https://user@images.example.com/a.png",
+    "https://images.example.com:8443/a.png",
+    "https://images.example.com/a b.png",
+    `https://images.example.com/${"a".repeat(2000)}`,
+  ]) {
+    assert.equal(await submit({ imageUrl: bad }, null), refused("image-link"), bad);
+  }
+  assert.equal(fetched.length, 0);
+  await assertNothingSaved();
+});
+
+test("a link that can't be fetched, is too big or isn't an image is refused and nothing is saved", async () => {
+  linkResult = { ok: false, error: "image-fetch" };
+  assert.equal(await submit({ model: "Down", imageUrl: LINK }, null), refused("image-fetch"));
+  linkResult = { ok: false, error: "image-size" };
+  assert.equal(await submit({ model: "Huge", imageUrl: LINK }, null), refused("image-size"));
+  // Served 200 OK, but the bytes aren't a photo: the same sharp check as an upload.
+  linkResult = { ok: true, bytes: Buffer.from("<html><body>Not an image</body></html>") };
+  assert.equal(await submit({ model: "Page", imageUrl: LINK }, null), refused("image-type"));
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>');
+  linkResult = { ok: true, bytes: svg };
+  assert.equal(await submit({ model: "Svg", imageUrl: LINK }, null), refused("image-type"));
+  await assertNothingSaved();
+});
+
+test("a duplicate is refused before the link is fetched", async () => {
+  linkResult = { ok: true, bytes: await image() };
+  assert.equal(await submit({ brand: "Yonex", model: "EZONE 98", year: "2022", imageUrl: LINK }, null), refused("exists"));
+  assert.equal(fetched.length, 0);
+  await assertNothingSaved();
+});
+
+test("the link is never put in the redirect URL", async () => {
+  const secret = "https://images.example.com/private-token-123/a.png";
+  linkResult = { ok: false, error: "image-fetch" };
+  assert.equal(await submit({ model: "Secret A", imageUrl: secret }, null), refused("image-fetch"));
+  assert.equal(await submit({ imageUrl: `${secret} x` }, null), refused("image-link"));
+  linkResult = { ok: true, bytes: await image() };
+  assert.ok(!(await submit({ model: "Secret", imageUrl: secret }, null)).includes("token"));
 });
 
 test("a brand that isn't on the list is refused and nothing is saved", async () => {
@@ -260,11 +360,11 @@ test("the slug is brand-model-year, and the brand typed into the model isn't dou
 });
 
 test("a duplicate is refused before the image is stored, and the original is untouched", async () => {
-  await submit({ model: "Dup", year: "2022", headSize: "98", sourceUrl: SOURCE });
+  await submit({ model: "Dup", year: "2022", headSize: "98" });
   const before = store.saved.size;
   clearRefreshedTags();
 
-  assert.equal(await submit({ model: "dup", year: "2022", headSize: "100", sourceUrl: SOURCE }), refused("exists"));
+  assert.equal(await submit({ model: "dup", year: "2022", headSize: "100" }), refused("exists"));
   assert.equal(await submit({ model: "  DUP!! ", year: "2022" }), refused("exists"));
   // Also a built-in racquet.
   assert.equal(await submit({ brand: "Yonex", model: "EZONE 98", year: "2022" }), refused("exists"));
@@ -285,8 +385,7 @@ test("two reviewers adding the same racquet at once: one wins and the loser's im
         name: "Head Race",
         year: 2024,
         image: { src: "/other.webp", alt: "other" },
-        specs: { headSizeSqIn: null, weightGrams: null, weightOunces: null, balanceMm: null, lengthIn: null, stringPattern: null },
-        sourceUrl: null,
+        specs: { headSizeSqIn: null, weightGrams: null, balanceMm: null, lengthIn: null, stringPattern: null },
       },
       { id: 2, username: "michal", displayName: "Michal" },
     );
@@ -314,18 +413,17 @@ test("a racquet's specs must be in range, whole or to the allowed decimals", asy
   const cases: [field: string, flag: string, good: string[], bad: string[]][] = [
     ["headSize", "head-size", ["70", "140"], ["69", "141", "98.5", "abc", "-98"]],
     ["weightGrams", "weight", ["150", "450"], ["149", "451", "305.5"]],
-    ["weightOunces", "weight", ["5", "16", "10.7586"], ["4.9999", "16.1", "10.75861"]],
     ["balanceMm", "balance", ["200", "450"], ["199", "451", "315.5"]],
     ["lengthIn", "length", ["17", "29", "27.25"], ["16.99", "29.01", "27.255"]],
   ];
   let n = 0;
   for (const [field, flag, good, bad] of cases) {
     for (const value of bad) {
-      assert.equal(await submit({ [field]: value, sourceUrl: SOURCE }), refused(flag), `${field}=${value}`);
+      assert.equal(await submit({ [field]: value }), refused(flag), `${field}=${value}`);
     }
     for (const value of good) {
       const model = `Range ${n++}`;
-      const url = await submit({ model, [field]: value, sourceUrl: SOURCE });
+      const url = await submit({ model, [field]: value });
       assert.equal(url, `/racquets/head-range-${n - 1}-2024`, `${field}=${value}`);
     }
   }
@@ -333,35 +431,30 @@ test("a racquet's specs must be in range, whole or to the allowed decimals", asy
 });
 
 test("a string pattern needs both numbers, each in range", async () => {
-  const both = { sourceUrl: SOURCE };
-  assert.equal(await submit({ ...both, stringMains: "16" }), refused("string-pattern"));
-  assert.equal(await submit({ ...both, stringCrosses: "19" }), refused("string-pattern"));
-  assert.equal(await submit({ ...both, stringMains: "11", stringCrosses: "19" }), refused("string-pattern"));
-  assert.equal(await submit({ ...both, stringMains: "16", stringCrosses: "25" }), refused("string-pattern"));
-  assert.equal(await submit({ ...both, stringMains: "16.5", stringCrosses: "19" }), refused("string-pattern"));
-  assert.equal(await submit({ ...both, model: "Pattern", stringMains: "18", stringCrosses: "20" }), "/racquets/head-pattern-2024");
+  assert.equal(await submit({ stringMains: "16" }), refused("string-pattern"));
+  assert.equal(await submit({ stringCrosses: "19" }), refused("string-pattern"));
+  assert.equal(await submit({ stringMains: "11", stringCrosses: "19" }), refused("string-pattern"));
+  assert.equal(await submit({ stringMains: "16", stringCrosses: "25" }), refused("string-pattern"));
+  assert.equal(await submit({ stringMains: "16.5", stringCrosses: "19" }), refused("string-pattern"));
+  assert.equal(await submit({ model: "Pattern", stringMains: "18", stringCrosses: "20" }), "/racquets/head-pattern-2024");
 });
 
-test("specs need an official source link, and the link must be https (Product rule 10)", async () => {
-  assert.equal(await submit({ headSize: "100" }), refused("source"));
-  assert.equal(await submit({ stringMains: "16", stringCrosses: "19" }), refused("source"));
-  assert.equal(await submit({ headSize: "100", sourceUrl: "   " }), refused("source"));
-  for (const bad of [
-    "http://www.head.com/speed",
-    "www.head.com/speed",
-    "https://localhost/speed",
-    "https://user:pass@www.head.com/",
-    "https://www.head.com/a b",
-    "javascript:alert(1)",
-    `https://www.head.com/${"a".repeat(500)}`,
-  ]) {
-    assert.equal(await submit({ headSize: "100", sourceUrl: bad }), refused("source"), bad);
-  }
-  // A link with no specs is still checked, but not required.
-  assert.equal(await submit({ sourceUrl: "ftp://x.com/a" }), refused("source"));
-  assert.equal(await submit({ model: "Archived", headSize: "100", sourceUrl: "https://web.archive.org/web/2023/https://www.head.com/speed" }), "/racquets/head-archived-2024");
-  assert.equal(store.removed.length, 0);
-  assert.equal(await rowCount(), rowsAtStart + 1);
+test("unstrung weight is grams only: an ounces field is ignored, never stored or converted", async () => {
+  assert.equal(
+    await submit({ model: "Grams", weightGrams: "300", weightOunces: "10.5821" }),
+    "/racquets/head-grams-2024",
+  );
+  assert.equal((await getRacquet("head-grams-2024"))?.specs.weightGrams, 300);
+  const [row] = await getDb().select().from(racquet).where(eq(racquet.slug, "head-grams-2024"));
+  assert.ok(!("weightOunces" in row));
+});
+
+test("a source link is not asked for, kept or required: specs alone are enough", async () => {
+  assert.equal(await submit({ model: "No Source", headSize: "100", stringMains: "16", stringCrosses: "19" }), "/racquets/head-no-source-2024");
+  // A leftover sourceUrl field from an old form is simply ignored.
+  assert.equal(await submit({ model: "Old Form", headSize: "100", sourceUrl: "not even a link" }), "/racquets/head-old-form-2024");
+  const [row] = await getDb().select().from(racquet).where(eq(racquet.slug, "head-old-form-2024"));
+  assert.ok(!("sourceUrl" in row));
 });
 
 test("every error flag the action can return is in RACQUET_ERROR_FLAGS", async () => {
@@ -370,13 +463,15 @@ test("every error flag the action can return is in RACQUET_ERROR_FLAGS", async (
     [{ brand: "x" }],
     [{ model: "" }],
     [{ year: "1" }],
-    [{ headSize: "1", sourceUrl: SOURCE }],
-    [{ weightGrams: "1", sourceUrl: SOURCE }],
-    [{ balanceMm: "1", sourceUrl: SOURCE }],
-    [{ lengthIn: "1", sourceUrl: SOURCE }],
-    [{ stringMains: "1", sourceUrl: SOURCE }],
-    [{ headSize: "100" }],
+    [{ headSize: "1" }],
+    [{ weightGrams: "1" }],
+    [{ balanceMm: "1" }],
+    [{ lengthIn: "1" }],
+    [{ stringMains: "1" }],
     [{}, null],
+    [{ imageUrl: LINK }],
+    [{ imageUrl: "http://example.com/a.png" }, null],
+    [{ model: "Fetch fails", imageUrl: LINK }, null],
     [{ model: "Bad image" }, Buffer.from("no")],
     [{ model: "Big image" }, Buffer.alloc(IMAGE_MAX_BYTES + 1)],
     [{ brand: "Yonex", model: "EZONE 98", year: "2022" }],
@@ -388,7 +483,7 @@ test("every error flag the action can return is in RACQUET_ERROR_FLAGS", async (
   for (const flag of seen) assert.ok((RACQUET_ERROR_FLAGS as readonly string[]).includes(flag), flag);
   assert.deepEqual(
     [...seen].sort(),
-    ["brand", "model", "year", "head-size", "weight", "balance", "length", "string-pattern", "source", "image-missing", "image-type", "image-size", "exists"].sort(),
+    ["brand", "model", "year", "head-size", "weight", "balance", "length", "string-pattern", "image-missing", "image-both", "image-link", "image-fetch", "image-type", "image-size", "exists"].sort(),
   );
 });
 

@@ -131,10 +131,3 @@
     width: 100%;
   }
 }
-
-/* The specs' source link sits under the table, in the muted caption style. */
-.source {
-  margin-block-start: var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
