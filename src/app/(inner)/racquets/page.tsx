@@ -32,6 +32,9 @@ export default async function RacquetsPage() {
         Racquets and string setups we&rsquo;ve tested, with everyone&rsquo;s scores side by side.
       </p>
       <RacquetsByBrand sections={brands} />
+      <p className={styles.sourceNote}>
+        Racquet photos and specs from the manufacturers&rsquo; official product pages.
+      </p>
     </>
   );
 }

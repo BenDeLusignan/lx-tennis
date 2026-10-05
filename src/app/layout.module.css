@@ -6,14 +6,6 @@
   padding: var(--space-6) var(--space-4) var(--space-12);
 }
 
-.footer {
-  padding: var(--space-6) var(--space-4);
-  text-align: center;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  background: linear-gradient(to top, var(--color-bg) 40%, transparent);
-}
-
 @media (min-width: 48rem) {
   .page {
     padding-inline: var(--space-8);

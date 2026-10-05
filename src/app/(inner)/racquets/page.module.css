@@ -23,3 +23,11 @@
   margin-block-end: var(--space-6);
   color: var(--color-text-muted);
 }
+
+/* Where the racquets' photos and specs come from, under the last brand. */
+.sourceNote {
+  margin-block-start: var(--space-8);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

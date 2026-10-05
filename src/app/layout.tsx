@@ -34,9 +34,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <div className={styles.page}>{children}</div>
-        <footer className={styles.footer}>
-          <p>Racquet photos and specs from the manufacturers&rsquo; official product pages.</p>
-        </footer>
       </body>
     </html>
   );
