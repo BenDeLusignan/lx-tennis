@@ -13,7 +13,7 @@ import { Input, Select } from "@/components/input";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
-import { BRANDS, IMAGE_SIZE } from "@/data/racquets";
+import { BRANDS } from "@/data/racquets";
 import { addRacquet } from "@/racquets/actions";
 import {
   IMAGE_ACCEPT,
@@ -64,7 +64,7 @@ const ERRORS: Record<RacquetErrorFlag, ReactNode> = {
   "image-both": "You gave both a photo file and an image link. Use one or the other, not both.",
   "image-link": `That image link can't be used. It must be a complete address starting with https://, up to ${RACQUET_LIMITS.imageUrl.maxLength} characters, with no username, password or port.`,
   "image-fetch": "The site couldn't get an image from that link. It may have moved, be blocked, or be a link to a page rather than to the image itself. Copy the image address instead, or upload the file.",
-  "image-type": "That file or link didn't give a photo the site can read. Use a JPEG, PNG, WebP, GIF or AVIF.",
+  "image-type": "That file or link didn't give a photo the site can use. It has to be a JPEG, PNG, WebP, GIF or AVIF showing the whole racquet; a blank or very small picture can't be used.",
   "image-size": `That photo is too big, whether uploaded or linked. The limit is ${imageMegabytes} MB, so use a smaller one.`,
   exists: (
     <>
@@ -172,9 +172,10 @@ export default function NewRacquetPage({ searchParams }: PageProps<"/account/rac
             <p id="photo-hint" className={styles.hint}>
               Give the photo <strong>one way: upload a file, or paste an image link. Not both.</strong>{" "}
               Either way it should be the manufacturer&rsquo;s official photo, face-on, with the whole
-              frame in view: JPEG, PNG, WebP, GIF or AVIF, up to {imageMegabytes} MB. It&rsquo;s scaled to
-              fit a {IMAGE_SIZE.width} × {IMAGE_SIZE.height} picture, centred at the top. The
-              background isn&rsquo;t removed, so a photo with a transparent one looks best.
+              frame in view: JPEG, PNG, WebP, GIF or AVIF, up to {imageMegabytes} MB. A plain border is
+              trimmed and the racquet is scaled to match the others. This works best on a plain white or
+              transparent background; a shadow or pattern behind the racquet makes it come out smaller.
+              The background isn&rsquo;t removed.
             </p>
 
             <Field label="Upload a file" htmlFor={RACQUET_FIELDS.image}>

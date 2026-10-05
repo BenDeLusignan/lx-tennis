@@ -196,7 +196,7 @@ export async function submitAddRacquet(
     original = fetched.bytes;
   }
 
-  // Whatever the source, only sharp's reading of the bytes decides they are a photo.
+  // Whatever the source, only toRacquetWebp decides the bytes are a photo.
   const webp = await toRacquetWebp(original);
   if (!webp) return refuse("image-type");
 

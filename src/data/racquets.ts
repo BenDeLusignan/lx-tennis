@@ -18,14 +18,13 @@ import { racquet, RACQUET_BRANDS } from "@/db/schema";
  * than guessed. Extras (Babolat's swingweight, stiffness) are deliberately
  * not stored.
  *
- * Images are 1000x1500 WebP: the official face-on product shot, scaled to
- * fit and centred at the top of a transparent canvas. The canvas is the same
- * for every racquet; how large the racquet is in it depends on the photo,
- * because an added photo's margins aren't trimmed. The four built-ins were
- * trimmed and scaled to the same 1410px frame height (every racquet is 27 in
- * long) before being centred on the canvas, so they match each other. The
- * built-in ones are in /public/images/racquets; an added one is in Vercel
- * Blob (`src/racquets/image-store.ts`).
+ * Images are 1000x1500 WebP: the official face-on product shot, trimmed of
+ * its uniform border, scaled so the racquet is 1410px tall (or 1000px wide,
+ * if it is wider than that frame allows) and centred on a transparent
+ * canvas. The four built-ins were prepared the same way (every racquet is
+ * 27 in long), and `src/racquets/process-image.ts` does it for an added
+ * photo, so they all match. The built-in ones are in /public/images/racquets;
+ * an added one is in Vercel Blob (`src/racquets/image-store.ts`).
  */
 
 /** Brands in display order. Every brand gets a section, even with no racquets. */

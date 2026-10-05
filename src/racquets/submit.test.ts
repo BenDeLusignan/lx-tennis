@@ -12,7 +12,7 @@ import { racquet } from "@/db/schema";
 import type { ImageStore } from "@/racquets/image-store";
 import type { ImageFetchResult } from "@/racquets/image-fetch";
 import { parseRacquetSlug } from "@/reviews/setup-form";
-import { toRacquetWebp } from "@/racquets/process-image";
+import { racquetImage as image } from "@/racquets/racquet-fixtures";
 import { IMAGE_MAX_BYTES, RACQUET_ERROR_FLAGS, racquetSlug } from "@/racquets/racquet-form";
 import { submitAddRacquet } from "@/racquets/submit";
 
@@ -66,17 +66,6 @@ let linkResult: ImageFetchResult = { ok: false, error: "image-fetch" };
 async function fakeFetch(url: URL): Promise<ImageFetchResult> {
   fetched.push(url);
   return linkResult;
-}
-
-/** A real image: a solid colour of the given size and format. */
-async function image(
-  width = 600,
-  height = 400,
-  format: "png" | "jpeg" | "webp" | "gif" | "avif" = "png",
-): Promise<Buffer> {
-  return sharp({ create: { width, height, channels: 3, background: { r: 255, g: 0, b: 128 } } })
-    [format]()
-    .toBuffer();
 }
 
 async function form(fields: Record<string, string> = {}, file?: Buffer | null): Promise<FormData> {
@@ -153,8 +142,9 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
   const [row] = await getDb().select({ createdBy: racquet.createdBy }).from(racquet).where(eq(racquet.slug, found.slug));
   assert.equal(row.createdBy, BEN.id);
 
-  // The stored file is the one the row points at: a 1000x1500 WebP, the photo
-  // fitted at the top of a transparent canvas (600x400 scales to 1000x667).
+  // The stored file is the one the row points at: a 1000x1500 WebP, the
+  // racquet trimmed of its white margin and centred, 1410px tall (45px of
+  // transparent canvas above and below, wide margins left and right).
   assert.equal([...store.saved.keys()].length, 1);
   const webp = store.saved.get(found.image.src);
   assert.ok(webp);
@@ -162,9 +152,11 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
   assert.deepEqual([meta.format, meta.width, meta.height], ["webp", 1000, 1500]);
   const { data, info } = await sharp(webp).raw().toBuffer({ resolveWithObject: true });
   const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
-  assert.equal(alphaAt(500, 10), 255);
+  assert.equal(alphaAt(500, 10), 0);
   assert.equal(alphaAt(500, 600), 255);
-  assert.equal(alphaAt(500, 1400), 0);
+  assert.equal(alphaAt(500, 1440), 255);
+  assert.equal(alphaAt(500, 1490), 0);
+  assert.equal(alphaAt(50, 600), 0);
 
   // The brand section, the racquet page and generateStaticParams all see it.
   const head = (await getRacquetsByBrand()).find((section) => section.brand === "Head");
@@ -216,6 +208,9 @@ test("a file that isn't a readable image is refused and nothing is saved", async
   // SVG is code, not a photo.
   const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>');
   assert.equal(await submit({ model: "Svg" }, svg), refused("image-type"));
+  // A readable but blank image (one flat colour) is refused too.
+  const blank = await sharp({ create: { width: 600, height: 400, channels: 3, background: "#fff" } }).png().toBuffer();
+  assert.equal(await submit({ model: "Blank" }, blank), refused("image-type"));
   await assertNothingSaved();
 });
 
@@ -485,34 +480,4 @@ test("every error flag the action can return is in RACQUET_ERROR_FLAGS", async (
     [...seen].sort(),
     ["brand", "model", "year", "head-size", "weight", "balance", "length", "string-pattern", "image-missing", "image-both", "image-link", "image-fetch", "image-type", "image-size", "exists"].sort(),
   );
-});
-
-test("photos are scaled to fit the canvas, upright, with no metadata, in any accepted format", async () => {
-  // AVIF is read by sharp as format "heif", so it needs its own check.
-  for (const format of ["png", "jpeg", "webp", "gif", "avif"] as const) {
-    const out = await toRacquetWebp(await image(300, 900, format));
-    assert.ok(out, format);
-    const meta = await sharp(out).metadata();
-    assert.deepEqual([meta.format, meta.width, meta.height], ["webp", 1000, 1500], format);
-  }
-  // Taller than the canvas: scaled down to fit, centred horizontally. 2000x6000 → 500x1500.
-  const tall = await toRacquetWebp(await image(2000, 6000));
-  assert.ok(tall);
-  const { data, info } = await sharp(tall).raw().toBuffer({ resolveWithObject: true });
-  const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
-  assert.equal(alphaAt(100, 700), 0);
-  assert.equal(alphaAt(500, 700), 255);
-  assert.equal(alphaAt(900, 700), 0);
-
-  // EXIF orientation 6 (rotate 90° clockwise): a 600x400 file is shown as 400x600.
-  const rotated = await sharp({ create: { width: 600, height: 400, channels: 3, background: "#fff" } })
-    .withMetadata({ orientation: 6 })
-    .jpeg()
-    .toBuffer();
-  const upright = await toRacquetWebp(rotated);
-  assert.ok(upright);
-  const { data: rotatedPixels, info: rotatedInfo } = await sharp(upright).raw().toBuffer({ resolveWithObject: true });
-  // Portrait 400x600 fits at 1000x1500, filling the canvas.
-  assert.equal(rotatedPixels[(1400 * rotatedInfo.width + 500) * rotatedInfo.channels + 3], 255);
-  assert.equal((await sharp(upright).metadata()).exif, undefined);
 });

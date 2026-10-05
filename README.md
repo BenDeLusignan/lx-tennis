@@ -10,7 +10,7 @@ Racquet and string setups (frame, string, gauge, tension) tested by me and my fr
 - Plain CSS / CSS Modules; the synthwave theme lives as design tokens (CSS custom properties) in `src/app/globals.css`
 - SQLite through [Drizzle ORM](https://orm.drizzle.team) and `@libsql/client`: a local file in development, [Turso](https://turso.tech) (hosted SQLite) later by changing `DATABASE_URL`
 - Racquets (with their specs) and reviewer accounts in the database, read through `src/data/racquets.ts` and `src/data/reviewers.ts`
-- Racquet photos: the four built-in ones in `public/images/racquets/`; the photo of a racquet a reviewer adds (an upload, or an image link the site fetches and keeps its own copy of) is converted by [sharp](https://sharp.pixelplumbing.com) to 1000 × 1500 WebP and stored in [Vercel Blob](https://vercel.com/docs/vercel-blob)
+- Racquet photos: the four built-in ones in `public/images/racquets/`; the photo of a racquet a reviewer adds (an upload, or an image link the site fetches and keeps its own copy of) has its plain border trimmed, is scaled so the racquet is 1410px tall like the built-ins, and is converted by [sharp](https://sharp.pixelplumbing.com) to 1000 × 1500 WebP and stored in [Vercel Blob](https://vercel.com/docs/vercel-blob)
 
 ## Setup
 

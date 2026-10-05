@@ -39,8 +39,8 @@ export const STRINGS_TAG = "strings";
 
 /**
  * The racquet catalogue: `getRacquetsByBrand()`, `getRacquet(slug)` and
- * `getRacquetSlugs()`. Refreshed when a racquet is added, so `/`, `/racquets`
- * and the racquet pages show it straight away. Racquets can't be edited or
+ * `getRacquetSlugs()`. Refreshed when a racquet is added, so `/racquets` and
+ * the racquet pages show it straight away. Racquets can't be edited or
  * deleted, so nothing else touches it.
  */
 export const RACQUETS_TAG = "racquets";

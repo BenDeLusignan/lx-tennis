@@ -6,32 +6,25 @@ import styles from "./racquets-by-brand.module.css";
 
 interface RacquetsByBrandProps {
   sections: readonly BrandSection[];
-  /**
-   * Level for each brand's name: one below the heading this sits under.
-   * Racquet names go one level below that.
-   */
-  headingLevel: "h2" | "h3";
 }
-
-const racquetNameLevel = { h2: "h3", h3: "h4" } as const;
 
 /**
  * One section per brand (Product rule 13), in the order `getRacquetsByBrand()`
  * returns them, with an honest empty state for a brand we haven't tested yet.
- * Used on `/` and `/racquets`.
+ * Used on `/racquets`, under its h1: brand names are h2, racquet names h3.
  */
-export function RacquetsByBrand({ sections, headingLevel }: RacquetsByBrandProps) {
+export function RacquetsByBrand({ sections }: RacquetsByBrandProps) {
   return (
     <div className={styles.brands}>
       {sections.map(({ brand, racquets }) => {
         const headingId = `brand-${brand.toLowerCase().replace(/\s+/g, "-")}`;
         return (
           <section key={brand} aria-labelledby={headingId}>
-            <SectionTitle as={headingLevel} id={headingId} size="lg">
+            <SectionTitle as="h2" id={headingId} size="lg">
               {brand}
             </SectionTitle>
             {racquets.length > 0 ? (
-              <RacquetList racquets={racquets} headingLevel={racquetNameLevel[headingLevel]} />
+              <RacquetList racquets={racquets} />
             ) : (
               <EmptyState title="No racquets yet" size="compact" />
             )}

@@ -112,7 +112,9 @@ export const IMAGE_ACCEPT = IMAGE_TYPES.map((type) => type.mime).join(",");
  *   answer), so the form can't be used to probe the network behind the
  *   server. Nothing in the URL or the message says which.
  * - `image-type`: the file, or what the link served, is not a readable JPEG,
- *   PNG, WebP, GIF or AVIF.
+ *   PNG, WebP, GIF or AVIF, or is readable but has nothing usable in it: blank,
+ *   one flat colour, fully transparent, or trimmed down to a speck or a thin
+ *   line (`toRacquetWebp` in `process-image.ts`).
  * - `image-size`: over `IMAGE_MAX_BYTES` (the uploaded file, or what the link served).
  * - `exists`: a racquet with the same brand, model and year is already on the site.
  * - `storage`: the image couldn't be stored (no Blob token on the server, or

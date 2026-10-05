@@ -5,15 +5,14 @@ import styles from "./racquet-list.module.css";
 
 interface RacquetListProps {
   racquets: readonly Racquet[];
-  /** Level for each racquet's name: one below the heading this list sits under. */
-  headingLevel: "h3" | "h4";
 }
 
 /**
  * Grid of one brand's racquet cards, each linking to its racquet page.
- * `RacquetsByBrand` renders one per brand, under the brand's heading.
+ * `RacquetsByBrand` renders one per brand, under the brand's h2, so each
+ * racquet's name is an h3.
  */
-export function RacquetList({ racquets, headingLevel: Name }: RacquetListProps) {
+export function RacquetList({ racquets }: RacquetListProps) {
   return (
     <ul className={styles.grid}>
       {racquets.map((racquet) => (
@@ -36,10 +35,10 @@ export function RacquetList({ racquets, headingLevel: Name }: RacquetListProps) 
                 brand stays in the link's name for screen readers, which can
                 list links away from their heading.
               */}
-              <Name id={`${racquet.slug}-name`} className={styles.cardName}>
+              <h3 id={`${racquet.slug}-name`} className={styles.cardName}>
                 <span className="visually-hidden">{racquet.brand} </span>
                 {modelName(racquet)}
-              </Name>
+              </h3>
               <span id={`${racquet.slug}-meta`} className={styles.cardMeta}>
                 {racquet.generation ? `${racquet.year} · ${racquet.generation}` : racquet.year}
               </span>

@@ -20,7 +20,7 @@ export default async function RacquetsPage() {
       {/* The row keeps a button's height whether or not "Add a racquet"
           streams in, so the brand sections below never jump. */}
       <div className={styles.header}>
-        {/* Same look as the landing page's "Racquets" heading; h1 here because it's the page title. */}
+        {/* h1 because it's the page title; the brand sections below are h2. */}
         <SectionTitle as="h1" className={styles.title}>
           Racquets
         </SectionTitle>
@@ -28,7 +28,7 @@ export default async function RacquetsPage() {
           <AddRacquetButton />
         </Suspense>
       </div>
-      <RacquetsByBrand sections={brands} headingLevel="h2" />
+      <RacquetsByBrand sections={brands} />
     </>
   );
 }
