@@ -6,14 +6,18 @@ import { del, put } from "@vercel/blob";
 
 /**
  * Where an added racquet's photo is kept. The site is on Vercel, which has
- * no permanent disk, so the photo goes to Vercel Blob (a public store; its
- * token is `BLOB_READ_WRITE_TOKEN`).
+ * no permanent disk, so the photo goes to Vercel Blob (a public store).
  *
- * Local development without a token must still work offline, so there the
- * photo is written under `public/images/racquets/uploads/` (gitignored) and
- * served by Next like any other public file. That fallback is for
+ * Credentials: Vercel now connects a store to a project with `BLOB_STORE_ID`
+ * and a short-lived OIDC token it supplies at runtime, and older stores (and
+ * anything outside Vercel) use `BLOB_READ_WRITE_TOKEN`. `@vercel/blob` reads
+ * both itself; this file only has to notice that one of them is there.
+ *
+ * Local development without credentials must still work offline, so there
+ * the photo is written under `public/images/racquets/uploads/` (gitignored)
+ * and served by Next like any other public file. That fallback is for
  * `next dev` only: any other run (a production server, `npm run start`
- * included) with no token refuses to save rather than quietly writing
+ * included) with no credentials refuses to save rather than quietly writing
  * somewhere that won't survive or won't be served.
  */
 
@@ -84,13 +88,14 @@ const localStore: ImageStore = {
 
 const unavailableStore: ImageStore = {
   async save() {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not set");
+    throw new Error("No Vercel Blob credentials: set BLOB_STORE_ID (connect the store to the project) or BLOB_READ_WRITE_TOKEN");
   },
   async remove() {},
 };
 
 /** The store for this environment. Read per call, so tests and `next dev` pick up env changes. */
 export function getImageStore(): ImageStore {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return blobStore;
+  // A connected Blob store shows up as either of the two variables (see the file's header).
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return blobStore;
   return process.env.NODE_ENV === "development" ? localStore : unavailableStore;
 }
