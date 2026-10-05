@@ -10,7 +10,7 @@
  * deleted: a stale link can't end up pointing at a different row.
  */
 import { sql, type SQL } from "drizzle-orm";
-import { check, index, integer, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { check, index, integer, real, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
  * The people who can log in: Ben, Michal and Otavio, seeded by the
@@ -69,23 +69,120 @@ function trimWhitespace(value: SQL): SQL {
 }
 
 /**
- * One row per racquet in `src/data/racquets.ts`, which keeps the specs,
- * photos and sources keyed by `slug`; setups reference `id`, so renaming a
- * slug can't break them. Seeded by the `0003_seed_racquets_and_strings`
- * migration. Adding a racquet to `src/data/racquets.ts` now also needs its
- * row here: a new migration that inserts the slug.
+ * Brands in display order (Product rule 13). Every brand gets a section,
+ * even with no racquets. Which brands exist is Ben's call; adding one needs
+ * a migration, because the `racquet_brand_valid` check below lists them.
+ */
+export const RACQUET_BRANDS = ["Yonex", "Babolat", "Head", "Tecnifibre", "Wilson"] as const;
+
+/** A sanity range check for a nullable number column: null (not published) passes. */
+function nullableInRange(column: SQL, types: string, min: number, max: number): SQL {
+  // Literals, not bound parameters: a CHECK is written into the migration as SQL text.
+  return sql`${column} IS NULL OR (typeof(${column}) IN (${sql.raw(types)}) AND ${column} BETWEEN ${sql.raw(String(min))} AND ${sql.raw(String(max))})`;
+}
+
+/**
+ * The racquet catalogue: the four built-in racquets (seeded by migration
+ * `0006_racquets_in_database`) and every racquet a reviewer adds. Setups
+ * reference `id`, so renaming a slug can't break them.
+ *
+ * The five specs (Product rule 11) are nullable: a spec the manufacturer
+ * doesn't publish is left out, never guessed. Each range is a sanity check
+ * and matches `RACQUET_LIMITS` in `src/racquets/racquet-form.ts`, which the
+ * form and the Server Action enforce first; change them together.
  */
 export const racquet = sqliteTable(
   "racquet",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    /** `brand-model-year`, e.g. `yonex-ezone-98-2022`; made by `racquetSlug` in `src/racquets/racquet-form.ts`. */
     slug: text("slug").notNull().unique(),
+    brand: text("brand", { enum: RACQUET_BRANDS }).notNull(),
+    /** Full name, which starts with the brand: "Yonex EZONE 98". */
+    name: text("name").notNull(),
+    /** Model year of this generation. */
+    year: integer("year").notNull(),
+    /** Generation label where the manufacturer's page states it, e.g. "7th gen". */
+    generation: text("generation"),
+    /**
+     * Where the 1000x1500 WebP is served from: a path under /public for the
+     * built-in racquets (and local development uploads), a Vercel Blob URL
+     * for a racquet a reviewer added.
+     */
+    imageSrc: text("image_src").notNull(),
+    imageAlt: text("image_alt").notNull(),
+    /** Square inches. */
+    headSizeSqIn: integer("head_size_sq_in"),
+    /** Unstrung, as the manufacturer publishes it. Grams and ounces are stored as published, never converted. */
+    weightGrams: integer("weight_grams"),
+    weightOunces: real("weight_ounces"),
+    /** Millimetres from the butt cap. */
+    balanceMm: integer("balance_mm"),
+    lengthIn: real("length_in"),
+    /** Both or neither: a pattern is "16 × 19", not half of it. */
+    stringMains: integer("string_mains"),
+    stringCrosses: integer("string_crosses"),
+    /**
+     * The official manufacturer page (or its Internet Archive copy) the specs
+     * come from (Product rule 10). Required when any spec is given.
+     */
+    sourceUrl: text("source_url"),
+    /** The reviewer who added it; null for the built-in racquets. */
+    createdBy: integer("created_by").references(() => reviewer.id, { onDelete: "restrict" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [
     // It's a URL segment (`/racquets/[slug]`): lowercase letters, digits, hyphens.
     check(
       "racquet_slug_format",
       sql`length(${table.slug}) > 0 AND ${table.slug} NOT GLOB '*[^a-z0-9-]*'`,
+    ),
+    check(
+      "racquet_brand_valid",
+      sql`${table.brand} IN (${sql.raw(RACQUET_BRANDS.map((brand) => `'${brand}'`).join(", "))})`,
+    ),
+    // "Yonex EZONE 98": the brand, a space, then a model that isn't blank
+    // (cards strip the brand off the front with `modelName`).
+    check(
+      "racquet_name_valid",
+      sql`substr(${table.name}, 1, length(${table.brand}) + 1) = ${table.brand} || ' '
+        AND length(${trimWhitespace(sql`substr(${table.name}, length(${table.brand}) + 2)`)}) > 0
+        AND ${table.name} = ${trimWhitespace(sql`${table.name}`)}`,
+    ),
+    check("racquet_year_valid", sql`typeof(${table.year}) = 'integer' AND ${table.year} BETWEEN 1990 AND 2100`),
+    check(
+      "racquet_generation_valid",
+      sql`${table.generation} IS NULL OR (length(${trimWhitespace(sql`${table.generation}`)}) > 0 AND ${table.generation} = ${trimWhitespace(sql`${table.generation}`)})`,
+    ),
+    check(
+      "racquet_image_valid",
+      sql`length(${trimWhitespace(sql`${table.imageSrc}`)}) > 0 AND length(${trimWhitespace(sql`${table.imageAlt}`)}) > 0`,
+    ),
+    check("racquet_head_size_valid", nullableInRange(sql`${table.headSizeSqIn}`, "'integer'", 70, 140)),
+    check("racquet_weight_grams_valid", nullableInRange(sql`${table.weightGrams}`, "'integer'", 150, 450)),
+    check(
+      "racquet_weight_ounces_valid",
+      nullableInRange(sql`${table.weightOunces}`, "'real', 'integer'", 5, 16),
+    ),
+    check("racquet_balance_valid", nullableInRange(sql`${table.balanceMm}`, "'integer'", 200, 450)),
+    check("racquet_length_valid", nullableInRange(sql`${table.lengthIn}`, "'real', 'integer'", 17, 29)),
+    check("racquet_string_mains_valid", nullableInRange(sql`${table.stringMains}`, "'integer'", 12, 24)),
+    check("racquet_string_crosses_valid", nullableInRange(sql`${table.stringCrosses}`, "'integer'", 12, 24)),
+    check(
+      "racquet_string_pattern_pair",
+      sql`(${table.stringMains} IS NULL) = (${table.stringCrosses} IS NULL)`,
+    ),
+    // Product rule 10 (proposal awaiting Ben): no spec without its source.
+    // An https link with no whitespace, of a sane length.
+    check(
+      "racquet_source_url_valid",
+      sql`${table.sourceUrl} IS NULL OR (${table.sourceUrl} LIKE 'https://_%' AND length(${table.sourceUrl}) <= 500 AND ${table.sourceUrl} NOT GLOB '*[ ' || char(9, 10, 13) || ']*')`,
+    ),
+    check(
+      "racquet_specs_have_source",
+      sql`${table.sourceUrl} IS NOT NULL OR (${table.headSizeSqIn} IS NULL AND ${table.weightGrams} IS NULL AND ${table.weightOunces} IS NULL AND ${table.balanceMm} IS NULL AND ${table.lengthIn} IS NULL AND ${table.stringMains} IS NULL)`,
     ),
   ],
 );

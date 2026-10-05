@@ -1,6 +1,6 @@
 import "server-only";
 import { parseId, parseScaledDecimal, parseStringFields } from "@/forms/fields";
-import { REVIEW_BODY_MAX_LENGTH } from "@/data/limits";
+import { RACQUET_SLUG_MAX_LENGTH, REVIEW_BODY_MAX_LENGTH } from "@/data/limits";
 import {
   CRITERIA,
   type NewReview,
@@ -27,9 +27,11 @@ export type ReviewFormError = "invalid" | "scores";
 
 type Parsed<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
-/** The slug's shape, as the `racquet` table checks it. Null if it can't be one. */
+/** The slug's shape: what `racquetSlug` makes, at most `RACQUET_SLUG_MAX_LENGTH`. Null if it can't be one. */
 export function parseRacquetSlug(value: unknown): string | null {
-  return typeof value === "string" && /^[a-z0-9-]{1,100}$/.test(value) ? value : null;
+  return typeof value === "string" && value.length <= RACQUET_SLUG_MAX_LENGTH && /^[a-z0-9-]+$/.test(value)
+    ? value
+    : null;
 }
 
 export function parseSetupForm(

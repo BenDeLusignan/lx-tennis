@@ -9,8 +9,8 @@ Racquet and string setups (frame, string, gauge, tension) tested by me and my fr
 - [Next.js](https://nextjs.org) (App Router) + TypeScript, with Cache Components (Partial Prerendering) on
 - Plain CSS / CSS Modules; the synthwave theme lives as design tokens (CSS custom properties) in `src/app/globals.css`
 - SQLite through [Drizzle ORM](https://orm.drizzle.team) and `@libsql/client`: a local file in development, [Turso](https://turso.tech) (hosted SQLite) later by changing `DATABASE_URL`
-- Racquet data in `src/data/racquets.ts`; reviewer accounts in the database, read through `src/data/reviewers.ts`
-- Racquet photos in `public/images/racquets/`
+- Racquets (with their specs) and reviewer accounts in the database, read through `src/data/racquets.ts` and `src/data/reviewers.ts`
+- Racquet photos: the four built-in ones in `public/images/racquets/`; the photo of a racquet a reviewer adds is converted by [sharp](https://sharp.pixelplumbing.com) to 1000 × 1500 WebP and stored in [Vercel Blob](https://vercel.com/docs/vercel-blob)
 
 ## Setup
 
@@ -32,9 +32,10 @@ Requires Node.js 20.9 or newer to run the site. `npm test` needs Node.js 25.9 or
    | --- | --- |
    | `DATABASE_URL` | `file:local.db` for a local SQLite file in the repo root (gitignored), or a `libsql://…turso.io` URL for Turso |
    | `DATABASE_AUTH_TOKEN` | Turso only; empty for a local file |
+   | `BLOB_READ_WRITE_TOKEN` | Vercel Blob read-write token, where the photos of added racquets are stored. Create a **public** Blob store in the Vercel project (Storage tab) and connect it to the project; Vercel adds the token to the project's environment itself. Not needed in `npm run dev`: with no token, a photo is written to `public/images/racquets/uploads/` (gitignored). Only `npm run dev` has that fallback: a production server, including a local `npm run start`, refuses to add a racquet without a token. A real token in `.env.local` makes local uploads go to the production Blob store |
    | `SESSION_SECRET` | At least 32 random characters; signs the login cookie and hashes the failed-login counters' keys. Changing it logs everyone out and forgets recent failed attempts |
 
-3. **Create the database:** applies the migrations in `drizzle/`, which create the `reviewer`, `racquet`, `string`, `setup`, `review` and `login_attempt` tables, add Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) with no password, and add the four racquets and Ben's ten starting strings. Run it again after pulling new migrations; it only applies the ones that are missing.
+3. **Create the database:** applies the migrations in `drizzle/`, which create the `reviewer`, `racquet`, `string`, `setup`, `review` and `login_attempt` tables, add Ben, Michal and Otavio (usernames `ben`, `michal`, `otavio`) with no password, and add the four racquets (with their specs, photos and source pages) and Ben's ten starting strings. Run it again after pulling new migrations; it only applies the ones that are missing.
 
    ```bash
    npm run db:migrate

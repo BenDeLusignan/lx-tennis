@@ -1,43 +1,54 @@
+import "server-only";
+import { asc, eq } from "drizzle-orm";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
+import { RACQUETS_TAG, racquetSetupsTag } from "@/data/cache-tags";
+import type { Reviewer } from "@/data/reviewers";
+import { getDb } from "@/db/client";
+import { racquet, RACQUET_BRANDS } from "@/db/schema";
+
 /**
- * Racquet catalogue.
+ * The racquet catalogue. The four built-in racquets (migration
+ * `0006_racquets_in_database`, which also keeps the pages their specs came
+ * from) and every racquet a reviewer adds live in the `racquet` table, so
+ * there is one source. Pages only talk to the async accessors below.
  *
- * Pages only ever talk to the async accessors at the bottom of this file
- * (`getRacquetsByBrand`, `getRacquet`, `getRacquetSlugs`). When the data
- * moves to a database, swap the bodies of those functions for queries and
- * leave the pages alone.
+ * Specs come only from the manufacturer's official product page, with its
+ * source URL (Product rules 10 and 11). Every racquet has the same five
+ * specs; one the manufacturer doesn't publish is `null`, left out rather
+ * than guessed or converted. Extras (Babolat's swingweight, stiffness) are
+ * deliberately not stored.
  *
- * Specs are copied from the manufacturer's official product pages only.
- * Every racquet carries the same five specs (Product rule 11); extras a
- * manufacturer publishes, such as Babolat's swingweight or stiffness, are
- * deliberately not stored, and one of the five it doesn't publish would be
- * left out rather than guessed or converted. The official pages for these
- * generations have since been replaced by newer models, so each source is
- * also given as an Internet Archive snapshot of the official page.
- *
- * Images are the manufacturer's official face-on product shots (launch
- * colourway), downloaded into /public/images/racquets, trimmed, scaled to the
- * same 1410px frame height (every racquet here is 27 in long) and centred at
- * the top of an identical 1000x1500 transparent canvas, so every racquet
- * shares the same scale.
+ * Images are 1000x1500 WebP: the official face-on product shot, scaled to
+ * fit and centred at the top of a transparent canvas. The canvas is the same
+ * for every racquet; how large the racquet is in it depends on the photo,
+ * because an added photo's margins aren't trimmed. The four built-ins were
+ * trimmed and scaled to the same 1410px frame height (every racquet is 27 in
+ * long) before being centred on the canvas, so they match each other. The
+ * built-in ones are in /public/images/racquets; an added one is in Vercel
+ * Blob (`src/racquets/image-store.ts`).
  */
 
 /** Brands in display order. Every brand gets a section, even with no racquets. */
-export const BRANDS = ["Yonex", "Babolat", "Head", "Tecnifibre", "Wilson"] as const;
+export const BRANDS = RACQUET_BRANDS;
 export type Brand = (typeof BRANDS)[number];
 
 export interface RacquetSpecs {
   /** Head size in square inches. */
-  headSizeSqIn: number;
-  /** Frame weight as published by the manufacturer (frames are sold unstrung). */
-  unstrungWeight: { grams: number; ounces: number };
+  headSizeSqIn: number | null;
+  /** Unstrung, as published. Grams and ounces are separate because neither is converted from the other. */
+  weightGrams: number | null;
+  weightOunces: number | null;
   /** Balance point in millimetres from the butt cap. */
-  balanceMm: number;
-  lengthIn: number;
-  stringPattern: { mains: number; crosses: number };
+  balanceMm: number | null;
+  lengthIn: number | null;
+  stringPattern: { mains: number; crosses: number } | null;
 }
 
+/** The canvas every racquet photo sits on (`docs/vision.md`, "Adding a racquet"). */
+export const IMAGE_SIZE = { width: 1000, height: 1500 } as const;
+
 export interface RacquetImage {
-  /** Path under /public. */
+  /** A path under /public, or an absolute Vercel Blob URL. */
   src: string;
   width: number;
   height: number;
@@ -45,150 +56,162 @@ export interface RacquetImage {
 }
 
 export interface Racquet {
-  /** URL slug, also the primary key. */
+  /** URL slug, `brand-model-year`. */
   slug: string;
   brand: Brand;
   /**
-   * Full name, which must start with `brand`, e.g. "Yonex EZONE 98". Cards
+   * Full name, which starts with `brand`, e.g. "Yonex EZONE 98". Cards
    * under a brand heading strip the brand off (`modelName` in racquet-list.tsx).
    */
   name: string;
   /** Model year of this generation. */
   year: number;
   /** Generation label where the manufacturer's page states it, e.g. "7th gen". */
-  generation?: string;
+  generation: string | null;
   image: RacquetImage;
   specs: RacquetSpecs;
+  /** The official page (or its Internet Archive copy) the specs come from; null only when there are no specs. */
+  sourceUrl: string | null;
 }
 
-const IMAGE_SIZE = { width: 1000, height: 1500 } as const;
+const racquetColumns = {
+  slug: racquet.slug,
+  brand: racquet.brand,
+  name: racquet.name,
+  year: racquet.year,
+  generation: racquet.generation,
+  imageSrc: racquet.imageSrc,
+  imageAlt: racquet.imageAlt,
+  headSizeSqIn: racquet.headSizeSqIn,
+  weightGrams: racquet.weightGrams,
+  weightOunces: racquet.weightOunces,
+  balanceMm: racquet.balanceMm,
+  lengthIn: racquet.lengthIn,
+  stringMains: racquet.stringMains,
+  stringCrosses: racquet.stringCrosses,
+  sourceUrl: racquet.sourceUrl,
+};
 
-/** Racquets within a brand display in the order of this array. */
-const racquets: readonly Racquet[] = [
-  {
-    // Specs: official Yonex product page, item code 07EZ98
-    //   https://www.yonex.com/tennis/racquets/ezone-98-07ez98
-    //   Archived: https://web.archive.org/web/20220129095929/https://www.yonex.com/tennis/racquets/ezone-98-07ez98
-    //   (same values for these specs in https://web.archive.org/web/20240810100806/https://www.yonex.com/tennis/racquets/ezone-98-07ez98)
-    // Image: Sky Blue launch colourway, listed on the page above
-    //   https://www.yonex.com/media/catalog/product/0/7/07ez98.png
-    slug: "yonex-ezone-98-2022",
-    brand: "Yonex",
-    name: "Yonex EZONE 98",
-    year: 2022,
-    generation: "7th gen",
-    image: {
-      src: "/images/racquets/yonex-ezone-98-2022.webp",
-      ...IMAGE_SIZE,
-      alt: "Yonex EZONE 98 (2022) racquet in sky blue and navy, head up, face-on",
-    },
+type RacquetRow = Pick<typeof racquet.$inferSelect, keyof typeof racquetColumns>;
+
+function toRacquet(row: RacquetRow): Racquet {
+  return {
+    slug: row.slug,
+    brand: row.brand,
+    name: row.name,
+    year: row.year,
+    generation: row.generation,
+    image: { src: row.imageSrc, ...IMAGE_SIZE, alt: row.imageAlt },
     specs: {
-      headSizeSqIn: 98,
-      unstrungWeight: { grams: 305, ounces: 10.8 },
-      balanceMm: 315,
-      lengthIn: 27,
-      stringPattern: { mains: 16, crosses: 19 },
+      headSizeSqIn: row.headSizeSqIn,
+      weightGrams: row.weightGrams,
+      weightOunces: row.weightOunces,
+      balanceMm: row.balanceMm,
+      lengthIn: row.lengthIn,
+      // The table keeps the pair together (`racquet_string_pattern_pair`).
+      stringPattern:
+        row.stringMains !== null && row.stringCrosses !== null
+          ? { mains: row.stringMains, crosses: row.stringCrosses }
+          : null,
     },
-  },
-  {
-    // Specs: official Yonex product page, item code 07VC98
-    //   https://www.yonex.com/tennis/racquets/vcore/07vc98
-    //   Archived: https://web.archive.org/web/20250123005803/https://www.yonex.com/tennis/racquets/vcore/07vc98
-    // Image: Scarlet launch colourway, from Yonex USA's 07VC98 product page
-    //   https://us.yonex.com/cdn/shop/files/07vc98_in_02.png
-    //   (page: https://web.archive.org/web/20250317040121/https://us.yonex.com/products/vcore-98)
-    slug: "yonex-vcore-98-2023",
-    brand: "Yonex",
-    name: "Yonex VCORE 98",
-    year: 2023,
-    generation: "7th gen",
-    image: {
-      src: "/images/racquets/yonex-vcore-98-2023.webp",
-      ...IMAGE_SIZE,
-      alt: "Yonex VCORE 98 (2023) racquet in scarlet red, head up, face-on",
-    },
-    specs: {
-      headSizeSqIn: 98,
-      unstrungWeight: { grams: 305, ounces: 10.8 },
-      balanceMm: 315,
-      lengthIn: 27,
-      stringPattern: { mains: 16, crosses: 19 },
-    },
-  },
-  {
-    // Specs: official Yonex product page, item code 01PE97
-    //   https://www.yonex.com/tennis/racquets/percept-97
-    //   Archived: https://web.archive.org/web/20240722194555/https://www.yonex.com/tennis/racquets/percept-97
-    //   Head size, balance, length and pattern also current on https://us.yonex.com/products/percept-97
-    // Image: Olive Green launch colourway, listed on the yonex.com page above
-    //   https://www.yonex.com/media/catalog/product/i/n/int_01pe97_268-1_1.png
-    slug: "yonex-percept-97-2023",
-    brand: "Yonex",
-    name: "Yonex PERCEPT 97",
-    year: 2023,
-    image: {
-      src: "/images/racquets/yonex-percept-97-2023.webp",
-      ...IMAGE_SIZE,
-      alt: "Yonex PERCEPT 97 (2023) racquet in olive green, head up, face-on",
-    },
-    specs: {
-      headSizeSqIn: 97,
-      unstrungWeight: { grams: 310, ounces: 10.9 },
-      balanceMm: 310,
-      lengthIn: 27,
-      stringPattern: { mains: 16, crosses: 19 },
-    },
-  },
-  {
-    // Specs: official Babolat US product page, item 101499 (unstrung)
-    //   https://www.babolat.com/us/pure-aero-98-unstrung/101499.html
-    //   Archived: https://web.archive.org/web/20230203095246/https://www.babolat.com/us/pure-aero-98-unstrung/101499.html
-    //   The US page is the one that publishes the imperial values (98 in², 27 in, 10.7586 oz);
-    //   the UK/FR pages give metric only. Weight and balance are published as ±7 g / ±7 mm;
-    //   the site shows the nominal value only.
-    // Generation: "eighth-generation" on the official UK page for the same item
-    //   Archived: https://web.archive.org/web/20230127021819/https://www.babolat.com/gb/pure-aero-98-unstrung/101499.html
-    // Image: Grey Yellow White launch colourway (code 370), face-on shot from the US page above
-    //   https://media.babolat.com/image/upload/v1651570894/Product_Media/2023/TENNIS_RACKETS/EXPERT/101499-Pure_Aero_98-370-1-Face.png
-    slug: "babolat-pure-aero-98-2023",
-    brand: "Babolat",
-    name: "Babolat Pure Aero 98",
-    year: 2023,
-    generation: "8th gen",
-    image: {
-      src: "/images/racquets/babolat-pure-aero-98-2023.webp",
-      ...IMAGE_SIZE,
-      alt: "Babolat Pure Aero 98 (2023) racquet in grey, neon yellow and white, head up, face-on",
-    },
-    specs: {
-      headSizeSqIn: 98,
-      // Babolat publishes the ounces to four decimals; kept as published. The racquet
-      // page rounds to 1 dp for display (`oneDecimal` in racquets/[slug]/page.tsx).
-      unstrungWeight: { grams: 305, ounces: 10.7586 },
-      balanceMm: 315,
-      lengthIn: 27,
-      stringPattern: { mains: 16, crosses: 20 },
-    },
-  },
-];
+    sourceUrl: row.sourceUrl,
+  };
+}
 
 export interface BrandSection {
   brand: Brand;
   racquets: readonly Racquet[];
 }
 
-/** Every brand in BRANDS order, including brands with no racquets; racquets in array order. */
+/**
+ * Every brand in BRANDS order, including brands with no racquets; racquets
+ * within a brand in the order they were added (the built-in ones first).
+ * Cached with the racquets tag, which `createRacquet` refreshes.
+ */
 export async function getRacquetsByBrand(): Promise<readonly BrandSection[]> {
+  "use cache";
+  cacheLife("max");
+  cacheTag(RACQUETS_TAG);
+  const rows = await getDb().select(racquetColumns).from(racquet).orderBy(asc(racquet.id));
+  const racquets = rows.map(toRacquet);
   return BRANDS.map((brand) => ({
     brand,
-    racquets: racquets.filter((racquet) => racquet.brand === brand),
+    racquets: racquets.filter((found) => found.brand === brand),
   }));
 }
 
 export async function getRacquet(slug: string): Promise<Racquet | undefined> {
-  return racquets.find((racquet) => racquet.slug === slug);
+  "use cache";
+  cacheLife("max");
+  cacheTag(RACQUETS_TAG);
+  const [row] = await getDb().select(racquetColumns).from(racquet).where(eq(racquet.slug, slug));
+  return row && toRacquet(row);
 }
 
 export async function getRacquetSlugs(): Promise<string[]> {
-  return racquets.map((racquet) => racquet.slug);
+  "use cache";
+  cacheLife("max");
+  cacheTag(RACQUETS_TAG);
+  const rows = await getDb().select({ slug: racquet.slug }).from(racquet).orderBy(asc(racquet.id));
+  return rows.map((row) => row.slug);
+}
+
+/** Whether a racquet has this slug. Not cached: the Server Action asks it at request time. */
+export async function racquetSlugExists(slug: string): Promise<boolean> {
+  const [row] = await getDb().select({ id: racquet.id }).from(racquet).where(eq(racquet.slug, slug));
+  return row !== undefined;
+}
+
+/** A racquet to add, already checked by `parseFields` (`src/racquets/submit.ts`). */
+export interface NewRacquet {
+  slug: string;
+  brand: Brand;
+  name: string;
+  year: number;
+  image: { src: string; alt: string };
+  specs: RacquetSpecs;
+  sourceUrl: string | null;
+}
+
+export type CreateRacquetResult = { status: "created"; slug: string } | { status: "exists" };
+
+/**
+ * Adds a racquet. A slug that's taken (checked inside the write transaction,
+ * so two reviewers adding the same racquet at once can't both win) is
+ * refused, not overwritten. Racquets can't be edited or deleted. Only from
+ * a Server Action (it refreshes pages with `updateTag`).
+ */
+export async function createRacquet(input: NewRacquet, author: Reviewer): Promise<CreateRacquetResult> {
+  const { specs } = input;
+  const result = await getDb().transaction(async (tx): Promise<CreateRacquetResult> => {
+    const [taken] = await tx.select({ id: racquet.id }).from(racquet).where(eq(racquet.slug, input.slug));
+    if (taken) return { status: "exists" };
+    await tx.insert(racquet).values({
+      slug: input.slug,
+      brand: input.brand,
+      name: input.name,
+      year: input.year,
+      imageSrc: input.image.src,
+      imageAlt: input.image.alt,
+      headSizeSqIn: specs.headSizeSqIn,
+      weightGrams: specs.weightGrams,
+      weightOunces: specs.weightOunces,
+      balanceMm: specs.balanceMm,
+      lengthIn: specs.lengthIn,
+      stringMains: specs.stringPattern?.mains ?? null,
+      stringCrosses: specs.stringPattern?.crosses ?? null,
+      sourceUrl: input.sourceUrl,
+      createdBy: author.id,
+    });
+    return { status: "created", slug: input.slug };
+  });
+
+  if (result.status === "created") {
+    // The brand sections on / and /racquets, the racquet's own page and the
+    // slug list (generateStaticParams) all carry this tag.
+    updateTag(RACQUETS_TAG);
+    // A visit to the slug before it existed may have cached an empty setup list for it.
+    updateTag(racquetSetupsTag(input.slug));
+  }
+  return result;
 }

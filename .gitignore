@@ -40,6 +40,10 @@ coverage/
 *.db-wal
 *.db-shm
 
+# Photos of racquets added while developing locally (no BLOB_READ_WRITE_TOKEN);
+# in production they are in Vercel Blob.
+public/images/racquets/uploads/
+
 # Logs
 *.log
 

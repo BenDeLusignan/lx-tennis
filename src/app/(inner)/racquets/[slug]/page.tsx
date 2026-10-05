@@ -58,17 +58,26 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
   // the static shell; only the reviewer's buttons stream in.
   const [setups, reviewers] = await Promise.all([getRacquetSetups(slug), getReviewers()]);
 
+  // A spec the manufacturer doesn't publish is null and its row is left out,
+  // never guessed (Product rule 11).
   const { specs } = racquet;
-  const specRows: [label: string, value: string][] = [
-    ["Head size", `${specs.headSizeSqIn} sq in`],
+  const weight = [
+    specs.weightGrams !== null ? `${specs.weightGrams} g` : null,
+    specs.weightOunces !== null ? `${oneDecimal.format(specs.weightOunces)} oz` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  const specRows: [label: string, value: string | null][] = [
+    ["Head size", specs.headSizeSqIn !== null ? `${specs.headSizeSqIn} sq in` : null],
+    ["Weight (unstrung)", weight || null],
+    ["Balance", specs.balanceMm !== null ? `${specs.balanceMm} mm` : null],
+    ["Length", specs.lengthIn !== null ? `${specs.lengthIn} in` : null],
     [
-      "Weight (unstrung)",
-      `${specs.unstrungWeight.grams} g / ${oneDecimal.format(specs.unstrungWeight.ounces)} oz`,
+      "String pattern",
+      specs.stringPattern ? `${specs.stringPattern.mains} × ${specs.stringPattern.crosses}` : null,
     ],
-    ["Balance", `${specs.balanceMm} mm`],
-    ["Length", `${specs.lengthIn} in`],
-    ["String pattern", `${specs.stringPattern.mains} × ${specs.stringPattern.crosses}`],
   ];
+  const shownSpecs = specRows.filter(([, value]) => value !== null);
 
   // Source order is the reading order on every screen: title, photo, Reviews,
   // Specs. Reviews come before Specs because at the court the scores are what
@@ -133,22 +142,42 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
         <SectionTitle id="specs-heading" size="lg">
           Specs
         </SectionTitle>
-        <table className={styles.specsTable}>
-          <caption className="visually-hidden">
-            Official {racquet.brand} specifications for the {racquet.name} ({racquet.year})
-          </caption>
-          <tbody>
-            {specRows.map(([label, value]) => (
-              <tr key={label}>
-                <th scope="row">{label}</th>
-                <td>{value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {shownSpecs.length > 0 ? (
+          <table className={styles.specsTable}>
+            <caption className="visually-hidden">
+              {racquet.brand} specifications for the {racquet.name} ({racquet.year})
+            </caption>
+            <tbody>
+              {shownSpecs.map(([label, value]) => (
+                <tr key={label}>
+                  <th scope="row">{label}</th>
+                  <td>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <EmptyState title="No specs yet">
+            No official specs have been entered for this racquet.
+          </EmptyState>
+        )}
+        {racquet.sourceUrl && (
+          <p className={styles.source}>
+            Source:{" "}
+            <a href={racquet.sourceUrl} rel="noopener noreferrer">
+              {sourceHost(racquet.sourceUrl)}
+            </a>
+          </p>
+        )}
       </Panel>
     </div>
   );
+}
+
+// The link text is the source's site ("yonex.com"), so a reader sees where the
+// specs came from, or that it's an Internet Archive copy, before tapping.
+function sourceHost(url: string) {
+  return new URL(url).hostname.replace(/^www\./, "");
 }
 
 // Reviewers only, and only a way in: the form's page and its action check

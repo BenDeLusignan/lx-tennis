@@ -11,6 +11,13 @@ export const REVIEW_BODY_MAX_LENGTH = 4000;
 /** A string's brand or name. Real ones are well under 30 characters. */
 export const STRING_FIELD_MAX_LENGTH = 100;
 
+/**
+ * A racquet's URL slug. The add-a-racquet form refuses a longer one, and the
+ * "add a setup" form (`parseRacquetSlug`) accepts no longer one, so a racquet
+ * that saved can always be reviewed.
+ */
+export const RACQUET_SLUG_MAX_LENGTH = 100;
+
 /** A reviewer's password: the floor shared by the script and the change-password form. */
 export const PASSWORD_MIN_LENGTH = 12;
 

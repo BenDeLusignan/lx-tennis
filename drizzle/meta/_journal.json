@@ -43,6 +43,13 @@
       "when": 1791141838538,
       "tag": "0005_create_login_attempt",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791194631891,
+      "tag": "0006_racquets_in_database",
+      "breakpoints": true
     }
   ]
 }

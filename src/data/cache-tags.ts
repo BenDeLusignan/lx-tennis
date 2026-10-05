@@ -36,3 +36,11 @@ export const ALL_SETUPS_TAG = "setups";
  * review delete that removes its setup (its strings may no longer be in use).
  */
 export const STRINGS_TAG = "strings";
+
+/**
+ * The racquet catalogue: `getRacquetsByBrand()`, `getRacquet(slug)` and
+ * `getRacquetSlugs()`. Refreshed when a racquet is added, so `/`, `/racquets`
+ * and the racquet pages show it straight away. Racquets can't be edited or
+ * deleted, so nothing else touches it.
+ */
+export const RACQUETS_TAG = "racquets";

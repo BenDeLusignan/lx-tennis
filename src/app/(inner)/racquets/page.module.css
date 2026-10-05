@@ -1,0 +1,19 @@
+/*
+ * The title and "Add a racquet" share a row that is always a button
+ * (2.75rem) tall, whether or not the button streams in for a logged-in
+ * reviewer, so the brand sections below never jump. Same pattern as the
+ * Reviews header on a racquet's page.
+ */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  min-block-size: 2.75rem;
+  margin-block-end: var(--space-4);
+}
+
+.title {
+  margin-block-end: 0;
+}
