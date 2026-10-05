@@ -3,7 +3,8 @@ import { loginPath } from "@/auth/safe-next-path";
 import type { Reviewer } from "@/data/reviewers";
 import { addReview, createSetupWithReview, deleteReview, updateReview } from "@/data/setups";
 import { parseId } from "@/forms/fields";
-import { parseRacquetSlug, parseReviewFields, parseSetupForm } from "@/reviews/setup-form";
+import { parseRacquetSlug } from "@/racquets/racquet-form";
+import { parseReviewFields, parseSetupForm } from "@/reviews/setup-form";
 
 /**
  * What the review Server Actions (`src/reviews/actions.ts`) do, given the

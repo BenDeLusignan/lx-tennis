@@ -9,12 +9,10 @@ import { getRacquet, getRacquetSlugs, getRacquetsByBrand, createRacquet, IMAGE_S
 import type { Reviewer } from "@/data/reviewers";
 import { getDb } from "@/db/client";
 import { racquet } from "@/db/schema";
-import type { ImageStore } from "@/racquets/image-store";
 import type { ImageFetchResult } from "@/racquets/image-fetch";
-import { parseRacquetSlug } from "@/reviews/setup-form";
-import { racquetImage as image } from "@/racquets/racquet-fixtures";
-import { IMAGE_MAX_BYTES, RACQUET_ERROR_FLAGS, racquetSlug } from "@/racquets/racquet-form";
-import { submitAddRacquet } from "@/racquets/submit";
+import { FakeImageStore, racquetImage as image } from "@/racquets/racquet-fixtures";
+import { IMAGE_MAX_BYTES, parseRacquetSlug, RACQUET_ERROR_FLAGS, racquetSlug } from "@/racquets/racquet-form";
+import { submitRacquetAdd } from "@/racquets/submit";
 
 const BEN: Reviewer = { id: 1, username: "ben", displayName: "Ben" };
 const FORM_PATH = "/account/racquets/new";
@@ -30,36 +28,7 @@ beforeEach(async () => {
   rowsAtStart = await rowCount();
 });
 
-/** An in-memory image store that records what was saved and removed. */
-class FakeStore implements ImageStore {
-  saved = new Map<string, Buffer>();
-  removed: string[] = [];
-  failSave = false;
-  /** Runs after the image is stored, before the row is inserted: where a race can happen. */
-  afterSave: (slug: string) => Promise<void> = async () => {};
-
-  reset(): void {
-    this.saved.clear();
-    this.removed = [];
-    this.failSave = false;
-    this.afterSave = async () => {};
-  }
-
-  async save(slug: string, webp: Buffer): Promise<string> {
-    if (this.failSave) throw new Error("the store is down");
-    const src = `https://fake.public.blob.vercel-storage.com/racquets/${slug}-${this.saved.size}.webp`;
-    this.saved.set(src, webp);
-    await this.afterSave(slug);
-    return src;
-  }
-
-  async remove(src: string): Promise<void> {
-    this.removed.push(src);
-    this.saved.delete(src);
-  }
-}
-
-const store = new FakeStore();
+const store = new FakeImageStore();
 
 const fetched: URL[] = [];
 let linkResult: ImageFetchResult = { ok: false, error: "image-fetch" };
@@ -80,7 +49,7 @@ async function form(fields: Record<string, string> = {}, file?: Buffer | null): 
 
 /** The upload path: `fakeFetch` records any link fetch and answers with `linkResult`, so no test reaches the network. */
 async function submit(fields: Record<string, string> = {}, file?: Buffer | null): Promise<string> {
-  return submitAddRacquet(BEN, await form(fields, file), store, undefined, fakeFetch);
+  return submitRacquetAdd(BEN, await form(fields, file), store, undefined, fakeFetch);
 }
 
 async function rowCount(): Promise<number> {
@@ -99,7 +68,7 @@ const refused = (flag: string) => `${FORM_PATH}?error=${flag}`;
 
 test("a visitor is sent to log in and nothing is saved", async () => {
   assert.equal(
-    await submitAddRacquet(null, await form(), store),
+    await submitRacquetAdd(null, await form(), store),
     `/login?next=${encodeURIComponent(FORM_PATH)}`,
   );
   await assertNothingSaved();
@@ -191,13 +160,13 @@ test("a missing image is refused and nothing is saved", async () => {
   // A browser with no file chosen sends an empty, nameless file.
   const formData = await form({}, null);
   formData.set("image", new File([], ""));
-  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), refused("image-missing"));
+  assert.equal(await submitRacquetAdd(BEN, formData, store, undefined, fakeFetch), refused("image-missing"));
   // Not a file at all (a hand-made request): invalid, not missing.
   formData.set("image", "not a file");
-  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), refused("invalid"));
+  assert.equal(await submitRacquetAdd(BEN, formData, store, undefined, fakeFetch), refused("invalid"));
   const linkAsFile = await form({}, null);
   linkAsFile.set("imageUrl", new File(["https://x.com/a.png"], "link.txt"));
-  assert.equal(await submitAddRacquet(BEN, linkAsFile, store, undefined, fakeFetch), refused("invalid"));
+  assert.equal(await submitRacquetAdd(BEN, linkAsFile, store, undefined, fakeFetch), refused("invalid"));
   await assertNothingSaved();
 });
 
@@ -252,7 +221,7 @@ test("exactly one photo source: a file and a link together are refused, not gues
   // An empty, nameless file (no file chosen) beside a link is just the link.
   const formData = await form({ model: "Empty file", imageUrl: LINK }, null);
   formData.set("image", new File([], ""));
-  assert.equal(await submitAddRacquet(BEN, formData, store, undefined, fakeFetch), "/racquets/head-empty-file-2024");
+  assert.equal(await submitRacquetAdd(BEN, formData, store, undefined, fakeFetch), "/racquets/head-empty-file-2024");
 });
 
 test("a link that isn't a plain https address is refused before anything is fetched", async () => {
@@ -315,7 +284,7 @@ test("a brand that isn't on the list is refused and nothing is saved", async () 
   // Not text at all (a hand-made request).
   const formData = await form();
   formData.set("brand", new File(["Head"], "brand.txt"));
-  assert.equal(await submitAddRacquet(BEN, formData, store), refused("invalid"));
+  assert.equal(await submitRacquetAdd(BEN, formData, store), refused("invalid"));
   await assertNothingSaved();
 });
 

@@ -1,0 +1,42 @@
+/* A form reads best in one column of limited width, even on desktop. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.lede {
+  color: var(--color-text-muted);
+}
+
+/* The page address: long and without spaces, so it may break anywhere. */
+.address {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* The fields themselves are styled by the shared RacquetFields (src/components/racquet-fields.module.css). */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* The delete area: the explanation, then the confirmation and its button, spaced evenly. */
+.delete {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* A disabled button in a column would stretch to the full width. */
+.unavailable {
+  align-self: flex-start;
+}

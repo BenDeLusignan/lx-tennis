@@ -1,9 +1,10 @@
 import "server-only";
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { ALL_SETUPS_TAG, STRINGS_TAG } from "@/data/cache-tags";
 import { getDb, type Transaction } from "@/db/client";
 import { setup, string, STRING_TYPES as STORED_STRING_TYPES } from "@/db/schema";
+import { qualified } from "@/db/sql";
 
 /**
  * The shared string list (Product rule 14). Any logged-in reviewer can add
@@ -63,16 +64,9 @@ export async function getStringsWithUsage(): Promise<readonly (TennisString & { 
   return rows.map((row) => ({ ...row, inUse: row.inUse === 1 }));
 }
 
-/** `"table"."column"`, spelled out for the subqueries below. */
-function qualified(table: typeof setup | typeof string, column: { name: string }): SQL {
-  return sql`${table}.${sql.identifier(column.name)}`;
-}
-
 /**
- * Whether a setup uses the outer query's string. The columns are qualified
- * by hand because Drizzle writes bare names in a single-table query, and in
- * the subquery a bare "id" would be the setup's id, not the string's. Two
- * EXISTS rather than one with OR, so each uses its own string-id index.
+ * Whether a setup uses the outer query's string. Two EXISTS rather than one
+ * with OR, so each uses its own string-id index.
  */
 const STRING_IN_USE = sql<number>`(
   EXISTS (SELECT 1 FROM ${setup} WHERE ${qualified(setup, setup.mainsStringId)} = ${qualified(string, string.id)})

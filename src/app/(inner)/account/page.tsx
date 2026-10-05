@@ -65,10 +65,16 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
       <Suspense fallback={<AccountDetails />}>
         <CurrentAccountDetails />
       </Suspense>
-      <p className={styles.tools}>
-        <Link href="/account/strings">Edit the string list</Link>: fix a brand, name or type, or
-        delete a string no setup uses.
-      </p>
+      <div className={styles.tools}>
+        <p>
+          <Link href="/account/strings">Edit the string list</Link>: fix a brand, name or type, or
+          delete a string no setup uses.
+        </p>
+        <p>
+          <Link href="/account/racquets">Edit the racquet list</Link>: fix a racquet&rsquo;s details
+          or photo, or delete a racquet no setup uses.
+        </p>
+      </div>
 
       {/* Email and Change password each start collapsed and open themselves
           when their form has a result to show, so the choice depends on the

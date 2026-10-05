@@ -1,3 +1,4 @@
+import type { ImageStore } from "@/racquets/image-store";
 import sharp, { type Sharp } from "sharp";
 
 /** Where a racquet sits on a photo: its box in pixels, top-left origin. */
@@ -51,4 +52,35 @@ export function racquetImage(
   })
     [format]()
     .toBuffer();
+}
+
+/** An in-memory image store that records what was saved and removed. */
+export class FakeImageStore implements ImageStore {
+  saved = new Map<string, Buffer>();
+  removed: string[] = [];
+  failSave = false;
+  /** Counts every save, even after a remove, so no two saved URLs are alike. */
+  private saves = 0;
+  /** Runs after the image is stored, before the row is written: where a race can happen. */
+  afterSave: (slug: string) => Promise<void> = async () => {};
+
+  reset(): void {
+    this.saved.clear();
+    this.removed = [];
+    this.failSave = false;
+    this.afterSave = async () => {};
+  }
+
+  async save(slug: string, webp: Buffer): Promise<string> {
+    if (this.failSave) throw new Error("the store is down");
+    const src = `https://fake.public.blob.vercel-storage.com/racquets/${slug}-${this.saves++}.webp`;
+    this.saved.set(src, webp);
+    await this.afterSave(slug);
+    return src;
+  }
+
+  async remove(src: string): Promise<void> {
+    this.removed.push(src);
+    this.saved.delete(src);
+  }
 }

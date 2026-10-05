@@ -1,0 +1,78 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.intro {
+  color: var(--color-text-muted);
+}
+
+/* Room between brands, so each heading clearly starts a new group. */
+.brands {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+/* The Panel surface, as a row: photo, name and year, Edit. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+/* Fixed width: keep the `sizes` on the row's RacquetPhoto (page.tsx) in step. */
+.photo {
+  flex: 0 0 3.5rem;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Same pill as a string's "String tested" on /account/strings. */
+.inUse {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-link);
+  border-radius: var(--radius-sm);
+  color: var(--color-link);
+  font-weight: 600;
+}
+
+/* Keeps its width when the name wraps. */
+.edit {
+  flex: none;
+}

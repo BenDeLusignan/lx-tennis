@@ -1,33 +1,51 @@
 import "server-only";
 import { loginPath } from "@/auth/safe-next-path";
 import { RACQUET_SLUG_MAX_LENGTH } from "@/data/limits";
-import { BRANDS, createRacquet, racquetSlugExists, type Brand, type RacquetSpecs } from "@/data/racquets";
+import {
+  BRANDS,
+  createRacquet,
+  racquetIdentityTaken,
+  racquetImageAlt,
+  racquetSlugExists,
+  removeRacquet,
+  saveRacquetEdit,
+  type Brand,
+  type RacquetSpecs,
+} from "@/data/racquets";
 import type { Reviewer } from "@/data/reviewers";
 import { parseScaledDecimal } from "@/forms/fields";
 import { getImageStore, type ImageStore } from "@/racquets/image-store";
 import { toRacquetWebp } from "@/racquets/process-image";
 import { fetchImageFromLink, parseImageLink, type ImageFetchResult } from "@/racquets/image-fetch";
 import {
+  editRacquetPath,
   IMAGE_MAX_BYTES,
   maxRacquetYear,
   NEW_RACQUET_PATH,
+  parseRacquetSlug,
   RACQUET_FIELDS,
   RACQUET_LIMITS,
+  RACQUETS_ADMIN_PATH,
   racquetSlug,
   type RacquetErrorFlag,
 } from "@/racquets/racquet-form";
 
 /**
- * What the `addRacquet` Server Action (`src/racquets/actions.ts`) does, given
- * the logged-in reviewer (null for a visitor). It returns the URL to redirect
- * to, so it can be tested without a Next request. Errors go in the URL as a
- * flag (`RACQUET_ERROR_FLAGS`), never what was typed.
+ * What the racquet Server Actions (`src/racquets/actions.ts`: `addRacquet`,
+ * `updateRacquet`, `deleteRacquet`) do, given the logged-in reviewer (null for
+ * a visitor). Each returns the URL to redirect to, so it can be tested
+ * without a Next request. Errors go in the URL as a flag
+ * (`RACQUET_ERROR_FLAGS`), never what was typed.
  *
- * Everything that can be checked without side effects is checked first, then
- * the photo is read (an upload) or fetched (an image link; the site keeps its
- * own copy, so it can't rot), converted, stored, and the row inserted last:
- * if the row can't be saved the stored image is removed again, so a refusal
- * leaves neither a row nor an orphaned file. The link is never put in a URL.
+ * Adding and editing share the checks and the photo pipeline. Everything
+ * that can be checked without side effects is checked first, then the photo
+ * is read (an upload) or fetched (an image link; the site keeps its own copy,
+ * so it can't rot), converted, stored, and the row written last: if the row
+ * can't be saved the stored image is removed again, so a refusal leaves
+ * neither a row change nor an orphaned file. An edit that replaced the photo
+ * removes the old file only after the new row has committed, and a delete
+ * removes the racquet's file after the row is gone, so a failure never costs
+ * a racquet its photo. The link is never put in a URL.
  */
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: RacquetErrorFlag };
@@ -71,7 +89,13 @@ interface ParsedFields {
   specs: RacquetSpecs;
 }
 
-function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
+/**
+ * `mode` only matters for the slug. An add lives at the slug these fields
+ * make, so a model whose slug would be too long is refused. An edit ignores
+ * the slug it works out (the racquet keeps its own), so only a model with
+ * nothing a URL can carry fails.
+ */
+function parseFields(formData: FormData, now: Date, mode: "add" | "edit"): Parsed<ParsedFields> {
   const brandText = textField(formData, RACQUET_FIELDS.brand);
   const modelText = textField(formData, RACQUET_FIELDS.model);
   const yearText = textField(formData, RACQUET_FIELDS.year);
@@ -96,7 +120,7 @@ function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
   // Model is capped, but folding can lengthen a slug (a ligature becomes
   // letters), and a slug over the cap is one "Add a setup" refuses.
   const slug = racquetSlug(brand, model, year);
-  if (!slug || slug.length > RACQUET_SLUG_MAX_LENGTH) return fail("model");
+  if (!slug || (mode === "add" && slug.length > RACQUET_SLUG_MAX_LENGTH)) return fail("model");
 
   const { headSize, weightGrams, balanceMm, lengthIn, stringPattern } = RACQUET_LIMITS;
   const headSizeSqIn = optionalNumber(formData, RACQUET_FIELDS.headSize, 0, headSize.min, headSize.max);
@@ -129,11 +153,11 @@ function parseFields(formData: FormData, now: Date): Parsed<ParsedFields> {
 type ImageSource = { kind: "file"; file: File } | { kind: "link"; url: URL };
 
 /**
- * Which of the two photo sources the reviewer gave. Exactly one is needed:
- * neither is `image-missing`; both is `image-both`, not a guess. Nothing is
- * read or fetched yet.
+ * Which of the two photo sources the reviewer gave: null for neither, which
+ * adding refuses (`image-missing`) and an edit takes as "keep the current
+ * photo". Both is `image-both`, not a guess. Nothing is read or fetched yet.
  */
-function chooseImageSource(formData: FormData): Parsed<ImageSource> {
+function chooseImageSource(formData: FormData): Parsed<ImageSource | null> {
   const file = formData.get(RACQUET_FIELDS.image);
   const linkText = textField(formData, RACQUET_FIELDS.imageUrl);
   if (linkText === null) return fail("invalid");
@@ -143,11 +167,56 @@ function chooseImageSource(formData: FormData): Parsed<ImageSource> {
   const hasLink = linkText.trim() !== "";
 
   if (upload && hasLink) return fail("image-both");
-  if (upload) return { ok: true, value: { kind: "file", file: upload } };
-  if (!hasLink) return fail("image-missing");
+  if (upload) {
+    return upload.size > IMAGE_MAX_BYTES ? fail("image-size") : { ok: true, value: { kind: "file", file: upload } };
+  }
+  if (!hasLink) return { ok: true, value: null };
   const url = parseImageLink(linkText);
   return url ? { ok: true, value: { kind: "link", url } } : fail("image-link");
 }
+
+/** The chosen photo's bytes (read, or fetched from the link) as the site's 1000 x 1500 WebP. */
+async function toWebp(
+  source: ImageSource,
+  fetchLink: (url: URL) => Promise<ImageFetchResult>,
+): Promise<Parsed<Buffer>> {
+  let original: Buffer;
+  if (source.kind === "file") {
+    original = Buffer.from(await source.file.arrayBuffer());
+  } else {
+    const fetched = await fetchLink(source.url);
+    if (!fetched.ok) return fail(fetched.error);
+    original = fetched.bytes;
+  }
+
+  // Whatever the source, only toRacquetWebp decides the bytes are a photo.
+  const webp = await toRacquetWebp(original);
+  return webp ? { ok: true, value: webp } : fail("image-type");
+}
+
+/** Stores the WebP, returning its `src`; a store that fails is the `storage` flag. */
+async function storeImage(store: ImageStore, slug: string, webp: Buffer): Promise<Parsed<string>> {
+  try {
+    return { ok: true, value: await store.save(slug, webp) };
+  } catch (error) {
+    console.error("Saving a racquet image failed:", error);
+    return fail("storage");
+  }
+}
+
+/** The chosen photo as a stored WebP, returning its `src`. */
+async function storePhoto(
+  source: ImageSource,
+  slug: string,
+  store: ImageStore,
+  fetchLink: (url: URL) => Promise<ImageFetchResult>,
+): Promise<Parsed<string>> {
+  const webp = await toWebp(source, fetchLink);
+  return webp.ok ? storeImage(store, slug, webp.value) : webp;
+}
+
+const loginFor = (slug: string | null): string =>
+  loginPath(slug === null ? RACQUETS_ADMIN_PATH : editRacquetPath(slug));
 
 /** Cleanup must never hide the real outcome, so a failed removal is logged, not thrown. */
 async function removeQuietly(store: ImageStore, src: string): Promise<void> {
@@ -163,7 +232,7 @@ async function removeQuietly(store: ImageStore, src: string): Promise<void> {
  * racquet's page. `store` is the image store and `fetchLink` gets the bytes
  * behind an image link; only tests pass their own.
  */
-export async function submitAddRacquet(
+export async function submitRacquetAdd(
   reviewer: Reviewer | null,
   formData: FormData,
   store: ImageStore = getImageStore(),
@@ -173,44 +242,27 @@ export async function submitAddRacquet(
   if (!reviewer) return loginPath(NEW_RACQUET_PATH);
   const refuse = (error: RacquetErrorFlag) => `${NEW_RACQUET_PATH}?error=${error}`;
 
-  const fields = parseFields(formData, now);
+  const fields = parseFields(formData, now, "add");
   if (!fields.ok) return refuse(fields.error);
   const { brand, name, year, slug, specs } = fields.value;
 
   // The photo is required: one source, checked before any work is done for it.
   const source = chooseImageSource(formData);
   if (!source.ok) return refuse(source.error);
-  if (source.value.kind === "file" && source.value.file.size > IMAGE_MAX_BYTES) return refuse("image-size");
+  if (source.value === null) return refuse("image-missing");
 
   // Cheap duplicate check before the expensive conversion and upload, and
   // before any request goes out to another website. The insert checks again
   // inside its transaction, which is what decides a race.
-  if (await racquetSlugExists(slug)) return refuse("exists");
+  if (await racquetIdentityTaken(brand, name, year)) return refuse("exists");
 
-  let original: Buffer;
-  if (source.value.kind === "file") {
-    original = Buffer.from(await source.value.file.arrayBuffer());
-  } else {
-    const fetched = await fetchLink(source.value.url);
-    if (!fetched.ok) return refuse(fetched.error);
-    original = fetched.bytes;
-  }
-
-  // Whatever the source, only toRacquetWebp decides the bytes are a photo.
-  const webp = await toRacquetWebp(original);
-  if (!webp) return refuse("image-type");
-
-  let src: string;
-  try {
-    src = await store.save(slug, webp);
-  } catch (error) {
-    console.error("Saving a racquet image failed:", error);
-    return refuse("storage");
-  }
+  const stored = await storePhoto(source.value, slug, store, fetchLink);
+  if (!stored.ok) return refuse(stored.error);
+  const src = stored.value;
 
   try {
     const result = await createRacquet(
-      { slug, brand, name, year, image: { src, alt: `${name} (${year}) racquet` }, specs },
+      { slug, brand, name, year, image: { src, alt: racquetImageAlt(name, year) }, specs },
       reviewer,
     );
     if (result.status === "exists") {
@@ -223,4 +275,85 @@ export async function submitAddRacquet(
     throw error;
   }
   return `/racquets/${slug}`;
+}
+
+/**
+ * Saves an edit of the racquet named by the form's hidden `slug`: success
+ * goes back to the list. Brand, model, year and specs are checked as when
+ * adding; the photo is optional (neither a file nor a link keeps the current
+ * one; both is refused). The slug and id never change: the slug the fields
+ * would make is ignored, so links and setups keep working. The reviewer's
+ * identity comes from the session; nothing in the form says who is editing.
+ */
+export async function submitRacquetUpdate(
+  reviewer: Reviewer | null,
+  formData: FormData,
+  store: ImageStore = getImageStore(),
+  now: Date = new Date(),
+  fetchLink: (url: URL) => Promise<ImageFetchResult> = fetchImageFromLink,
+): Promise<string> {
+  // The one thing read first: the slug's shape, to know where to come back to.
+  const slug = parseRacquetSlug(formData.get(RACQUET_FIELDS.slug));
+  if (!reviewer) return loginFor(slug);
+  const notFound = `${RACQUETS_ADMIN_PATH}?error=not-found`;
+  // Refuses a racquet that's gone before any parsing or image work. The write
+  // checks again inside its transaction, which is what decides a race.
+  if (slug === null || !(await racquetSlugExists(slug))) return notFound;
+  const refuse = (error: RacquetErrorFlag) => `${editRacquetPath(slug)}?error=${error}`;
+
+  const fields = parseFields(formData, now, "edit");
+  if (!fields.ok) return refuse(fields.error);
+  const { brand, name, year, specs } = fields.value;
+
+  const source = chooseImageSource(formData);
+  if (!source.ok) return refuse(source.error);
+
+  // Before the image work and any request to another website; the update
+  // checks again inside its transaction, which is what decides a race.
+  if (await racquetIdentityTaken(brand, name, year, slug)) return refuse("exists");
+
+  let newImageSrc: string | null = null;
+  if (source.value !== null) {
+    const stored = await storePhoto(source.value, slug, store, fetchLink);
+    if (!stored.ok) return refuse(stored.error);
+    newImageSrc = stored.value;
+  }
+
+  try {
+    const result = await saveRacquetEdit({ slug, brand, name, year, specs, newImageSrc });
+    if (result.status !== "saved") {
+      // Refused, so the new photo is an orphan.
+      if (newImageSrc !== null) await removeQuietly(store, newImageSrc);
+      return result.status === "exists" ? refuse("exists") : notFound;
+    }
+    // The new row is committed, so only now is the replaced photo let go.
+    // The store skips anything it didn't save (the built-in racquets' files).
+    if (result.replacedImageSrc !== null) await removeQuietly(store, result.replacedImageSrc);
+  } catch (error) {
+    if (newImageSrc !== null) await removeQuietly(store, newImageSrc);
+    throw error;
+  }
+  return `${RACQUETS_ADMIN_PATH}?saved=${slug}`;
+}
+
+/**
+ * Deletes the racquet named by the form's hidden `slug`, if no setup uses it:
+ * success goes back to the list, and so does a racquet that's already gone (a
+ * double-submitted Delete isn't an error). One a setup uses goes back to its
+ * edit page as `in-use`, with nothing deleted. The racquet's stored photo is
+ * removed after its row is gone; the built-in racquets' files never are.
+ */
+export async function submitRacquetDelete(
+  reviewer: Reviewer | null,
+  formData: FormData,
+  store: ImageStore = getImageStore(),
+): Promise<string> {
+  const slug = parseRacquetSlug(formData.get(RACQUET_FIELDS.slug));
+  if (!reviewer) return loginFor(slug);
+  if (slug === null) return `${RACQUETS_ADMIN_PATH}?error=not-found`;
+
+  const result = await removeRacquet(slug);
+  if (result.status === "in-use") return `${editRacquetPath(slug)}?error=in-use`;
+  if (result.status === "deleted") await removeQuietly(store, result.imageSrc);
+  return `${RACQUETS_ADMIN_PATH}?deleted=1`;
 }

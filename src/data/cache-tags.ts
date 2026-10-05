@@ -38,9 +38,18 @@ export const ALL_SETUPS_TAG = "setups";
 export const STRINGS_TAG = "strings";
 
 /**
- * The racquet catalogue: `getRacquetsByBrand()`, `getRacquet(slug)` and
- * `getRacquetSlugs()`. Refreshed when a racquet is added, so `/racquets` and
- * the racquet pages show it straight away. Racquets can't be edited or
- * deleted, so nothing else touches it.
+ * The racquet catalogue: `getRacquetsByBrand()`, `getRacquetsByBrandWithUsage()`,
+ * `getRacquet(slug)` and `getRacquetSlugs()`. Refreshed when a racquet is
+ * added, edited or deleted, so `/racquets`, `/account/racquets` and the
+ * racquet pages show it straight away.
  */
 export const RACQUETS_TAG = "racquets";
+
+/**
+ * Which racquets a setup uses (so can't be deleted): only
+ * `getRacquetsByBrandWithUsage()`, which also carries `RACQUETS_TAG`.
+ * Refreshed by every new setup and by a review delete that removes its
+ * setup. Kept apart from `RACQUETS_TAG` so a new setup doesn't expire every
+ * racquet page, only the list that shows usage.
+ */
+export const RACQUET_USAGE_TAG = "racquet-usage";

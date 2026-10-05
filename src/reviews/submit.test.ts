@@ -101,6 +101,8 @@ test("a full bed is saved with the mains' string and gauge on the crosses, and r
     },
   ]);
   assert.ok(refreshedTags.includes(`setups:${SLUG}`));
+  // The racquet now has a setup, so it can't be deleted from /account/racquets.
+  assert.ok(refreshedTags.includes("racquet-usage"));
 });
 
 test("a hybrid with a new string adds the string, the setup and the review", async () => {
@@ -497,7 +499,7 @@ test("deleting the last review removes the setup too, and the racquet page and s
   assert.ok(!(await getRacquetSetups(SLUG)).some((setup) => setup.id === id));
   // The string stays on the list, but no setup uses it any more.
   assert.equal(await stringInUse("Delete Test Gut"), false);
-  assert.deepEqual([...refreshedTags].sort(), ["strings", `setups:${SLUG}`].sort());
+  assert.deepEqual([...refreshedTags].sort(), ["racquet-usage", "strings", `setups:${SLUG}`].sort());
 });
 
 test("a reviewer can't delete another reviewer's review, whatever the form says", async () => {

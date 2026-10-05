@@ -1,0 +1,48 @@
+/* A <details> opens the confirmation with no JavaScript. The summary is the 44px+ tap target. */
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-link);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary:hover {
+  text-shadow: var(--text-glow-cyan);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron instead of the default triangle, turned when open. Decorative (empty alt). */
+.summary::before {
+  content: "›" / "";
+  transition: transform var(--duration-fast) ease;
+}
+
+.confirm[open] .summary::before {
+  transform: rotate(90deg);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block-start: var(--space-2);
+}
+
+.warning {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}

@@ -23,7 +23,9 @@ import {
  *   given the file input carries the message "Upload a file or paste an
  *   image link." Both at once is refused, and a file over the upload limit
  *   is refused with a message that says so. (A linked image's size can only
- *   be checked by the server, which fetches it.)
+ *   be checked by the server, which fetches it.) With `photoRequired` off
+ *   (editing a racquet: no photo means keep the current one) the "neither"
+ *   message is dropped and the rest stays.
  * - String pattern: mains and crosses are both required once either is filled.
  * - Year: capped at next year, by the same UTC-year rule as the server
  *   (`maxRacquetYear`). Not in the HTML, so the prerendered page doesn't
@@ -32,7 +34,7 @@ import {
  * The string pattern's fields are found by the `data-pattern` marker the page
  * puts on them; the year and the photo's two inputs by their form field names.
  */
-export function RacquetFormConstraints() {
+export function RacquetFormConstraints({ photoRequired }: { photoRequired: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function RacquetFormConstraints() {
       let imageMessage = "";
       if (file && file.size > IMAGE_MAX_BYTES) {
         imageMessage = `That photo is ${(file.size / 1_000_000).toFixed(1)} MB. The limit is ${IMAGE_MAX_BYTES / 1_000_000} MB: choose a smaller one.`;
-      } else if (!file && !hasLink) {
+      } else if (photoRequired && !file && !hasLink) {
         imageMessage = "Upload a file or paste an image link.";
       }
       image.setCustomValidity(imageMessage);
@@ -82,7 +84,7 @@ export function RacquetFormConstraints() {
       form.removeEventListener("input", onChange);
       form.removeEventListener("change", onChange);
     };
-  }, []);
+  }, [photoRequired]);
 
   return <span ref={ref} hidden />;
 }

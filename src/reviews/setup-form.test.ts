@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { RACQUET_SLUG_MAX_LENGTH, REVIEW_BODY_MAX_LENGTH } from "@/data/limits";
-import { parseRacquetSlug, parseReviewFields, parseSetupForm, parseStrungOn } from "@/reviews/setup-form";
+import { REVIEW_BODY_MAX_LENGTH } from "@/data/limits";
+import { parseReviewFields, parseSetupForm, parseStrungOn } from "@/reviews/setup-form";
 
 const SLUG = "yonex-ezone-98-2022";
 // 10:00 UTC on 29 September 2026.
@@ -162,17 +162,4 @@ test("the written review is optional, trimmed, and capped", () => {
   const atCap = `${"a".repeat(REVIEW_BODY_MAX_LENGTH - 2)}\r\nb`;
   assert.equal(body(atCap), atCap.replace("\r\n", "\n"));
   assert.equal(body(`${atCap}c`), "invalid");
-});
-
-test("a racquet slug must look like one", () => {
-  assert.equal(parseRacquetSlug(SLUG), SLUG);
-  for (const slug of ["", "Yonex", "../account", "a b", null]) {
-    assert.equal(parseRacquetSlug(slug), null, String(slug));
-  }
-});
-
-test("a racquet slug is at most RACQUET_SLUG_MAX_LENGTH characters", () => {
-  const longest = "a".repeat(RACQUET_SLUG_MAX_LENGTH);
-  assert.equal(parseRacquetSlug(longest), longest);
-  assert.equal(parseRacquetSlug(`${longest}a`), null);
 });

@@ -5,6 +5,7 @@ import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/button";
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { FormActions } from "@/components/form-actions";
 import { FormMessage } from "@/components/form-message";
 import { Panel } from "@/components/panel";
@@ -175,21 +176,21 @@ async function DeleteYourReview({ setup }: { setup: Setup }) {
       </SectionTitle>
       <div className={styles.delete}>
         <p className={styles.note}>Entered under the wrong racquet? You can delete your review.</p>
-        <details className={styles.confirm}>
-          <summary className={styles.confirmSummary}>Delete your review…</summary>
-          <form action={deleteReview} className={styles.confirmForm}>
-            <input type="hidden" name="setup" value={setup.id} />
-            <p className={styles.warning}>
+        <ConfirmDelete
+          summary="Delete your review…"
+          action={deleteReview}
+          confirmLabel="Yes, delete my review"
+          warning={
+            <>
               This deletes your review. It can&rsquo;t be undone.{" "}
               {othersReviewed
                 ? "Other reviewers’ reviews stay."
                 : "Yours is the only review, so the setup is deleted too."}
-            </p>
-            <div className={styles.actions}>
-              <Button type="submit">Yes, delete my review</Button>
-            </div>
-          </form>
-        </details>
+            </>
+          }
+        >
+          <input type="hidden" name="setup" value={setup.id} />
+        </ConfirmDelete>
       </div>
     </Panel>
   );

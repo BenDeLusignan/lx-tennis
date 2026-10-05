@@ -17,12 +17,33 @@ import { del, put } from "@vercel/blob";
  * somewhere that won't survive or won't be served.
  */
 
-/** What the Server Action needs from the store. */
+/** What the Server Actions need from the store. */
 export interface ImageStore {
   /** Stores the WebP and returns the `src` the page will use (an absolute URL or a path under /public). */
   save(slug: string, webp: Buffer): Promise<string>;
-  /** Removes what `save` stored. Used when the racquet row couldn't be saved after the image was. */
+  /**
+   * Removes a photo this store saved: when the racquet row couldn't be saved
+   * after it, when an edit replaced it, or when its racquet was deleted.
+   * Anything else (the four built-in racquets' files in
+   * `public/images/racquets/`, a path or URL the store didn't make) is left
+   * alone and no error is raised: the caller passes whatever the row held.
+   */
   remove(src: string): Promise<void>;
+}
+
+/**
+ * Whether `src` is a Vercel Blob URL, the only thing the Blob store deletes.
+ * Public Blob stores serve from `<store-id>.public.blob.vercel-storage.com`.
+ * Checked rather than passed to `del()` blindly, which would take a built-in
+ * racquet's `/images/...` path as a Blob pathname.
+ */
+export function isBlobImageUrl(src: string): boolean {
+  try {
+    const url = new URL(src);
+    return url.protocol === "https:" && url.hostname.endsWith(".blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
 }
 
 const LOCAL_URL_PREFIX = "/images/racquets/uploads/";
@@ -40,6 +61,7 @@ const blobStore: ImageStore = {
     return blob.url;
   },
   async remove(src) {
+    if (!isBlobImageUrl(src)) return;
     await del(src);
   },
 };

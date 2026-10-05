@@ -2,7 +2,7 @@ import "server-only";
 import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
-import { ALL_SETUPS_TAG, racquetSetupsTag, STRINGS_TAG } from "@/data/cache-tags";
+import { ALL_SETUPS_TAG, RACQUET_USAGE_TAG, racquetSetupsTag, STRINGS_TAG } from "@/data/cache-tags";
 import type { Reviewer } from "@/data/reviewers";
 import {
   findStringByName,
@@ -283,6 +283,8 @@ export async function createSetupWithReview(
   updateTag(racquetSetupsTag(input.racquetSlug));
   // New strings join the list, and this setup's strings are now in use.
   updateTag(STRINGS_TAG);
+  // The racquet now has a setup, so it can't be deleted.
+  updateTag(RACQUET_USAGE_TAG);
   return result;
 }
 
@@ -448,7 +450,11 @@ export async function deleteReview(setupId: number, author: Reviewer): Promise<D
   if (result.status === "deleted") {
     updateTag(racquetSetupsTag(result.racquetSlug));
     // Only a removed setup changes the string list: its strings may no longer be in use.
-    if (result.setupRemoved) updateTag(STRINGS_TAG);
+    if (result.setupRemoved) {
+      updateTag(STRINGS_TAG);
+      // The racquet may have no setup left, so it can be deleted again.
+      updateTag(RACQUET_USAGE_TAG);
+    }
   }
   return result;
 }
