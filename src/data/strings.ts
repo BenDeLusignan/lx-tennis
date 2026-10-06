@@ -14,13 +14,16 @@ import { qualified } from "@/db/sql";
 
 export type StringType = (typeof STORED_STRING_TYPES)[number];
 
-/** Product rule 14's types, in its order, with the labels it uses. */
+/**
+ * Product rule 14's types, in its order, with the labels it uses. Labels
+ * start with a capital (Ben); the stored keys stay lowercase.
+ */
 export const STRING_TYPES: readonly { value: StringType; label: string }[] = [
-  { value: "polyester", label: "polyester" },
-  { value: "co-polyester", label: "co-polyester" },
-  { value: "multifilament", label: "multifilament" },
-  { value: "synthetic-gut", label: "synthetic gut" },
-  { value: "natural-gut", label: "natural gut" },
+  { value: "polyester", label: "Polyester" },
+  { value: "co-polyester", label: "Co-polyester" },
+  { value: "multifilament", label: "Multifilament" },
+  { value: "synthetic-gut", label: "Synthetic gut" },
+  { value: "natural-gut", label: "Natural gut" },
   { value: "kevlar-aramid", label: "Kevlar/aramid" },
 ];
 
@@ -38,37 +41,6 @@ export interface TennisString {
 
 /** A string's editable fields, already trimmed and checked (`parseStringFields` in `src/forms/fields.ts`). */
 export type StringFields = Omit<TennisString, "id">;
-
-/**
- * `text` with its first character uppercased and everything after it left
- * exactly as typed (Ben: a string's first letter is always capitalised;
- * manufacturers write POLYTOUR PRO, Hyper-G, Mach-10, so the rest is never
- * lowercased or title-cased). Works on the first code point, so an accented
- * or non-Latin first letter is capitalised too ("école" becomes "École").
- * Only the very first character is looked at: a leading digit or symbol is
- * left alone, and the letter after it isn't promoted ("3m Tour", "(pro) Gut"
- * stay as typed). A letter whose uppercase is several characters (ß → "SS")
- * is left alone too, since that would change the spelling.
- */
-export function capitalizeFirst(text: string): string {
-  const [first] = text; // string iteration is by code point, not UTF-16 unit
-  if (first === undefined) return text;
-  const upper = first.toUpperCase();
-  return Array.from(upper).length === 1 ? upper + text.slice(first.length) : text;
-}
-
-/**
- * Product rule 14's one exception to "named as the manufacturer writes them":
- * the first letter of the brand and of the name is always uppercase. Applied
- * by every writer and by the duplicate lookup below, the single place that
- * decides what is stored, so a caller that skips `parseStringFields` still
- * stores a capitalised string, and capitalisation can neither create a
- * duplicate nor hide one. Idempotent. A seed or migration that writes the
- * table directly must do the same (0008 does for the rows before it).
- */
-function capitalizeStringFields<T extends Pick<StringFields, "brand" | "name">>(fields: T): T {
-  return { ...fields, brand: capitalizeFirst(fields.brand), name: capitalizeFirst(fields.name) };
-}
 
 const stringColumns = {
   id: string.id,
@@ -146,12 +118,8 @@ const STRING_IN_USE = sql<number>`(
  */
 export async function findStringByName(
   tx: Transaction,
-  fields: Pick<StringFields, "brand" | "name">,
+  { brand, name }: Pick<StringFields, "brand" | "name">,
 ): Promise<TennisString | undefined> {
-  // Capitalised like what would be stored, so the lookup matches exactly the
-  // strings the insert would collide with (SQLite's lower() doesn't fold an
-  // accented first letter, so an uncapitalised "école" wouldn't find "École").
-  const { brand, name } = capitalizeStringFields(fields);
   const [row] = await tx
     .select(stringColumns)
     .from(string)
@@ -171,10 +139,7 @@ export async function stringExists(tx: Transaction, id: number): Promise<boolean
 
 /** Inside a write transaction that has already checked `findStringByName`. Returns the new id. */
 export async function insertString(tx: Transaction, fields: StringFields): Promise<number> {
-  const [row] = await tx
-    .insert(string)
-    .values(capitalizeStringFields(fields))
-    .returning({ id: string.id });
+  const [row] = await tx.insert(string).values(fields).returning({ id: string.id });
   return row.id;
 }
 
@@ -183,15 +148,13 @@ export async function updateString(
   id: number,
   fields: StringFields,
 ): Promise<"saved" | "not-found" | "string-exists"> {
-  const stored = capitalizeStringFields(fields);
   const result = await getDb().transaction(async (tx) => {
     if (!(await stringExists(tx, id))) return "not-found";
     // Another string with this brand and name; the same one (fixing only its
     // capitals, say) is fine.
-    // Capitalises again on purpose: it's idempotent, and the lookup must work for any caller.
-    const clash = await findStringByName(tx, stored);
+    const clash = await findStringByName(tx, fields);
     if (clash && clash.id !== id) return "string-exists";
-    await tx.update(string).set(stored).where(eq(string.id, id));
+    await tx.update(string).set(fields).where(eq(string.id, id));
     return "saved";
   });
   if (result === "saved") {

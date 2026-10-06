@@ -170,9 +170,9 @@ export const racquet = sqliteTable(
 
 /**
  * Product rule 14's string types, as stored. Stored value → label:
- * `polyester` → polyester, `co-polyester` → co-polyester,
- * `multifilament` → multifilament, `synthetic-gut` → synthetic gut,
- * `natural-gut` → natural gut, `kevlar-aramid` → Kevlar/aramid.
+ * `polyester` → Polyester, `co-polyester` → Co-polyester,
+ * `multifilament` → Multifilament, `synthetic-gut` → Synthetic gut,
+ * `natural-gut` → Natural gut, `kevlar-aramid` → Kevlar/aramid.
  * Changing this list needs a migration: the check below is written into it.
  */
 export const STRING_TYPES = [

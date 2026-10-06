@@ -259,7 +259,7 @@ test("migrations 0006 and 0007 keep the racquets' ids and the setups and reviews
   // The deployed database already has setups and reviews on racquets when
   // 0006 runs, and its table rebuild (and 0007's after it, applied in the same
   // run as Turso will get them) must not lose, renumber or orphan them.
-  await upgradingFrom(["0008_capitalise_string_first_letter", "0007_racquet_grams_only_no_source", "0006_racquets_in_database"], async (oldClient, migrateRest) => {
+  await upgradingFrom(["0007_racquet_grams_only_no_source", "0006_racquets_in_database"], async (oldClient, migrateRest) => {
     await oldClient.execute(
       `INSERT INTO setup (racquet_id, strung_on, tension_unit, mains_string_id, mains_gauge_hundredths_mm, mains_tension_tenths,
          crosses_string_id, crosses_gauge_hundredths_mm, crosses_tension_tenths, created_by)
@@ -297,7 +297,7 @@ test("migrations 0006 and 0007 keep the racquets' ids and the setups and reviews
 test("migration 0007 drops ounces and the source link, keeping every racquet row and the setups and reviews on them", async () => {
   // The state a database is in after 0006: racquets with ounces and a source
   // link, a reviewer-added one among them, and setups and reviews on both.
-  await upgradingFrom(["0008_capitalise_string_first_letter", "0007_racquet_grams_only_no_source"], async (oldClient, migrateRest) => {
+  await upgradingFrom(["0007_racquet_grams_only_no_source"], async (oldClient, migrateRest) => {
     const before = await oldClient.execute("SELECT name FROM pragma_table_info('racquet')");
     const beforeColumns = before.rows.map((row) => row.name);
     assert.ok(beforeColumns.includes("weight_ounces") && beforeColumns.includes("source_url"), "0006 still has both");
@@ -361,76 +361,6 @@ test("migration 0007 drops ounces and the source link, keeping every racquet row
     await oldClient.execute(
       `INSERT INTO racquet (slug, brand, name, year, image_src, image_alt, head_size_sq_in, weight_grams) VALUES ('head-spec-2024', 'Head', 'Head Spec', 2024, '/s.webp', 's', 98, 300)`,
     );
-  });
-});
-
-test("migration 0008 capitalises the first letter of old lowercase brands and names and leaves every other row alone", async () => {
-  await upgradingFrom(["0008_capitalise_string_first_letter"], async (oldClient, migrateRest) => {
-    const insert = (brand: string, name: string) =>
-      oldClient.execute({
-        sql: "INSERT INTO string (brand, name, type) VALUES (?, ?, 'polyester')",
-        args: [brand, name],
-      });
-    await insert("babolat", "rpm blast"); // both lowercase
-    await insert("Luxilon", "alu power"); // only the name
-    await insert("kirschbaum", "Max Power"); // only the brand
-    await insert("KIRSCH", "SHOUTED"); // all capitals, kept
-    await insert("Solinco", "Tour Bite"); // capitalised, mixed case after: kept
-    await insert("3m", "3m tour"); // a leading digit: nothing to capitalise
-    await insert("école", "ça va"); // non-ASCII: SQLite's upper() can't, so left (the app does it on a save)
-    // A lowercase string a setup already uses keeps its id and its setup.
-    await insert("wilson", "natural gut");
-    const [{ id: usedId }] = (await oldClient.execute("SELECT id FROM string WHERE brand = 'wilson'")).rows as unknown as { id: number }[];
-    await oldClient.execute({
-      sql: `INSERT INTO setup (racquet_id, strung_on, tension_unit, mains_string_id, mains_gauge_hundredths_mm, mains_tension_tenths,
-              crosses_string_id, crosses_gauge_hundredths_mm, crosses_tension_tenths, created_by)
-            VALUES (1, '2026-09-01', 'lb', ?, 130, 550, ?, 130, 550, 1)`,
-      args: [usedId, usedId],
-    });
-    const rows = async () =>
-      (await oldClient.execute("SELECT id, brand, name, type FROM string ORDER BY id")).rows.map((row) => ({ ...row }));
-    const before = await rows();
-    assert.equal(before.length, 18);
-
-    await migrateRest();
-
-    const after = await rows();
-    assert.deepEqual(
-      after.slice(0, 10),
-      before.slice(0, 10),
-      "Ben's ten were already capitalised and are untouched",
-    );
-    assert.deepEqual(
-      after.slice(10).map((row) => [row.brand, row.name]),
-      [
-        ["Babolat", "Rpm blast"],
-        ["Luxilon", "Alu power"],
-        ["Kirschbaum", "Max Power"],
-        ["KIRSCH", "SHOUTED"],
-        ["Solinco", "Tour Bite"],
-        ["3m", "3m tour"],
-        ["école", "ça va"],
-        ["Wilson", "Natural gut"],
-      ],
-    );
-    assert.deepEqual(
-      after.map((row) => row.id),
-      before.map((row) => row.id),
-      "ids don't change",
-    );
-    assert.deepEqual(after.map((row) => row.type), before.map((row) => row.type));
-    const used = await oldClient.execute({
-      sql: "SELECT string.brand, string.name FROM setup JOIN string ON string.id = setup.mains_string_id",
-      args: [],
-    });
-    assert.deepEqual(used.rows.map((row) => [row.brand, row.name]), [["Wilson", "Natural gut"]]);
-
-    // Idempotent: running its SQL again changes nothing.
-    const sql = readFileSync(path.join(process.cwd(), "drizzle", "0008_capitalise_string_first_letter.sql"), "utf8");
-    await oldClient.executeMultiple(sql);
-    assert.deepEqual(await rows(), after);
-    // The unique index still treats capitals as the same string.
-    await assertRefused(insert("BABOLAT", "RPM BLAST"), /UNIQUE constraint failed/);
   });
 });
 
