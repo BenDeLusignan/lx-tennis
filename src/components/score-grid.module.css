@@ -1,4 +1,12 @@
+/*
+ * `position: relative` makes the scroller the containing block of the
+ * visually-hidden text in the cells ("out of 50"). Without it that text is
+ * positioned against the page, escapes the scroller's clipping, and in a
+ * sideways-scrolled grid (4+ reviewers) sits beyond the right edge of the
+ * screen, so the whole page scrolls sideways.
+ */
 .scroller {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -44,6 +52,7 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   text-align: start;
+  text-wrap: balance;
   color: var(--color-text-muted);
 }
 
@@ -54,7 +63,13 @@
   vertical-align: middle;
 }
 
+/*
+ * No side padding on the names: at 360px a reviewer column is about 60px, and
+ * a name with its colour bar ("Michal") needs about 53px, so with the
+ * padding it broke mid-word ("Micha / l"). The chips below don't need it.
+ */
 .grid thead th {
+  padding-inline: 0;
   padding-block-end: var(--space-2);
   font-size: var(--font-size-sm);
 }
@@ -70,4 +85,38 @@
 /* A row line under each criterion helps the eye read across. */
 .grid tbody tr + tr {
   border-block-start: 1px solid var(--color-border);
+}
+
+/*
+ * The Total row: a stronger line above it sets it apart from the criteria,
+ * and the number is bold text in the reviewer's colour (the name in the
+ * column header stays the cue that doesn't rely on colour). Coloured text sits
+ * on --color-bg here, as on the names above (ratios in globals.css); the card
+ * sets that surface, so this must stay out of --color-surface-raised.
+ * Number and "/50" share one line: "50/50" is about 2.75rem wide, inside the
+ * 3.5rem minimum column less its padding.
+ */
+.grid tfoot th,
+.grid tfoot td {
+  padding-block-start: var(--space-2);
+  border-block-start: 2px solid var(--color-border-strong);
+  white-space: nowrap;
+}
+
+.grid tfoot th {
+  padding-inline-end: var(--space-3);
+  font-weight: 700;
+  text-align: start;
+  color: var(--color-text);
+}
+
+.total {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--total-color);
+}
+
+.outOf {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }

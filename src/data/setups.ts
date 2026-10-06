@@ -40,6 +40,18 @@ export type Criterion = (typeof CRITERIA)[number]["key"];
 
 export type Scores = Record<Criterion, number>;
 
+/** The highest total a review can reach: every criterion scored 10 (Product rule 5). */
+export const MAX_TOTAL_SCORE = CRITERIA.length * 10;
+
+/**
+ * A review's total across the five criteria (5–50). Worked out whenever it's
+ * shown and never stored, so it can't disagree with the scores; every review
+ * scores all five (Product rule 4), so it's always a real sum.
+ */
+export function totalScore(scores: Scores): number {
+  return CRITERIA.reduce((sum, { key }) => sum + scores[key], 0);
+}
+
 export interface SetupSide {
   string: TennisString;
   gaugeMm: number;

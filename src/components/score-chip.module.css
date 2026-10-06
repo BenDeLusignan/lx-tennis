@@ -7,6 +7,11 @@
  * 2.25rem (--score-chip-size in globals.css) fits three reviewer columns on a
  * 360px phone. The entry forms make the whole label around the chip the
  * touch target, so it can stay this size.
+ *
+ * Digits are in the body font (Geist), not the display font: Orbitron's 3, 8
+ * and 9 (and 0 in 10) are too alike at this size, and Ben found them hard to
+ * read. 1.25rem at weight 600 fills the chip without crowding "10" (about
+ * 22px of the 32px inside the border).
  */
 .chip {
   display: inline-flex;
@@ -19,8 +24,9 @@
   border-radius: var(--radius-sm);
   background: var(--score-chip-fill, transparent);
   color: var(--score-chip-text, var(--color-text));
-  font-family: var(--font-display);
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   box-shadow: 0 0 0.5rem -0.1rem var(--score-chip-color, var(--color-accent));

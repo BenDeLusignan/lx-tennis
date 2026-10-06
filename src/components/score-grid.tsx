@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { CRITERIA, type SetupReview } from "@/data/setups";
+import { CRITERIA, MAX_TOTAL_SCORE, totalScore, type SetupReview } from "@/data/setups";
 import { reviewerColor } from "./reviewer-color";
 import { ReviewerName } from "./reviewer-name";
 import { ScoreChip } from "./score-chip";
@@ -20,6 +20,10 @@ interface ScoreGridProps {
  * table with row and column headers, so a screen reader announces
  * "Power, Michal, 7" for a cell. Only reviewers who reviewed the setup get
  * a column, so there's never an empty slot or a made-up score (rule 9).
+ *
+ * The last row is each reviewer's Total out of 50, derived from their five
+ * scores when rendered. It sits in a <tfoot> under a stronger line and is
+ * plain bold text, not a chip, so it reads as a sum and not a sixth criterion.
  */
 export function ScoreGrid({ reviews }: ScoreGridProps) {
   // Three reviewers fit a 360px phone; a fourth or more and the wrapper
@@ -31,7 +35,9 @@ export function ScoreGrid({ reviews }: ScoreGridProps) {
         className={styles.grid}
         style={{ "--reviewer-count": reviews.length } as CSSProperties}
       >
-        <caption className={styles.caption}>Scores out of 10</caption>
+        <caption className={styles.caption}>
+          Scores out of 10, total out of {MAX_TOTAL_SCORE}
+        </caption>
         {/* The criterion column is sized to its longest label; the
             reviewer columns split the rest evenly (table-layout: fixed). */}
         <colgroup>
@@ -64,6 +70,24 @@ export function ScoreGrid({ reviews }: ScoreGridProps) {
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            {reviews.map(({ reviewer, scores }) => {
+              const style = { "--total-color": reviewerColor(reviewer.username) } as CSSProperties;
+              return (
+                <td key={reviewer.id} style={style}>
+                  {/* Heard as "36 out of 50": the visible "/50" is for the eye only. */}
+                  <span className={styles.total}>{totalScore(scores)}</span>
+                  <span className={styles.outOf} aria-hidden="true">
+                    /{MAX_TOTAL_SCORE}
+                  </span>
+                  <span className="visually-hidden"> out of {MAX_TOTAL_SCORE}</span>
+                </td>
+              );
+            })}
+          </tr>
+        </tfoot>
       </table>
     </div>
   );
