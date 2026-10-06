@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Panel } from "@/components/panel";
 import { RacquetPhoto } from "@/components/racquet-photo";
 import { SectionTitle } from "@/components/section-title";
-import { SetupCard } from "@/components/setup-card";
+import { SetupCard, SetupCardList } from "@/components/setup-card";
 import { getRacquet, getRacquetSlugs } from "@/data/racquets";
 import { getRacquetSetups } from "@/data/setups";
 import styles from "./page.module.css";
@@ -102,7 +102,7 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
         </div>
 
         {setups.length > 0 ? (
-          <div className={styles.setups}>
+          <SetupCardList>
             {setups.map((setup) => (
               <SetupCard key={setup.id} setup={setup}>
                 {/* At the foot of the card: for visitors there's nothing
@@ -115,7 +115,7 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
                 />
               </SetupCard>
             ))}
-          </div>
+          </SetupCardList>
         ) : (
           <EmptyState title="No reviews yet">
             When someone tests a setup on this racquet, their scores and notes will appear here side

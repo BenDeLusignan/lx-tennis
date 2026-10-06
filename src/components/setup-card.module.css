@@ -1,9 +1,24 @@
 /*
+ * The list the cards sit in: one column on phones, as many ~24rem cards as
+ * fit on wider screens. It follows the space, not a breakpoint, because a
+ * card needs the same room for its grid wherever it is.
+ */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/*
  * Nested inside a panel (the Reviews panel, or a racquet's group on a string's
  * results), so its padding is tighter than a top-level panel's: on a 390px
  * phone three score columns still get room.
  * It sits on --color-bg rather than the panel's surface (Product rule 3's
  * grid and the reviewer colours are checked against both).
+ *
+ * This is the fallback layout: a plain column. Where subgrid is supported
+ * (below) it becomes four rows shared with the cards beside it.
  */
 .card {
   --panel-padding: var(--space-4);
@@ -13,6 +28,74 @@
   gap: var(--space-4);
   /* Clear of the page top when a save lands on #setup-<id>. */
   scroll-margin-block-start: var(--space-4);
+}
+
+/* Whatever streams in here (reviewer buttons) is the card's own flex or grid item. */
+.actions {
+  display: contents;
+}
+
+/*
+ * Cards in the same row of the list share its row tracks, so a taller summary
+ * (a hybrid lists Mains and Crosses, a full bed one string) pushes everyone's
+ * scores down by the same amount and the score captions start at one height.
+ *
+ * Each card spans four of the list's rows and lays its parts on them:
+ *   1 summary   2 scores (caption + table)   3 written reviews   4 reviewer buttons
+ * Row 3 and 4 may hold nothing, so they must cost nothing when empty. Track
+ * gaps are always paid, even for an empty track, so the list has no row gap;
+ * instead every part after the first brings its own top margin, which an
+ * absent part doesn't. The gap between cards moves to a bottom margin on the
+ * card (the list pulls the last row's one back), so it stays --space-4.
+ * The tracks are shared, so a row's cards end up the same height, and a card
+ * with no written review beside one with a long one has blank space above its
+ * buttons. That is the price of lining the rows up.
+ *
+ * Needs the card's parent to be `.list` (SetupCardList) and four rows per card,
+ * so change the 4 here and the row numbers below together.
+ */
+@supports (grid-template-rows: subgrid) {
+  .list {
+    row-gap: 0;
+    margin-block-end: calc(-1 * var(--space-4));
+  }
+
+  .card {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    /* minmax(0, ...) so a long word can't widen the card past its column. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-block-end: var(--space-4);
+  }
+
+  .summary {
+    grid-row: 1;
+  }
+
+  .scores {
+    grid-row: 2;
+    margin-block-start: var(--space-4);
+  }
+
+  .written {
+    grid-row: 3;
+    margin-block-start: var(--space-4);
+  }
+
+  /*
+   * <template> is the placeholder React leaves while the buttons stream in; it
+   * isn't displayed, so it must not get the margin or a row.
+   * justify-self: the pages' `.cardAction` (align-self: flex-start) keeps the
+   * button its own width in the flex fallback; this does the same here.
+   */
+  .actions > :not(template) {
+    grid-column: 1;
+    grid-row: 4;
+    justify-self: start;
+    margin-block-start: var(--space-4);
+  }
 }
 
 /* The card you just saved to glows, so you can see where you've landed. */

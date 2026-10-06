@@ -13,10 +13,22 @@ interface SetupCardProps {
 }
 
 /**
+ * The grid that setup cards sit in: as many ~24rem columns as fit, one on a
+ * phone. Use it for every run of `SetupCard`s, since the cards' alignment
+ * relies on this being their parent (see setup-card.module.css).
+ */
+export function SetupCardList({ children }: { children: ReactNode }) {
+  return <div className={styles.list}>{children}</div>;
+}
+
+/**
  * One setup on a racquet's page or a string's results (Product rule 3): the
  * setup on top, then everyone's scores side by side, then the written reviews.
  * Its id, `setup-<id>`, is where saving a setup or review lands
  * (`/racquets/<slug>#setup-<id>`).
+ *
+ * The four wrappers (summary, scores, written, actions) are the card's rows;
+ * cards sharing a row of the list line them up (setup-card.module.css).
  */
 export function SetupCard({ setup, children }: SetupCardProps) {
   const anchor = `setup-${setup.id}`;
@@ -26,8 +38,13 @@ export function SetupCard({ setup, children }: SetupCardProps) {
 
   return (
     <Panel id={anchor} aria-labelledby={setupHeadingId(setup.id)} className={styles.card}>
-      <SetupSummary setup={setup} headingLevel="h3" />
-      <ScoreGrid reviews={setup.reviews} />
+      <div className={styles.summary}>
+        <SetupSummary setup={setup} headingLevel="h3" />
+      </div>
+
+      <div className={styles.scores}>
+        <ScoreGrid reviews={setup.reviews} />
+      </div>
 
       {written.length > 0 && (
         <div className={styles.written}>
@@ -43,7 +60,8 @@ export function SetupCard({ setup, children }: SetupCardProps) {
         </div>
       )}
 
-      {children}
+      {/* display: contents (see the CSS), so whatever streams in here is the card's own row-4 item. */}
+      <div className={styles.actions}>{children}</div>
     </Panel>
   );
 }

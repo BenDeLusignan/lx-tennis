@@ -67,18 +67,6 @@
   margin-block-end: 0;
 }
 
-/*
- * One column on phones; as many ~24rem cards as fit on wider screens. It
- * follows the space, not a breakpoint, because a card needs the same room
- * for its grid wherever it is.
- */
-.setups {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
-  gap: var(--space-4);
-  align-items: start;
-}
-
 .cardAction {
   align-self: flex-start;
 }

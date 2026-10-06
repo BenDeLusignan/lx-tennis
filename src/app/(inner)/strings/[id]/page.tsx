@@ -5,7 +5,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
-import { SetupCard } from "@/components/setup-card";
+import { SetupCard, SetupCardList } from "@/components/setup-card";
 import { getRacquetsByBrand } from "@/data/racquets";
 import { getStringSetups } from "@/data/setups";
 import { getStrings, stringTypeLabel, type TennisString } from "@/data/strings";
@@ -97,11 +97,11 @@ export default async function StringPage({ params }: PageProps<"/strings/[id]">)
                   <span className="visually-hidden"> {racquet.name}</span>
                 </Button>
               </div>
-              <div className={styles.setups}>
+              <SetupCardList>
                 {racquetSetups.map((setup) => (
                   <SetupCard key={setup.id} setup={setup} />
                 ))}
-              </div>
+              </SetupCardList>
             </Panel>
           );
         })

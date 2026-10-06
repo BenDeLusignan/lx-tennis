@@ -33,15 +33,3 @@
   font-weight: 400;
   color: var(--color-text-muted);
 }
-
-/*
- * One column on phones; as many ~24rem cards as fit on wider screens. It
- * follows the space, not a breakpoint, as on a racquet's page, because a
- * card needs the same room for its grid wherever it is.
- */
-.setups {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
-  gap: var(--space-4);
-  align-items: start;
-}
