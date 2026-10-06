@@ -24,6 +24,11 @@ export const STRING_TYPES: readonly { value: StringType; label: string }[] = [
   { value: "kevlar-aramid", label: "Kevlar/aramid" },
 ];
 
+/** A type's label, as the lists and pages show it. */
+export function stringTypeLabel(type: StringType): string {
+  return STRING_TYPES.find(({ value }) => value === type)?.label ?? type;
+}
+
 export interface TennisString {
   id: number;
   brand: string;
@@ -53,7 +58,7 @@ export async function getStrings(): Promise<readonly TennisString[]> {
 }
 
 /** Every string, by brand then name, and whether a setup uses it (so it can't be deleted). */
-export async function getStringsWithUsage(): Promise<readonly (TennisString & { inUse: boolean })[]> {
+export async function getStringsWithUsage(): Promise<readonly TennisStringWithUsage[]> {
   "use cache";
   cacheLife("max");
   cacheTag(STRINGS_TAG);
@@ -62,6 +67,36 @@ export async function getStringsWithUsage(): Promise<readonly (TennisString & { 
     .from(string)
     .orderBy(...byBrandThenName);
   return rows.map((row) => ({ ...row, inUse: row.inUse === 1 }));
+}
+
+type TennisStringWithUsage = TennisString & { inUse: boolean };
+
+export interface StringBrandSection {
+  /** As the first of its strings spells it. */
+  brand: string;
+  strings: readonly TennisStringWithUsage[];
+}
+
+/**
+ * `/strings`: every string with a setup (`inUse`) or without, in a section per
+ * brand, brands and names alphabetical. Brands are grouped ignoring capitals,
+ * as the sort and the unique index fold them, so "Solinco" and "solinco"
+ * typed on two setup forms don't make two sections. Cached with the strings
+ * tag, which every change to the list or to which strings are used refreshes.
+ */
+export async function getStringsByBrand(): Promise<readonly StringBrandSection[]> {
+  "use cache";
+  cacheLife("max");
+  cacheTag(STRINGS_TAG);
+  const rows = await getStringsWithUsage();
+  const sections = new Map<string, TennisStringWithUsage[]>();
+  for (const row of rows) {
+    const key = row.brand.toLowerCase();
+    const section = sections.get(key);
+    if (section) section.push(row);
+    else sections.set(key, [row]);
+  }
+  return [...sections.values()].map((strings) => ({ brand: strings[0].brand, strings }));
 }
 
 /**

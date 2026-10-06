@@ -30,8 +30,18 @@ export function racquetSetupsTag(slug: string): string {
 export const ALL_SETUPS_TAG = "setups";
 
 /**
- * The string list and which strings are in use: `getStrings()` and
- * `getStringsWithUsage()`. Refreshed by any string change, by every new
+ * The setups that use a string: `getStringSetups(id)`, on `/strings/[id]`.
+ * A string's setups can be on any racquet, so `setups:<slug>` can't name
+ * them (a setup on a racquet the string wasn't on yet wouldn't carry it).
+ * Refreshed with `setups:<slug>` by every new setup and every review
+ * added, edited or deleted (`refreshRacquetSetups` in `setups.ts`); a string
+ * edit refreshes it through `ALL_SETUPS_TAG`, which the reader also carries.
+ */
+export const STRING_SETUPS_TAG = "string-setups";
+
+/**
+ * The string list and which strings are in use: `getStrings()`,
+ * `getStringsWithUsage()` and `getStringsByBrand()`. Refreshed by any string change, by every new
  * setup (it may add strings, and it puts its strings in use) and by a
  * review delete that removes its setup (its strings may no longer be in use).
  */

@@ -12,7 +12,7 @@ import { Input, Select } from "@/components/input";
 import { SectionTitle } from "@/components/section-title";
 import { SubmitButton } from "@/components/submit-button";
 import { STRING_FIELD_MAX_LENGTH } from "@/data/limits";
-import { getStringsWithUsage, STRING_TYPES, type TennisString } from "@/data/strings";
+import { getStringsWithUsage, STRING_TYPES, stringTypeLabel, type TennisString } from "@/data/strings";
 import { deleteString, updateString } from "@/strings/actions";
 import styles from "./page.module.css";
 
@@ -29,8 +29,6 @@ const ERRORS: Record<string, string> = {
   "string-exists": "Another string already has that brand and name (ignoring capitals).",
   "in-use": "That string has been tested in a review, so it can’t be deleted.",
 };
-
-const TYPE_LABELS = Object.fromEntries(STRING_TYPES.map(({ value, label }) => [value, label]));
 
 // The list is cached and refreshed on every change, so it's in the static
 // shell; only the login check and the result of the last change stream in.
@@ -68,7 +66,7 @@ export default async function StringsPage({ searchParams }: PageProps<"/account/
                     {string.brand} {string.name}
                   </span>
                   <span className={styles.meta}>
-                    {TYPE_LABELS[string.type]}
+                    {stringTypeLabel(string.type)}
                     {string.inUse && <span className={styles.inUse}>String tested</span>}
                   </span>
                 </summary>

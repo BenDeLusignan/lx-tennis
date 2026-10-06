@@ -264,7 +264,8 @@ test("a reviewer adds their review to someone else's setup once", async () => {
     await submitReview(MICHAL, form({ setup: String(id), ...SCORES, spin: "4", body: "" })),
     `/racquets/${SLUG}#setup-${id}`,
   );
-  assert.deepEqual(refreshedTags, [`setups:${SLUG}`]);
+  // The racquet's page, and every string's results (the setup could be on any).
+  assert.deepEqual(refreshedTags, [`setups:${SLUG}`, "string-setups"]);
 
   // Already reviewed: back to the review page, which says so; nothing changes.
   clearRefreshedTags();
@@ -351,7 +352,7 @@ test("a reviewer edits their own review: scores and text change, the time moves,
   );
   assert.ok(after.updatedAt.getTime() > 0);
   assert.equal(after.createdAt.getTime(), before.createdAt.getTime());
-  assert.deepEqual(refreshedTags, [`setups:${SLUG}`]);
+  assert.deepEqual(refreshedTags, [`setups:${SLUG}`, "string-setups"]);
 
   // A blank written review clears it.
   assert.equal(
@@ -465,7 +466,7 @@ test("deleting your review leaves the setup and everyone else's review, and refr
     (await getSetup(id))?.reviews.map((review) => review.reviewer.id),
     [MICHAL.id],
   );
-  assert.deepEqual(refreshedTags, [`setups:${SLUG}`]);
+  assert.deepEqual(refreshedTags, [`setups:${SLUG}`, "string-setups"]);
 });
 
 test("deleting the last review removes the setup too, and the racquet page and string list refresh", async () => {
@@ -499,7 +500,10 @@ test("deleting the last review removes the setup too, and the racquet page and s
   assert.ok(!(await getRacquetSetups(SLUG)).some((setup) => setup.id === id));
   // The string stays on the list, but no setup uses it any more.
   assert.equal(await stringInUse("Delete Test Gut"), false);
-  assert.deepEqual([...refreshedTags].sort(), ["racquet-usage", "strings", `setups:${SLUG}`].sort());
+  assert.deepEqual(
+    [...refreshedTags].sort(),
+    ["racquet-usage", "strings", `setups:${SLUG}`, "string-setups"].sort(),
+  );
 });
 
 test("a reviewer can't delete another reviewer's review, whatever the form says", async () => {

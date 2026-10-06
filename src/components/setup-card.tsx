@@ -16,9 +16,9 @@ interface SetupCardProps {
 }
 
 /**
- * One setup on a racquet's page (Product rule 3): the setup on top, then
- * everyone's scores side by side, then the written reviews. Its id,
- * `setup-<id>`, is where saving a setup or review lands
+ * One setup on a racquet's page or a string's results (Product rule 3): the
+ * setup on top, then everyone's scores side by side, then the written reviews.
+ * Its id, `setup-<id>`, is where saving a setup or review lands
  * (`/racquets/<slug>#setup-<id>`).
  */
 export function SetupCard({ setup, reviewers, children }: SetupCardProps) {

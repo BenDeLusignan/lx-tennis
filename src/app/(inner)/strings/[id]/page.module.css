@@ -1,0 +1,47 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.title {
+  margin-block-end: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--color-text-muted);
+}
+
+/* The racquet's name and "View racquet" share a row; the button wraps under the name on a narrow phone. */
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-block-end: var(--space-4);
+}
+
+.groupTitle {
+  margin-block-end: 0;
+}
+
+.year {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/*
+ * One column on phones; as many ~24rem cards as fit on wider screens. It
+ * follows the space, not a breakpoint, as on a racquet's page, because a
+ * card needs the same room for its grid wherever it is.
+ */
+.setups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}

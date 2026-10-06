@@ -1,7 +1,7 @@
 import { Field } from "@/components/field";
 import { Input, Select } from "@/components/input";
 import { STRING_FIELD_MAX_LENGTH } from "@/data/limits";
-import { STRING_TYPES, type TennisString } from "@/data/strings";
+import { STRING_TYPES, stringTypeLabel, type TennisString } from "@/data/strings";
 import { stringKey } from "./string-key";
 import styles from "./page.module.css";
 
@@ -14,8 +14,6 @@ interface StringPickerProps {
    */
   alwaysShown: boolean;
 }
-
-const TYPE_LABELS = Object.fromEntries(STRING_TYPES.map(({ value, label }) => [value, label]));
 
 /**
  * One side's string: a choice from the shared list, grouped by brand, or
@@ -55,7 +53,7 @@ export function StringPicker({ side, strings, alwaysShown }: StringPickerProps) 
                   value={string.id}
                   data-key={stringKey(string.brand, string.name)}
                 >
-                  {string.brand} {string.name} ({TYPE_LABELS[string.type]})
+                  {string.brand} {string.name} ({stringTypeLabel(string.type)})
                 </option>
               ))}
             </optgroup>

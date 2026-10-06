@@ -1,6 +1,7 @@
 /*
- * Nested inside the Reviews panel, so its padding is tighter than a
- * top-level panel's: on a 390px phone three score columns still get room.
+ * Nested inside a panel (the Reviews panel, or a racquet's group on a string's
+ * results), so its padding is tighter than a top-level panel's: on a 390px
+ * phone three score columns still get room.
  * It sits on --color-bg rather than the panel's surface (Product rule 3's
  * grid and the reviewer colours are checked against both).
  */

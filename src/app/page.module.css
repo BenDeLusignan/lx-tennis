@@ -55,7 +55,7 @@
   color: var(--color-text-muted);
 }
 
-/* Pushed to the card's foot so the three cards' calls to action line up. */
+/* Pushed to the card's foot so the linked cards' calls to action line up. */
 .cardCta {
   margin-block-start: auto;
   padding-block-start: var(--space-2);

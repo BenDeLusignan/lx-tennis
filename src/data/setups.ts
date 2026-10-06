@@ -1,8 +1,14 @@
 import "server-only";
-import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
-import { ALL_SETUPS_TAG, RACQUET_USAGE_TAG, racquetSetupsTag, STRINGS_TAG } from "@/data/cache-tags";
+import {
+  ALL_SETUPS_TAG,
+  RACQUET_USAGE_TAG,
+  racquetSetupsTag,
+  STRING_SETUPS_TAG,
+  STRINGS_TAG,
+} from "@/data/cache-tags";
 import type { Reviewer } from "@/data/reviewers";
 import {
   findStringByName,
@@ -158,6 +164,34 @@ export async function getSetup(id: number): Promise<Setup | undefined> {
   return found;
 }
 
+/**
+ * Every setup with this string in its mains, its crosses or both, newest
+ * strung first, for `/strings/[id]`. A setup is one row, so a full bed (or a
+ * hybrid of one string in two gauges) is listed once. An id no string has
+ * gives an empty list, the same as a string no setup uses: the page checks
+ * that the string exists first. Cached; a new setup or any review change
+ * refreshes `STRING_SETUPS_TAG` (`refreshRacquetSetups`), a string edit
+ * `ALL_SETUPS_TAG`.
+ */
+export async function getStringSetups(stringId: number): Promise<readonly Setup[]> {
+  "use cache";
+  cacheLife("max");
+  cacheTag(STRING_SETUPS_TAG, ALL_SETUPS_TAG);
+  return loadSetups(
+    sql`(${eq(setup.mainsStringId, stringId)} OR ${eq(setup.crossesStringId, stringId)})`,
+  );
+}
+
+/**
+ * A new setup or a review change: refreshes the racquet's page and the
+ * results of every string. Every write that changes what a setup card shows
+ * goes through here, so `/strings/[id]` can't miss one.
+ */
+function refreshRacquetSetups(slug: string): void {
+  updateTag(racquetSetupsTag(slug));
+  updateTag(STRING_SETUPS_TAG);
+}
+
 /** Either an existing string's id or a new string to add to the list. */
 export type StringChoice = { id: number } | { new: StringFields };
 
@@ -280,7 +314,7 @@ export async function createSetupWithReview(
     throw error;
   }
 
-  updateTag(racquetSetupsTag(input.racquetSlug));
+  refreshRacquetSetups(input.racquetSlug);
   // New strings join the list, and this setup's strings are now in use.
   updateTag(STRINGS_TAG);
   // The racquet now has a setup, so it can't be deleted.
@@ -348,7 +382,7 @@ export async function addReview(
     .returning({ id: review.id });
   if (inserted.length === 0) return { status: "already-reviewed", racquetSlug: found.racquetSlug };
 
-  updateTag(racquetSetupsTag(found.racquetSlug));
+  refreshRacquetSetups(found.racquetSlug);
   return { status: "created", racquetSlug: found.racquetSlug };
 }
 
@@ -389,7 +423,7 @@ export async function updateReview(
     .returning({ id: review.id });
   if (updated.length === 0) return { status: "not-reviewed", racquetSlug: found.racquetSlug };
 
-  updateTag(racquetSetupsTag(found.racquetSlug));
+  refreshRacquetSetups(found.racquetSlug);
   return { status: "updated", racquetSlug: found.racquetSlug };
 }
 
@@ -448,7 +482,7 @@ export async function deleteReview(setupId: number, author: Reviewer): Promise<D
   });
 
   if (result.status === "deleted") {
-    updateTag(racquetSetupsTag(result.racquetSlug));
+    refreshRacquetSetups(result.racquetSlug);
     // Only a removed setup changes the string list: its strings may no longer be in use.
     if (result.setupRemoved) {
       updateTag(STRINGS_TAG);
