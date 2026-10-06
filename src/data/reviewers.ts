@@ -1,6 +1,5 @@
 import "server-only";
 import { and, eq, ne } from "drizzle-orm";
-import { cacheLife } from "next/cache";
 import { getDb, type Transaction } from "@/db/client";
 import { reviewer } from "@/db/schema";
 
@@ -8,7 +7,8 @@ import { reviewer } from "@/db/schema";
  * Reviewer accounts. The `...Credentials` accessors return the password hash
  * and exist only for `src/auth` and `scripts/set-password.ts`; pages and
  * components get a `Reviewer`, which never carries it — nor the email,
- * which is read only via `getReviewerEmail` (see `getReviewers` below).
+ * which is read only via `getReviewerEmail` (the setups readers select a
+ * reviewer's columns one by one, so cached cards never carry it).
  */
 
 export interface Reviewer {
@@ -91,7 +91,7 @@ export async function setReviewerPasswordHash(
 /**
  * The reviewer's stored email, or null when they've never set one. Read
  * separately from `Reviewer` on purpose: an email is private, so it never
- * rides on a reviewer object — `getReviewers()` feeds the public score
+ * rides on a reviewer object — the setups readers feed the public score
  * grid, and the account page's `Reviewer` is passed around pages. Not
  * cached: the account page reads it per request, after the session check.
  */
@@ -125,8 +125,8 @@ export async function reviewerEmailInUse(
 /**
  * Sets the reviewer's own email, refused when another reviewer already has
  * it. The unique index in the schema stays as the backstop for a check
- * bypassed here. Nothing cached shows an email (`getReviewers` selects
- * without it and has no tag), so there's nothing to refresh. Only from a
+ * bypassed here. Nothing cached shows an email (the setups readers select
+ * a reviewer's columns one by one), so there's nothing to refresh. Only from a
  * Server Action.
  */
 export async function setReviewerEmail(
@@ -150,26 +150,4 @@ export async function getReviewerUsernames(): Promise<string[]> {
     .from(reviewer)
     .orderBy(reviewer.id);
   return rows.map((row) => row.username);
-}
-
-/**
- * Every reviewer, by id: the score grid's column order. Cached into the
- * static shell with no tag, because nothing in the app changes a reviewer's
- * id or name (the password hash changes via `db:set-password` or the
- * account page's change-password form, and isn't here). A reviewer added by
- * a migration shows up after the next build, whose new build id starts
- * every cache afresh.
- *
- * The select spells out its columns on purpose: this result is baked into
- * prerendered pages, so a future `select()` of the whole row would leak the
- * `email` column into the public grid. Emails are read only through
- * `getReviewerEmail`, per request, never cached.
- */
-export async function getReviewers(): Promise<readonly Reviewer[]> {
-  "use cache";
-  cacheLife("max");
-  return getDb()
-    .select({ id: reviewer.id, username: reviewer.username, displayName: reviewer.displayName })
-    .from(reviewer)
-    .orderBy(reviewer.id);
 }

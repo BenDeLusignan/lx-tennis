@@ -5,18 +5,30 @@
 /*
  * Fixed layout: the criterion column is as wide as its longest label
  * ("Comfort", "Control"), and the reviewer columns share the rest evenly
- * whatever their names, so the grid reads as a grid. Its minimum width
- * keeps every reviewer column wide enough for a name in the header and a
- * chip below it (--reviewer-column-width); below that, the wrapper scrolls
- * sideways instead of names breaking mid-word or chips spilling out of
- * their cells. --reviewer-count is set by score-grid.tsx.
+ * whatever their names, so the grid reads as a grid. Only reviewers who
+ * reviewed the setup have a column, so there can be one, two, three or more.
+ *
+ * - Minimum width keeps every reviewer column wide enough for a name in the
+ *   header and a chip below it (--reviewer-column-width); below that, the
+ *   wrapper scrolls sideways instead of names breaking mid-word or chips
+ *   spilling out of their cells.
+ * - Maximum width stops a lone reviewer's column stretching across the whole
+ *   card, which would leave their name and chips far from the criteria they
+ *   belong to. Three columns on a phone are already narrower than this, so
+ *   it only ever bites for one or two.
+ *
+ * --reviewer-count is set by score-grid.tsx.
  */
 .grid {
   --criterion-width: 5rem;
   --reviewer-column-width: 3.5rem;
+  --reviewer-column-max-width: 7rem;
   inline-size: 100%;
   min-inline-size: calc(
     var(--criterion-width) + var(--reviewer-count) * var(--reviewer-column-width)
+  );
+  max-inline-size: calc(
+    var(--criterion-width) + var(--reviewer-count) * var(--reviewer-column-max-width)
   );
   table-layout: fixed;
   border-collapse: collapse;
@@ -58,17 +70,4 @@
 /* A row line under each criterion helps the eye read across. */
 .grid tbody tr + tr {
   border-block-start: 1px solid var(--color-border);
-}
-
-/*
- * An empty slot the size of a chip, dashed like EmptyState (same strong
- * border, so it clears 3:1): "nobody has scored this", never a number.
- */
-.empty {
-  display: inline-block;
-  vertical-align: middle;
-  inline-size: var(--score-chip-size);
-  block-size: var(--score-chip-size);
-  border: 2px dashed var(--color-border-strong);
-  border-radius: var(--radius-sm);
 }

@@ -98,7 +98,7 @@
   --content-width: 72rem;
   --focus-ring-width: 3px;
 
-  /* Score chip: one size, so the grid's empty slot always matches a chip. */
+  /* Score chip: one size wherever a score is shown. */
   --score-chip-size: 2.25rem;
 
   /* Motion */

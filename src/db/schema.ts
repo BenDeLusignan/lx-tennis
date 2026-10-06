@@ -31,10 +31,11 @@ export const reviewer = sqliteTable(
     passwordHash: text("password_hash"),
     /**
      * What the reviewer logs in with, and later the password-reset address;
-     * null until the reviewer sets one on /account. Private: no public reader ever
-     * selects it (`getReviewers` spells out its columns), and the account
-     * page reads it per request. Stored trimmed and lowercased (as
-     * usernames are), so later a reset can look the address up as typed.
+     * null until the reviewer sets one on /account. Private: no public reader
+     * ever selects it (`loadSetups` in `src/data/setups.ts` spells out the
+     * reviewer columns it takes), and the account page reads it per request.
+     * Stored trimmed and lowercased (as usernames are), so later a reset can
+     * look the address up as typed.
      */
     email: text("email"),
   },

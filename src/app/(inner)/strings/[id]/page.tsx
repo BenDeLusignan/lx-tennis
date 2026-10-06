@@ -7,7 +7,6 @@ import { Panel } from "@/components/panel";
 import { SectionTitle } from "@/components/section-title";
 import { SetupCard } from "@/components/setup-card";
 import { getRacquetsByBrand } from "@/data/racquets";
-import { getReviewers } from "@/data/reviewers";
 import { getStringSetups } from "@/data/setups";
 import { getStrings, stringTypeLabel, type TennisString } from "@/data/strings";
 import { parseId } from "@/forms/fields";
@@ -52,11 +51,7 @@ export default async function StringPage({ params }: PageProps<"/strings/[id]">)
 
   // All cached and refreshed when something is saved, so the cards are in
   // the static shell. The catalogue gives the racquets' names and their order.
-  const [setups, reviewers, brands] = await Promise.all([
-    getStringSetups(found.id),
-    getReviewers(),
-    getRacquetsByBrand(),
-  ]);
+  const [setups, brands] = await Promise.all([getStringSetups(found.id), getRacquetsByBrand()]);
 
   // By racquet, in the catalogue's order; within one, newest strung first
   // (the order `getStringSetups` returns). A setup's racquet always exists.
@@ -104,7 +99,7 @@ export default async function StringPage({ params }: PageProps<"/strings/[id]">)
               </div>
               <div className={styles.setups}>
                 {racquetSetups.map((setup) => (
-                  <SetupCard key={setup.id} setup={setup} reviewers={reviewers} />
+                  <SetupCard key={setup.id} setup={setup} />
                 ))}
               </div>
             </Panel>

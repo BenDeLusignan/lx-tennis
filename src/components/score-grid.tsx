@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import type { Reviewer } from "@/data/reviewers";
 import { CRITERIA, type SetupReview } from "@/data/setups";
 import { reviewerColor } from "./reviewer-color";
 import { ReviewerName } from "./reviewer-name";
@@ -7,8 +6,11 @@ import { ScoreChip } from "./score-chip";
 import styles from "./score-grid.module.css";
 
 interface ScoreGridProps {
-  /** Every reviewer, in column order: one column each, reviewed or not. */
-  reviewers: readonly Reviewer[];
+  /**
+   * The setup's reviews, which are the columns: one per review, in the
+   * order given (by reviewer id, as `Setup.reviews` is). Never empty, since
+   * a setup with no reviews is deleted.
+   */
   reviews: readonly SetupReview[];
 }
 
@@ -16,13 +18,10 @@ interface ScoreGridProps {
  * Product rule 3's grid: criteria as rows, reviewers as columns, so
  * comparing everyone on one criterion means reading across one row. A real
  * table with row and column headers, so a screen reader announces
- * "Power, Michal, 7" for a cell. A reviewer who hasn't reviewed the setup
- * keeps their column, with empty slots rather than any made-up score
- * (rule 9).
+ * "Power, Michal, 7" for a cell. Only reviewers who reviewed the setup get
+ * a column, so there's never an empty slot or a made-up score (rule 9).
  */
-export function ScoreGrid({ reviewers, reviews }: ScoreGridProps) {
-  const reviewsByReviewer = new Map(reviews.map((review) => [review.reviewer.id, review]));
-
+export function ScoreGrid({ reviews }: ScoreGridProps) {
   // Three reviewers fit a 360px phone; a fourth or more and the wrapper
   // scrolls sideways (see .grid). It isn't a tab stop, since it normally has
   // nothing to scroll (current browsers make it focusable once it does).
@@ -30,7 +29,7 @@ export function ScoreGrid({ reviewers, reviews }: ScoreGridProps) {
     <div className={styles.scroller}>
       <table
         className={styles.grid}
-        style={{ "--reviewer-count": reviewers.length } as CSSProperties}
+        style={{ "--reviewer-count": reviews.length } as CSSProperties}
       >
         <caption className={styles.caption}>Scores out of 10</caption>
         {/* The criterion column is sized to its longest label; the
@@ -43,7 +42,7 @@ export function ScoreGrid({ reviewers, reviews }: ScoreGridProps) {
             <th scope="col">
               <span className="visually-hidden">Criterion</span>
             </th>
-            {reviewers.map((reviewer) => (
+            {reviews.map(({ reviewer }) => (
               <th key={reviewer.id} scope="col">
                 <ReviewerName reviewer={reviewer} />
               </th>
@@ -54,18 +53,11 @@ export function ScoreGrid({ reviewers, reviews }: ScoreGridProps) {
           {CRITERIA.map((criterion) => (
             <tr key={criterion.key}>
               <th scope="row">{criterion.label}</th>
-              {reviewers.map((reviewer) => {
-                const review = reviewsByReviewer.get(reviewer.id);
+              {reviews.map(({ reviewer, scores }) => {
                 const style = { "--score-chip-color": reviewerColor(reviewer.username) } as CSSProperties;
                 return (
                   <td key={reviewer.id} style={style}>
-                    {review ? (
-                      <ScoreChip value={review.scores[criterion.key]} />
-                    ) : (
-                      <span className={styles.empty}>
-                        <span className="visually-hidden">Not reviewed</span>
-                      </span>
-                    )}
+                    <ScoreChip value={scores[criterion.key]} />
                   </td>
                 );
               })}

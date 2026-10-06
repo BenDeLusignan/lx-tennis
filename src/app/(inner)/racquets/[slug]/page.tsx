@@ -12,7 +12,6 @@ import { RacquetPhoto } from "@/components/racquet-photo";
 import { SectionTitle } from "@/components/section-title";
 import { SetupCard } from "@/components/setup-card";
 import { getRacquet, getRacquetSlugs } from "@/data/racquets";
-import { getReviewers } from "@/data/reviewers";
 import { getRacquetSetups } from "@/data/setups";
 import styles from "./page.module.css";
 
@@ -47,9 +46,9 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
   const racquet = await getRacquet(slug);
   if (!racquet) notFound();
 
-  // Both cached and refreshed when something is saved, so the cards are in
-  // the static shell; only the reviewer's buttons stream in.
-  const [setups, reviewers] = await Promise.all([getRacquetSetups(slug), getReviewers()]);
+  // Cached and refreshed when something is saved, so the cards are in the
+  // static shell; only the reviewer's buttons stream in.
+  const setups = await getRacquetSetups(slug);
 
   // A spec the manufacturer doesn't publish is null and its row is left out,
   // never guessed (Product rule 11). Weight is grams only (Ben's decision).
@@ -105,7 +104,7 @@ export default async function RacquetPage({ params }: PageProps<"/racquets/[slug
         {setups.length > 0 ? (
           <div className={styles.setups}>
             {setups.map((setup) => (
-              <SetupCard key={setup.id} setup={setup} reviewers={reviewers}>
+              <SetupCard key={setup.id} setup={setup}>
                 {/* At the foot of the card: for visitors there's nothing
                     here, and a gap kept free for a button they'll never
                     see would waste a phone's height on every card. */}

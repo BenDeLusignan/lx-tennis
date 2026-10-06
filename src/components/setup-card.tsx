@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import type { Reviewer } from "@/data/reviewers";
 import type { Setup } from "@/data/setups";
 import { Panel } from "./panel";
 import { ReviewerName } from "./reviewer-name";
@@ -9,8 +8,6 @@ import styles from "./setup-card.module.css";
 
 interface SetupCardProps {
   setup: Setup;
-  /** Every reviewer, in the grid's column order. */
-  reviewers: readonly Reviewer[];
   /** Reviewer-only controls at the foot of the card (streamed in by the page). */
   children?: ReactNode;
 }
@@ -21,18 +18,16 @@ interface SetupCardProps {
  * Its id, `setup-<id>`, is where saving a setup or review lands
  * (`/racquets/<slug>#setup-<id>`).
  */
-export function SetupCard({ setup, reviewers, children }: SetupCardProps) {
+export function SetupCard({ setup, children }: SetupCardProps) {
   const anchor = `setup-${setup.id}`;
-  // In the grid's column order, so the reviews read in the same order as the scores.
-  const written = reviewers.flatMap((reviewer) => {
-    const review = setup.reviews.find((r) => r.reviewer.id === reviewer.id);
-    return review?.body ? [{ reviewer, body: review.body }] : [];
-  });
+  // In the grid's column order (`setup.reviews` is by reviewer id), so the
+  // written reviews read in the same order as the scores.
+  const written = setup.reviews.flatMap(({ reviewer, body }) => (body ? [{ reviewer, body }] : []));
 
   return (
     <Panel id={anchor} aria-labelledby={setupHeadingId(setup.id)} className={styles.card}>
       <SetupSummary setup={setup} headingLevel="h3" />
-      <ScoreGrid reviewers={reviewers} reviews={setup.reviews} />
+      <ScoreGrid reviews={setup.reviews} />
 
       {written.length > 0 && (
         <div className={styles.written}>
