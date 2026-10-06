@@ -60,6 +60,67 @@ test("a string can change only its capitals", async () => {
   assert.equal((await findString(HYPER_G))?.brand, "SOLINCO");
 });
 
+test("an edit capitalises the first letter of the brand and name and leaves the rest as typed", async () => {
+  const HYPER_G_SOFT = 7;
+  const CONFIDENTIAL = 8;
+  const MACH_10 = 10;
+
+  assert.equal(
+    await submitStringUpdate(
+      BEN,
+      form({ id: String(HYPER_G_SOFT), brand: "solinco", name: "hyper-G soft", type: "co-polyester" }),
+    ),
+    `/account/strings?saved=${HYPER_G_SOFT}`,
+  );
+  const soft = await findString(HYPER_G_SOFT);
+  assert.deepEqual([soft?.brand, soft?.name], ["Solinco", "Hyper-G soft"]);
+
+  // Already capitalised, or all capitals: untouched.
+  await submitStringUpdate(
+    BEN,
+    form({ id: String(CONFIDENTIAL), brand: "SOLINCO", name: "POLYTOUR", type: "co-polyester" }),
+  );
+  const confidential = await findString(CONFIDENTIAL);
+  assert.deepEqual([confidential?.brand, confidential?.name], ["SOLINCO", "POLYTOUR"]);
+
+  // The first letter can't be edited back to lowercase.
+  await submitStringUpdate(
+    BEN,
+    form({ id: String(MACH_10), brand: "Solinco", name: "mach-10", type: "co-polyester" }),
+  );
+  assert.equal((await findString(MACH_10))?.name, "Mach-10");
+});
+
+test("a leading digit or symbol is left alone and an accented first letter is capitalised", async () => {
+  const CONFIDENTIAL_SOFT = 9;
+  await submitStringUpdate(
+    BEN,
+    form({ id: String(CONFIDENTIAL_SOFT), brand: "école", name: "3m soft", type: "co-polyester" }),
+  );
+  const edited = await findString(CONFIDENTIAL_SOFT);
+  assert.deepEqual([edited?.brand, edited?.name], ["École", "3m soft"]);
+
+  await submitStringUpdate(
+    BEN,
+    form({ id: String(CONFIDENTIAL_SOFT), brand: "(solinco)", name: "ßoft", type: "co-polyester" }),
+  );
+  const symbol = await findString(CONFIDENTIAL_SOFT);
+  assert.deepEqual([symbol?.brand, symbol?.name], ["(solinco)", "ßoft"]);
+});
+
+test("an edit that lowercases a clash is still a clash, and capitals alone never hide one", async () => {
+  // Seeded "Solinco Hyper-G" (id 6); "solinco" + "hyper-g" would be stored as "Solinco Hyper-g".
+  const before = await findString(POLYTOUR_FIRE);
+  assert.equal(
+    await submitStringUpdate(
+      BEN,
+      form({ id: String(POLYTOUR_FIRE), brand: "solinco", name: "hyper-g", type: "polyester" }),
+    ),
+    "/account/strings?error=string-exists",
+  );
+  assert.deepEqual(await findString(POLYTOUR_FIRE), before);
+});
+
 test("an edit can't give a string another string's brand and name, whatever the capitals", async () => {
   const url = await submitStringUpdate(
     BEN,

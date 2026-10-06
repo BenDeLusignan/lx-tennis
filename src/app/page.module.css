@@ -1,3 +1,10 @@
+/*
+ * `margin-block-end` is the air between the hero's pink horizon line and the
+ * entry cards. A phone gets 3rem (the cards were crowding the line at 2rem,
+ * but the first two cards still have to fit above the fold, so no more than
+ * that); from 48rem there's room to spare and the bigger hero deserves
+ * more, see the media query below.
+ */
 .hero {
   position: relative;
   display: flex;
@@ -5,7 +12,7 @@
   align-items: center;
   gap: var(--space-3);
   padding-block: var(--space-8) 0;
-  margin-block-end: var(--space-8);
+  margin-block-end: var(--space-12);
   text-align: center;
   overflow: hidden;
   border-block-end: 2px solid var(--color-accent);
@@ -88,6 +95,11 @@
 }
 
 @media (min-width: 48rem) {
+  /* Twice --space-8, with the room the desktop has: the cards end well above the fold. */
+  .hero {
+    margin-block-end: calc(var(--space-8) * 2);
+  }
+
   .entries {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-6);

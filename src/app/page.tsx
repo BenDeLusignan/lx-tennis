@@ -7,8 +7,8 @@ import styles from "./page.module.css";
 // banner, so it renders its own <header> and <main id="main"> instead of
 // <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
 //
-// It's the hub (Ben's call): three ways in. Racquet Reviews and String Search
-// are built, so those are links; the quiz says "Coming soon" in words (not
+// It's the hub (Ben's call): three ways in. Search by Racquet and Search by
+// String are built, so those are links; the quiz says "Coming soon" in words (not
 // just a muted look) and isn't a link, so nobody taps into a page that isn't
 // there. When it's built, swap its entry for a `LiveEntry` and add its page
 // to the Rendering notes in docs/vision.md.
@@ -31,12 +31,12 @@ export default function Home() {
           <LiveEntry
             id="racquets"
             href="/racquets"
-            title="Racquet Reviews"
+            title="Search by Racquet"
             cta="See all racquets"
           >
             Every racquet we&rsquo;ve tested, with its official specs and everyone&rsquo;s reviews.
           </LiveEntry>
-          <LiveEntry id="strings" href="/strings" title="String Search" cta="Browse strings">
+          <LiveEntry id="strings" href="/strings" title="Search by String" cta="Browse strings">
             Pick a string to see every setup it&rsquo;s been in, with everyone&rsquo;s scores.
           </LiveEntry>
           <ComingSoonEntry id="quiz" title="Tennis Quiz">
@@ -60,8 +60,8 @@ interface LiveEntryProps {
 
 /**
  * A hub entry that exists: a whole-card link, named by its heading and
- * described by its blurb, so a screen reader's link list says "Racquet
- * Reviews" rather than a sentence.
+ * described by its blurb, so a screen reader's link list says "Search by
+ * Racquet" rather than a sentence.
  */
 function LiveEntry({ id, href, title, cta, children }: LiveEntryProps) {
   const titleId = `entry-${id}-title`;

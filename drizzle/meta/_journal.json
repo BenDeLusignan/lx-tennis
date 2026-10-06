@@ -57,6 +57,13 @@
       "when": 1791196892495,
       "tag": "0007_racquet_grams_only_no_source",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791317125830,
+      "tag": "0008_capitalise_string_first_letter",
+      "breakpoints": true
     }
   ]
 }

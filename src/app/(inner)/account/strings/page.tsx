@@ -42,7 +42,8 @@ export default async function StringsPage({ searchParams }: PageProps<"/account/
         <SectionTitle as="h1">Strings</SectionTitle>
         <p className={styles.intro}>
           The list reviewers choose from when adding a setup. A change here shows on every setup
-          that uses the string. A string can only be deleted while no setup uses it.
+          that uses the string. A string can only be deleted while no setup uses it. The first
+          letter of a brand or name is always capitalised; the rest is kept as you type it.
         </p>
       </div>
 

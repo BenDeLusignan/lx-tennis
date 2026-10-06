@@ -64,7 +64,10 @@ export function StringPicker({ side, strings, alwaysShown }: StringPickerProps) 
 
       <fieldset className={styles.newString}>
         <legend className={styles.newStringLegend}>New string</legend>
-        <p className={styles.hint}>It&rsquo;s added to the list for everyone.</p>
+        <p className={styles.hint}>
+          It&rsquo;s added to the list for everyone. The first letter of a brand or name is always
+          capitalised; the rest is kept as you type it.
+        </p>
         <Field label="Brand" htmlFor={id("NewBrand")}>
           <Input
             id={id("NewBrand")}
