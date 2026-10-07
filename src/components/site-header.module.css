@@ -3,6 +3,12 @@
  * state streams in after the rest of the page, and a layout that wrapped
  * depending on its width (a name, or "Log in" at 360px) made the page jump.
  * From 48rem there's always room for one row.
+ *
+ * The landing hero (app/page.module.css) reserves this same top band, so the
+ * login state doesn't move between `/` and the other pages. What it relies on:
+ * the brand row is `--header-brand-row` tall (the brand's line-height below),
+ * the rows are `--space-2` apart on a phone, and the login state is the
+ * slot in auth-status.module.css. Change one, check the other.
  */
 .header {
   display: grid;
@@ -28,6 +34,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-decoration: none;
+  line-height: var(--header-brand-row);
   color: var(--color-accent);
   text-shadow: var(--text-glow-pink);
 }

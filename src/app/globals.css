@@ -96,6 +96,13 @@
   --font-size-brand: calc(var(--font-size-2xl) * 1.2);
   /* The landing page's site name: the largest text on the site, above brand at every width. */
   --font-size-hero: clamp(2.5rem, 1.4rem + 4.5vw, 4.5rem);
+  /*
+   * The height of the inner pages' header row: the brand's line box. The brand
+   * sets its line-height from it, and the landing hero reserves the same row
+   * for its login state, so "Log in" / the name / "Log out" sit in exactly the
+   * same place on `/` as on every other page (see site-header.module.css).
+   */
+  --header-brand-row: calc(var(--font-size-brand) * 1.6);
 
   /* Spacing, shape, layout */
   --space-1: 0.25rem;
@@ -130,6 +137,12 @@
 }
 
 html {
+  /*
+   * Always reserve the scrollbar's space. Without it a short page (no
+   * scrollbar) is wider than a long one, and everything right-aligned, like
+   * the login state, shifts by the scrollbar's width between pages.
+   */
+  scrollbar-gutter: stable;
   background-color: var(--color-bg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

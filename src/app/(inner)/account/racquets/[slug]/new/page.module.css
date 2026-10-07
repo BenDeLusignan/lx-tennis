@@ -101,7 +101,6 @@ output.hint {
 .sides {
   display: grid;
   gap: var(--space-4);
-  align-items: start;
 }
 
 .side {
@@ -159,5 +158,17 @@ output.hint {
 @media (min-width: 48rem) {
   .sides {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /*
+   * Tension is each area's last field, pinned to the bottom of boxes that
+   * are the same height, so the two tensions share a line whatever sits
+   * above them: a full bed's short "same as mains" note, or a taller string
+   * block after "Add new string…". Any spare height becomes a gap above the
+   * tension. (Subgrid rows would be the other way, but Chromium ignores
+   * `subgrid` on a fieldset.)
+   */
+  .tension {
+    margin-block-start: auto;
   }
 }

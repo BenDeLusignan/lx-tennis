@@ -1,4 +1,14 @@
 /*
+ * The hero's top band mirrors the inner pages' header (site-header.module.css)
+ * so the login state sits in exactly the same place on `/` as everywhere else:
+ * a first row as tall as the header's brand row (`--header-brand-row`), then,
+ * on a phone, a second row for the login state `--space-2` below it. The site
+ * name takes the place of the brand: in the first row on a phone, and on
+ * desktop (where the header is one row, brand left and login right, but the
+ * big title would collide with a long name) in a row of its own under the
+ * login state. The hero adds nothing above that band; the page's own padding
+ * is the top margin, as on the inner pages.
+ *
  * `margin-block-end` is the air between the hero's pink horizon line and the
  * entry cards. A phone gets 3rem (the cards were crowding the line at 2rem,
  * but the first two cards still have to fit above the fold, so no more than
@@ -7,24 +17,38 @@
  */
 .hero {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-8) 0;
-  margin-block-end: var(--space-12);
+  display: grid;
+  /* `minmax(…, auto)`, not a fixed row: with enlarged text the title wraps and must push the login state down, as the inner header's auto rows do. */
+  grid-template-rows: minmax(var(--header-brand-row), auto) auto auto;
+  grid-template-areas:
+    "title"
+    "account"
+    "sun";
+  justify-items: center;
+  gap: var(--space-2);
+  /*
+   * The title's glow reaches above its row on a phone, and `overflow: hidden`
+   * would cut it. The negative margin and equal padding give it room without
+   * moving anything: the content sits where it would with neither.
+   */
+  margin-block: calc(var(--space-4) * -1) var(--space-12);
+  padding-block: var(--space-4) 0;
   text-align: center;
   overflow: hidden;
   border-block-end: 2px solid var(--color-accent);
   box-shadow: 0 0.5rem 0.75rem -0.75rem var(--color-accent);
 }
 
-/* First row of the hero, above the title, so it never overlaps it on a phone. */
+/* Spans the width so the slot's own right-alignment lands where the header's does. */
 .account {
-  align-self: flex-end;
+  grid-area: account;
+  justify-self: stretch;
+  align-self: center;
 }
 
 .title {
+  grid-area: title;
+  align-self: center;
   font-size: var(--font-size-hero);
   font-weight: 800;
   text-transform: uppercase;
@@ -34,10 +58,9 @@
 }
 
 /*
- * One column on a phone, two by two from 48rem. Four equal columns would leave
- * each card about 10rem wide at 48rem, too narrow for "Search by Racquet" in
- * the display face; two columns keep the cards readable, and the three live
- * cards still come first.
+ * One column on a phone, in the order Add a Review, Search by Racquet, Search
+ * by String, Tennis Quiz. From 48rem it is three equal columns with the quiz
+ * centred on a row of its own, see the media query below.
  */
 .entries {
   list-style: none;
@@ -100,14 +123,33 @@
 }
 
 @media (min-width: 48rem) {
-  /* Twice --space-8, with the room the desktop has: the cards end well above the fold. */
+  /*
+   * Header-style top band: login state in the brand's row, title in its own
+   * row below it (see the comment at the top).
+   */
   .hero {
+    grid-template-rows: var(--header-brand-row) auto auto;
+    grid-template-areas:
+      "account"
+      "title"
+      "sun";
+    /* Twice --space-8, with the room the desktop has: the cards end well above the fold. */
     margin-block-end: calc(var(--space-8) * 2);
   }
 
+  /*
+   * Three equal columns: about 13.5rem each at 48rem, so "Search by Racquet"
+   * wraps to two lines in the display face instead of overflowing. The quiz
+   * has the row below, in the middle column: the same width as the cards above
+   * it and centred under the middle one.
+   */
   .entries {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-6);
+  }
+
+  .quiz {
+    grid-column: 2;
   }
 
   /* Same lift as the racquet cards. */
@@ -118,9 +160,10 @@
 
 /* Striped sunset sinking into the horizon (decorative). */
 .sun {
+  grid-area: sun;
   width: min(16rem, 45vw);
   aspect-ratio: 2 / 1;
-  margin-block-start: var(--space-6);
+  margin-block-start: var(--space-4);
   border-radius: 999px 999px 0 0;
   background: linear-gradient(
     180deg,

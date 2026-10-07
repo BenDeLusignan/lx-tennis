@@ -202,7 +202,11 @@ function GaugeField({ side, alwaysShown }: { side: "mains" | "crosses"; alwaysSh
 function TensionField({ side }: { side: "mains" | "crosses" }) {
   const id = `${side}Tension`;
   return (
-    <Field label={side === "mains" ? "Mains tension" : "Crosses tension"} htmlFor={id}>
+    <Field
+      label={side === "mains" ? "Mains tension" : "Crosses tension"}
+      htmlFor={id}
+      className={styles.tension}
+    >
       <Input
         id={id}
         name={id}

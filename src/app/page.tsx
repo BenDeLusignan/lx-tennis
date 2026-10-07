@@ -5,14 +5,18 @@ import styles from "./page.module.css";
 
 // The landing page sits outside the (inner) route group: its hero is the
 // banner, so it renders its own <header> and <main id="main"> instead of
-// <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
+// <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page,
+// and the hero lays its top band out like the inner header, so the login state
+// doesn't move when you go between `/` and another page (see page.module.css).
 //
-// It's the hub (Ben's call): four ways in. Search by Racquet, Search by String
-// and Add a Review are built, so those are links; the quiz says "Coming soon"
+// It's the hub (Ben's call): four ways in. Add a Review, Search by Racquet and
+// Search by String are built, so those are links; the quiz says "Coming soon"
 // in words (not just a muted look) and isn't a link, so nobody taps into a page
-// that isn't there. The live cards come first so they sit near the top of a
-// phone screen. When the quiz is built, swap its entry for a `LiveEntry` and
-// add its page to the Rendering notes in docs/vision.md.
+// that isn't there. Ben's order: Add a Review, Search by Racquet, Search by
+// String, then the quiz, which sits on its own centred row from 48rem. The
+// live cards come first so they sit near the top of a phone screen. When the
+// quiz is built, swap its entry for a `LiveEntry` and add its page to the
+// Rendering notes in docs/vision.md.
 //
 // The page reads nothing per request, so it stays whole in the static shell.
 // Add a Review is shown to everyone: a visitor who follows it is sent to log
@@ -22,15 +26,23 @@ export default function Home() {
   return (
     <>
       <header className={styles.hero}>
+        <h1 className={styles.title}>LX Tennis</h1>
         <div className={styles.account}>
           <AuthStatus />
         </div>
-        <h1 className={styles.title}>LX Tennis</h1>
         <div className={styles.sun} aria-hidden="true" />
       </header>
 
       <main id="main">
         <ul className={styles.entries}>
+          <LiveEntry
+            id="add-review"
+            href="/account/add-review"
+            title="Add a Review"
+            cta="Choose a racquet"
+          >
+            Tested a setup? Pick the racquet, then enter the strings and your scores.
+          </LiveEntry>
           <LiveEntry
             id="racquets"
             href="/racquets"
@@ -41,14 +53,6 @@ export default function Home() {
           </LiveEntry>
           <LiveEntry id="strings" href="/strings" title="Search by String" cta="Browse strings">
             Pick a string to see every setup it&rsquo;s been in, with everyone&rsquo;s scores.
-          </LiveEntry>
-          <LiveEntry
-            id="add-review"
-            href="/account/add-review"
-            title="Add a Review"
-            cta="Choose a racquet"
-          >
-            Tested a setup? Pick the racquet, then enter the strings and your scores.
           </LiveEntry>
           <ComingSoonEntry id="quiz" title="Tennis Quiz">
             A few questions to help find the racquet that suits you.
@@ -114,7 +118,7 @@ interface ComingSoonEntryProps {
 function ComingSoonEntry({ id, title, children }: ComingSoonEntryProps) {
   const titleId = `entry-${id}-title`;
   return (
-    <li>
+    <li className={styles.quiz}>
       <Panel aria-labelledby={titleId} className={`${styles.card} ${styles.soon}`}>
         <h2 id={titleId} className={styles.cardTitle}>
           {title}
