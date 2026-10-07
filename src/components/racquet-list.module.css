@@ -13,8 +13,15 @@
   height: 100%;
 }
 
-.photo {
+/*
+ * Fixed padding on phones: the stage's own padding is a percentage of its
+ * parent's width (the whole card), not of the 7rem photo, which shrank the
+ * racquet. `.card .photo` outweighs `.stage`. From 48rem the photo is the
+ * full card width and 6% is right again.
+ */
+.card .photo {
   flex: 0 0 7rem;
+  padding: var(--space-2);
 }
 
 .cardText {
@@ -57,9 +64,11 @@
     transform: translateY(-4px);
   }
 
-  .photo {
+  .card .photo {
     flex: none;
     width: 100%;
+    /* Back to the stage's own 6%: the box is as wide as its parent again. */
+    padding: 6%;
   }
 
   .cardText {

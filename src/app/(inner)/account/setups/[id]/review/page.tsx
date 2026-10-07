@@ -95,14 +95,6 @@ async function YourReview({ setup, searchParams }: { setup: Setup } & Pick<Props
         </SectionTitle>
         <form action={updateReview} className={styles.form}>
           <input type="hidden" name="setup" value={setup.id} />
-          {existing === "1" && (
-            // Sent here by createSetupWithReview instead of saving a duplicate,
-            // and this reviewer's own review is already on it.
-            <FormMessage key={key} tone="error">
-              This setup is already on the site, so nothing from the new-setup form was saved. Your
-              review of it is below.
-            </FormMessage>
-          )}
           {errorMessage && (
             <FormMessage key={key} tone="error">
               {errorMessage} Nothing was saved, so your review below is as it was. Make your changes

@@ -1,0 +1,5 @@
+/* Under the title, before the brand sections (same spacing as /racquets). */
+.intro {
+  margin-block-end: var(--space-6);
+  color: var(--color-text-muted);
+}

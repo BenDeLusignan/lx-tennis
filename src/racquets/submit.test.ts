@@ -113,19 +113,20 @@ test("a reviewer adds a racquet: row saved, 1000x1500 WebP stored, lists refresh
 
   // The stored file is the one the row points at: a 1000x1500 WebP, the
   // racquet trimmed of its white margin and centred, 1410px tall (45px of
-  // transparent canvas above and below, wide margins left and right).
+  // white canvas above and below, wide margins left and right), opaque.
   assert.equal([...store.saved.keys()].length, 1);
   const webp = store.saved.get(found.image.src);
   assert.ok(webp);
   const meta = await sharp(webp).metadata();
   assert.deepEqual([meta.format, meta.width, meta.height], ["webp", 1000, 1500]);
+  assert.equal(meta.hasAlpha, false);
   const { data, info } = await sharp(webp).raw().toBuffer({ resolveWithObject: true });
-  const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
-  assert.equal(alphaAt(500, 10), 0);
-  assert.equal(alphaAt(500, 600), 255);
-  assert.equal(alphaAt(500, 1440), 255);
-  assert.equal(alphaAt(500, 1490), 0);
-  assert.equal(alphaAt(50, 600), 0);
+  const redAt = (x: number, y: number) => data[(y * info.width + x) * info.channels];
+  assert.ok(redAt(500, 10) >= 253, "white above the racquet");
+  assert.ok(redAt(500, 1300) < 100, "the handle");
+  assert.ok(redAt(500, 1440) < 100, "the handle's end");
+  assert.ok(redAt(500, 1490) >= 253, "white below the racquet");
+  assert.ok(redAt(50, 600) >= 253, "white beside the racquet");
 
   // The brand section, the racquet page and generateStaticParams all see it.
   const head = (await getRacquetsByBrand()).find((section) => section.brand === "Head");

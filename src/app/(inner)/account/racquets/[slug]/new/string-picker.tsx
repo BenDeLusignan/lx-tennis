@@ -45,6 +45,10 @@ export function StringPicker({ side, strings, alwaysShown }: StringPickerProps) 
           <option value="" disabled>
             Choose a string
           </option>
+          {/* First, under the placeholder, so a long list needs no scrolling to
+              reach it. The reveal in page.module.css matches it by value, not
+              by position. */}
+          <option value="new">Add new string…</option>
           {Array.from(brands, ([brand, brandStrings]) => (
             <optgroup key={brand} label={brand}>
               {brandStrings.map((string) => (
@@ -58,7 +62,6 @@ export function StringPicker({ side, strings, alwaysShown }: StringPickerProps) 
               ))}
             </optgroup>
           ))}
-          <option value="new">Add new string…</option>
         </Select>
       </Field>
 

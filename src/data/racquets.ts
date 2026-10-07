@@ -22,8 +22,8 @@ import { racquetModel, racquetSlug } from "@/racquets/racquet-form";
  *
  * Images are 1000x1500 WebP: the official face-on product shot, trimmed of
  * its uniform border, scaled so the racquet is 1410px tall (or 1000px wide,
- * if it is wider than that frame allows) and centred on a transparent
- * canvas. The four built-ins were prepared the same way (every racquet is
+ * if it is wider than that frame allows) and centred on an opaque white
+ * canvas (Ben's decision). The four built-ins were prepared the same way (every racquet is
  * 27 in long), and `src/racquets/process-image.ts` does it for an added
  * photo, so they all match. The built-in ones are in /public/images/racquets;
  * an added one is in Vercel Blob (`src/racquets/image-store.ts`).

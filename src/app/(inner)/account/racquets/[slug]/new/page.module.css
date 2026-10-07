@@ -7,13 +7,8 @@
   margin-inline: auto;
 }
 
-.lede,
-.intro {
+.lede {
   color: var(--color-text-muted);
-}
-
-.intro {
-  margin-block-end: var(--space-4);
 }
 
 .hint {
@@ -26,33 +21,6 @@
 output.hint {
   display: block;
   min-block-size: calc(var(--font-size-sm) * 1.6);
-}
-
-/* Existing setups, above the form */
-
-.existing {
-  display: flex;
-  flex-direction: column;
-  list-style: none;
-}
-
-.existingItem {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-block: var(--space-4);
-}
-
-.existingItem + .existingItem {
-  border-block-start: 1px solid var(--color-border);
-}
-
-.existingItem:last-child {
-  padding-block-end: 0;
-}
-
-.existingAction {
-  align-self: flex-start;
 }
 
 /* The form */

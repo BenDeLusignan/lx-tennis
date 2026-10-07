@@ -2,6 +2,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { secretHmac } from "@/auth/secret";
+import { SESSION_HINT_COOKIE } from "@/auth/session-hint";
 
 /**
  * Stateless session: an HMAC-signed cookie holding the reviewer id, an
@@ -16,7 +17,7 @@ import { secretHmac } from "@/auth/secret";
 
 const COOKIE_NAME = "lx_session";
 const SESSION_DAYS = 30;
-const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
+export const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
 export interface SessionPayload {
   /** Reviewer id. */
@@ -69,7 +70,8 @@ export async function startSession(reviewer: { id: number; passwordHash: string 
     exp: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
     pwd: passwordFingerprint(reviewer.passwordHash),
   });
-  (await cookies()).set(COOKIE_NAME, token, {
+  const jar = await cookies();
+  jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     // Browsers accept Secure cookies on http://localhost, so this only
     // matters for a hosted production site, where it keeps the cookie off
@@ -80,11 +82,21 @@ export async function startSession(reviewer: { id: number; passwordHash: string 
     path: "/",
     maxAge: SESSION_SECONDS,
   });
+  // The loading-screen hint (see session-hint.ts): readable by the page's
+  // script on purpose, so it holds nothing but "1".
+  jar.set(SESSION_HINT_COOKIE, "1", {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_SECONDS,
+  });
 }
 
 /** Only from a Server Action or Route Handler. */
 export async function endSession(): Promise<void> {
-  (await cookies()).delete(COOKIE_NAME);
+  const jar = await cookies();
+  jar.delete(COOKIE_NAME);
+  jar.delete(SESSION_HINT_COOKIE);
 }
 
 /** The current request's verified session, or null. Reading it makes the caller request-time. */

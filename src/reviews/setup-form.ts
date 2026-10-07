@@ -25,6 +25,14 @@ import { GAUGE_LIMITS_MM, TENSION_LIMITS, type TensionUnit } from "@/data/units"
 export type SetupFormError = "invalid" | "unit" | "tension" | "gauge" | "date" | "scores";
 export type ReviewFormError = "invalid" | "scores";
 
+/**
+ * Every `?error=` flag the new-setup page can come back with: the form's own
+ * checks, plus the two refusals only the database can make (see
+ * `submitSetupWithReview`). The page's messages are a `Record` on this type,
+ * so a new flag is a type error there until it has words.
+ */
+export type NewSetupErrorFlag = SetupFormError | "string-exists" | "already-reviewed";
+
 type Parsed<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
 export function parseSetupForm(

@@ -1,15 +1,17 @@
+/*
+ * The photo files are opaque white (see src/racquets/process-image.ts), so this
+ * box is the same white and the two read as one sheet: no seam where the
+ * image ends. The rounded corners and the purple rim keep a white rectangle
+ * from looking harsh on the dark page. The padding is extra room round the
+ * file's own margin, so the racquet sits a little in from the edge.
+ */
 .stage {
   aspect-ratio: 2 / 3;
   display: grid;
   place-items: center;
   padding: 6%;
   border-radius: var(--radius-md);
-  background: radial-gradient(
-    ellipse at 50% 40%,
-    var(--color-stage-center) 0%,
-    var(--color-stage-center) 45%,
-    var(--color-stage-edge) 100%
-  );
+  background: var(--color-photo);
   box-shadow: var(--glow-purple-box);
 }
 

@@ -104,10 +104,17 @@
   box-shadow: var(--glow-pink-box);
 }
 
+/*
+ * Extra room under the last line: on its own the card's padding left the text
+ * looking pressed against the edge of the box (a visitor sees no buttons
+ * below). It is on the block, not the card, so a card with no written reviews
+ * doesn't get it, and it sits inside row 3 so the shared rows stay aligned.
+ */
 .written {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding-block-end: var(--space-3);
 }
 
 .writtenTitle {

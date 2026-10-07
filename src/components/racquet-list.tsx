@@ -5,21 +5,29 @@ import styles from "./racquet-list.module.css";
 
 interface RacquetListProps {
   racquets: readonly Racquet[];
+  /** Where a card goes. Defaults to the racquet's own page. */
+  hrefFor?: (racquet: Racquet) => string;
+  /** The card's call to action, without its arrow. */
+  cta?: string;
 }
 
 /**
- * Grid of one brand's racquet cards, each linking to its racquet page.
- * `RacquetsByBrand` renders one per brand, under the brand's h2, so each
- * racquet's name is an h3.
+ * Grid of one brand's racquet cards, each a whole-card link (to its racquet
+ * page unless `hrefFor` says otherwise). `RacquetsByBrand` renders one per
+ * brand, under the brand's h2, so each racquet's name is an h3.
  */
-export function RacquetList({ racquets }: RacquetListProps) {
+export function RacquetList({
+  racquets,
+  hrefFor = (racquet) => `/racquets/${racquet.slug}`,
+  cta = "View details",
+}: RacquetListProps) {
   return (
     <ul className={styles.grid}>
       {racquets.map((racquet) => (
         <li key={racquet.slug}>
           {/* Name the link by its text only; the photo keeps its own alt text. */}
           <Panel
-            href={`/racquets/${racquet.slug}`}
+            href={hrefFor(racquet)}
             className={styles.card}
             aria-labelledby={`${racquet.slug}-name ${racquet.slug}-meta`}
           >
@@ -43,7 +51,7 @@ export function RacquetList({ racquets }: RacquetListProps) {
                 {racquet.generation ? `${racquet.year} · ${racquet.generation}` : racquet.year}
               </span>
               <span className={styles.cardCta} aria-hidden="true">
-                View details &rarr;
+                {cta} &rarr;
               </span>
             </div>
           </Panel>

@@ -137,9 +137,9 @@ export function RacquetFields({ racquet }: RacquetFieldsProps) {
           <strong>one way: upload a file, or paste an image link. Not both.</strong> Either way it
           should be the manufacturer&rsquo;s official photo, face-on, with the whole frame in view:
           JPEG, PNG, WebP, GIF or AVIF, up to {imageMegabytes} MB. A plain border is trimmed and the
-          racquet is scaled to match the others. This works best on a plain white or transparent
-          background; a shadow or pattern behind the racquet makes it come out smaller. The
-          background isn&rsquo;t removed.
+          racquet is scaled to match the others and put on a white background (transparent parts turn
+          white). This works best on a plain white background; a shadow or pattern behind the racquet
+          makes it come out smaller. The background isn&rsquo;t removed.
         </p>
 
         <Field label="Upload a file" htmlFor={RACQUET_FIELDS.image}>

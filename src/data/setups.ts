@@ -231,7 +231,12 @@ export interface NewSetupWithReview {
 
 export type CreateSetupResult =
   | { status: "created"; setupId: number }
-  | { status: "duplicate"; setupId: number }
+  /**
+   * The setup is already on the site (Product rule 2); nothing was written.
+   * `reviewedByAuthor`: the reviewer already has a review on it, so there is
+   * nothing for them to add and they can only update it.
+   */
+  | { status: "duplicate"; setupId: number; reviewedByAuthor: boolean }
   | { status: "unknown-racquet" }
   | { status: "unknown-string" }
   /** A new string whose brand and name, ignoring capitals, are already on the list. */
@@ -250,7 +255,8 @@ class Refusal extends Error {
  * Adds a setup with the reviewer's review, plus any new strings, in one
  * transaction: if anything fails, nothing is left behind (no orphan string).
  * A setup that's already on the site (Product rule 2) isn't added; its id
- * comes back so the reviewer can add their review to it. Only from a Server
+ * comes back, with whether the reviewer has already reviewed it, so they can
+ * add their review to it or update the one they have. Only from a Server
  * Action (it refreshes pages with `updateTag`).
  */
 export async function createSetupWithReview(
@@ -296,7 +302,19 @@ export async function createSetupWithReview(
             ),
           ),
         );
-      if (existing) throw new Refusal({ status: "duplicate", setupId: existing.id });
+      if (existing) {
+        // Read inside the same write transaction as the duplicate check, so
+        // the two can't disagree: no second read outside it.
+        const [mine] = await tx
+          .select({ id: review.id })
+          .from(review)
+          .where(and(eq(review.setupId, existing.id), eq(review.reviewerId, author.id)));
+        throw new Refusal({
+          status: "duplicate",
+          setupId: existing.id,
+          reviewedByAuthor: mine !== undefined,
+        });
+      }
 
       const [created] = await tx
         .insert(setup)

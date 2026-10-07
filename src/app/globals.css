@@ -16,6 +16,8 @@
  *   --color-reviewer-other  11.6:1 / 9.9:1  (lavender: a reviewer without a colour yet)
  * Pink and purple fall just short of 4.5:1 on --color-surface-raised (4.48
  * and 4.45), so reviewer-coloured text never sits on that surface.
+ * --color-photo (white) only sits behind racquet photos; no text is ever set
+ * on it, so it has no ratio to meet.
  */
 :root {
   color-scheme: dark;
@@ -30,9 +32,9 @@
   --palette-neon-cyan: #2de2e6;
   --palette-sunset-orange: #ff8a3d;
   --palette-sunset-yellow: #ffd23f;
+  --palette-white: #ffffff;
   --palette-lavender-50: #f7f1ff;
   --palette-lavender-200: #cbbcf5;
-  --palette-lavender-300: #e6d7ff;
 
   /* Semantic colours */
   --color-bg: var(--palette-night-950);
@@ -62,9 +64,12 @@
   --color-reviewer-otavio: var(--palette-neon-purple);
   --color-reviewer-other: var(--palette-lavender-200);
 
-  /* Light "display case" behind racquet photos so dark frames stay visible. */
-  --color-stage-center: var(--palette-lavender-50);
-  --color-stage-edge: var(--palette-lavender-300);
+  /*
+   * The racquet photos' white (Ben's call: photos keep a white background).
+   * Must stay the same white as the image files themselves, 255,255,255, so
+   * the box behind a photo and the photo's own margin are one seamless sheet.
+   */
+  --color-photo: var(--palette-white);
 
   /* Glows */
   --glow-pink: 0 0 0.35rem rgb(255 60 172 / 0.8), 0 0 1.25rem rgb(255 60 172 / 0.45);
@@ -81,8 +86,16 @@
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  /* The largest page heading (an h1) is --font-size-2xl, on the racquet page. */
   --font-size-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.25rem);
-  --font-size-hero: clamp(2.25rem, 1.4rem + 4.5vw, 4.5rem);
+  /*
+   * The site name in the inner pages' header ("LX Tennis") stays larger than
+   * any page heading: it is always 1.2 times --font-size-2xl, so a bigger h1
+   * makes it grow with it. Keep the order 2xl < brand < hero.
+   */
+  --font-size-brand: calc(var(--font-size-2xl) * 1.2);
+  /* The landing page's site name: the largest text on the site, above brand at every width. */
+  --font-size-hero: clamp(2.5rem, 1.4rem + 4.5vw, 4.5rem);
 
   /* Spacing, shape, layout */
   --space-1: 0.25rem;

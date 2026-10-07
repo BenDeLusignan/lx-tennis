@@ -26,18 +26,39 @@ async function boxOf(webp: Buffer, pick: (r: number, g: number, b: number, a: nu
   return right < 0 ? null : { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
 
-/** Where the photo's content is on the canvas: everything that isn't transparent. */
+/** Where the photo's content is on the canvas: everything that isn't (near) white. */
 async function contentBox(webp: Buffer): Promise<Box> {
-  const box = await boxOf(webp, (_r, _g, _b, a) => a > 128);
+  const box = await boxOf(webp, (r, g, b) => Math.min(r, g, b) < 200);
   assert.ok(box, "something is drawn");
   return box;
 }
 
 /** Where the dark racquet itself is, wherever the background and shadow end. */
 async function racquetBox(webp: Buffer): Promise<Box> {
-  const box = await boxOf(webp, (r, g, b, a) => a > 128 && r < 100 && g < 100 && b < 100);
+  const box = await boxOf(webp, (r, g, b) => r < 100 && g < 100 && b < 100);
   assert.ok(box, "a racquet is drawn");
   return box;
+}
+
+/**
+ * Ben's rule: racquet photos keep a white background. The canvas is opaque
+ * (no alpha channel, or alpha 255 everywhere), and the margin the racquet
+ * never reaches is white: the four corners and the 45px bands above and below.
+ */
+async function assertOpaqueWhiteBackground(webp: Buffer, label: string): Promise<void> {
+  const { data, info } = await sharp(webp).raw().toBuffer({ resolveWithObject: true });
+  if (info.channels === 4) {
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] !== 255) assert.fail(`${label}: pixel ${(i - 3) / 4} is not opaque (alpha ${data[i]})`);
+    }
+  }
+  const white = (x: number, y: number) => {
+    const i = (y * info.width + x) * info.channels;
+    return data[i] >= 253 && data[i + 1] >= 253 && data[i + 2] >= 253;
+  };
+  for (const [x, y] of [[0, 0], [info.width - 1, 0], [0, info.height - 1], [info.width - 1, info.height - 1], [500, 10], [500, 1490]]) {
+    assert.ok(white(x, y), `${label}: (${x}, ${y}) is white`);
+  }
 }
 
 function assertClose(actual: number, expected: number, tolerance: number, label: string): void {
@@ -69,6 +90,7 @@ test("a photo with wide margins and a tight crop of the same racquet come out th
     assert.deepEqual([meta.width, meta.height], [1000, 1500], label);
     const content = await contentBox(webp);
     assertBuiltInFrame(content, label);
+    await assertOpaqueWhiteBackground(webp, label);
     // 200x600 scaled to 1410 tall is 470 wide; the built-in widths run 424-558.
     assertClose(content.width, 470, 3, `${label} width`);
   }
@@ -106,7 +128,7 @@ test("JPEG noise on a white background doesn't stop the trim", async () => {
   assertBuiltInFrame(await contentBox(webp), "jpeg q30");
 });
 
-test("transparent PNG and WebP photos are trimmed on their alpha, not their hidden colour", async () => {
+test("transparent PNG and WebP photos are trimmed on their alpha and flattened onto white", async () => {
   const pngIn = await photoPng({ width: 1000, height: 1000, box: RACQUET });
   const webpIn = await racquetPhoto({ width: 1000, height: 1000, box: RACQUET }).webp({ lossless: true }).toBuffer();
   for (const [input, label] of [[pngIn, "png"], [webpIn, "webp"]] as const) {
@@ -114,10 +136,11 @@ test("transparent PNG and WebP photos are trimmed on their alpha, not their hidd
     assert.ok(webp, label);
     const content = await contentBox(webp);
     assertBuiltInFrame(content, label);
-    // The background stays transparent: the box holds the racquet and clear pixels.
-    const { data, info } = await sharp(webp).raw().toBuffer({ resolveWithObject: true });
-    const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
-    assert.equal(alphaAt(Math.round(content.left + 5), Math.round(content.top + 700)), 0, `${label} clear beside the handle`);
+    await assertOpaqueWhiteBackground(webp, label);
+    // Where the source was clear (beside the handle) is white now, not transparent or black.
+    const { data, info } = await sharp(webp).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const at = (x: number, y: number) => [...data.subarray((y * info.width + x) * 4, (y * info.width + x) * 4 + 4)];
+    assert.deepEqual(at(Math.round(content.left + 5), Math.round(content.top + 700)), [255, 255, 255, 255], `${label} white beside the handle`);
   }
 });
 
@@ -225,6 +248,7 @@ test("every accepted format gives a 1000x1500 WebP", async () => {
     const meta = await sharp(out).metadata();
     assert.deepEqual([meta.format, meta.width, meta.height], ["webp", 1000, 1500], format);
     assertBuiltInFrame(await contentBox(out), format);
+    await assertOpaqueWhiteBackground(out, format);
   }
 });
 

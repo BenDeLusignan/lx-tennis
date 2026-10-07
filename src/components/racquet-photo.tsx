@@ -12,8 +12,9 @@ interface RacquetPhotoProps {
 }
 
 /**
- * Racquet photo on the light "display case" stage. The stage keeps dark
- * frames legible on the dark theme and gives every racquet the same box.
+ * Racquet photo on a white sheet. The photos are opaque white-background
+ * images, so every racquet shows in the same box on the dark theme; the
+ * styling is in racquet-photo.module.css.
  */
 export function RacquetPhoto({ image, sizes, preload = false, className }: RacquetPhotoProps) {
   return (

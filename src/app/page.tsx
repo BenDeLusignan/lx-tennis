@@ -7,14 +7,17 @@ import styles from "./page.module.css";
 // banner, so it renders its own <header> and <main id="main"> instead of
 // <SiteHeader />. It still carries <AuthStatus /> so "Log in" is on every page.
 //
-// It's the hub (Ben's call): three ways in. Search by Racquet and Search by
-// String are built, so those are links; the quiz says "Coming soon" in words (not
-// just a muted look) and isn't a link, so nobody taps into a page that isn't
-// there. When it's built, swap its entry for a `LiveEntry` and add its page
-// to the Rendering notes in docs/vision.md.
+// It's the hub (Ben's call): four ways in. Search by Racquet, Search by String
+// and Add a Review are built, so those are links; the quiz says "Coming soon"
+// in words (not just a muted look) and isn't a link, so nobody taps into a page
+// that isn't there. The live cards come first so they sit near the top of a
+// phone screen. When the quiz is built, swap its entry for a `LiveEntry` and
+// add its page to the Rendering notes in docs/vision.md.
 //
 // The page reads nothing per request, so it stays whole in the static shell.
-// The h2s sit directly under the h1 (the site name in the hero).
+// Add a Review is shown to everyone: a visitor who follows it is sent to log
+// in by the proxy and comes back to the chooser. The h2s sit directly under
+// the h1 (the site name in the hero).
 export default function Home() {
   return (
     <>
@@ -38,6 +41,14 @@ export default function Home() {
           </LiveEntry>
           <LiveEntry id="strings" href="/strings" title="Search by String" cta="Browse strings">
             Pick a string to see every setup it&rsquo;s been in, with everyone&rsquo;s scores.
+          </LiveEntry>
+          <LiveEntry
+            id="add-review"
+            href="/account/add-review"
+            title="Add a Review"
+            cta="Choose a racquet"
+          >
+            Tested a setup? Pick the racquet, then enter the strings and your scores.
           </LiveEntry>
           <ComingSoonEntry id="quiz" title="Tennis Quiz">
             A few questions to help find the racquet that suits you.

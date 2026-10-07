@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Orbitron } from "next/font/google";
+import { SessionGateScript } from "@/components/session-gate";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -28,7 +29,16 @@ export const metadata: Metadata = {
 // InnerShell (via app/(inner)/layout.tsx, or directly in not-found.tsx).
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${orbitron.variable}`}>
+    // suppressHydrationWarning: the gate script sets an attribute on <html>
+    // before React hydrates (see session-gate.tsx).
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${orbitron.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <SessionGateScript />
+      </head>
       <body>
         <a className="skip-link" href="#main">
           Skip to content

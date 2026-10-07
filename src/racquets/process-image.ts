@@ -45,11 +45,19 @@ const MIN_CONTENT_SHORT_SIDE = 20;
 const FLAT_STDEV = 2;
 
 /**
+ * The photo's background. Pure white, not a theme token: it is image data,
+ * and the built-in photos are flattened onto the same 255,255,255. The page
+ * side of this is `--color-photo` in globals.css.
+ */
+const WHITE = { r: 255, g: 255, b: 255 };
+
+/**
  * Turns an uploaded photo into the site's racquet photo, matching the four
  * built-in ones: a 1000x1500 WebP whose racquet is 1410px tall (or 1000px
- * wide, if it is wider than that frame allows), centred both ways on a
- * transparent canvas. So the racquet's size doesn't depend on how much
- * margin the photo has.
+ * wide, if it is wider than that frame allows), centred both ways on an
+ * opaque white canvas (Ben's decision: racquet photos keep a white
+ * background). So the racquet's size doesn't depend on how much margin the
+ * photo has, and a transparent source ends up white too.
  *
  * Steps: turn the photo upright from its EXIF orientation; trim the uniform
  * border (the colour of the top-left pixel, or full transparency, within
@@ -99,14 +107,18 @@ export async function toRacquetWebp(input: Buffer): Promise<Buffer | null> {
     const left = Math.round((IMAGE_SIZE.width - fittedWidth) / 2);
     const top = Math.round((IMAGE_SIZE.height - fittedHeight) / 2);
 
+    // Flatten before extending: a transparent PNG/WebP/AVIF (or an
+    // anti-aliased edge) is composited on white, so the output has no alpha
+    // channel at all and every pixel outside the racquet is pure white.
     return await sharp(data, rawInput)
       .resize(fittedWidth, fittedHeight, { fit: "fill" })
+      .flatten({ background: WHITE })
       .extend({
         left,
         right: IMAGE_SIZE.width - fittedWidth - left,
         top,
         bottom: IMAGE_SIZE.height - fittedHeight - top,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        background: WHITE,
       })
       .webp({ quality: 85 })
       .toBuffer();

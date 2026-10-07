@@ -65,8 +65,15 @@
   gap: var(--space-2);
 }
 
-.currentPhoto {
+/*
+ * A fixed padding, as on the `/account/racquets` rows: the stage's own padding
+ * is a percentage, worked out from the parent's width (this whole box, not
+ * the 6rem photo), which squeezed the racquet to a sliver. `.current
+ * .currentPhoto` outweighs `.stage`.
+ */
+.current .currentPhoto {
   width: 6rem;
+  padding: var(--space-1);
 }
 
 /*

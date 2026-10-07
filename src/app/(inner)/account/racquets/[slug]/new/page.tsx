@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentReviewer } from "@/auth/current-reviewer";
 import { loginPath } from "@/auth/safe-next-path";
-import { AddReviewButton } from "@/components/add-review-button";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
@@ -13,24 +12,24 @@ import { Input } from "@/components/input";
 import { Panel } from "@/components/panel";
 import { ReviewFields } from "@/components/review-fields";
 import { SectionTitle } from "@/components/section-title";
-import { SetupSummary } from "@/components/setup-summary";
 import { SubmitButton } from "@/components/submit-button";
 import { getRacquet, getRacquetSlugs } from "@/data/racquets";
-import { getRacquetSetups } from "@/data/setups";
+import { getSetup } from "@/data/setups";
 import { getStrings } from "@/data/strings";
 import { GAUGE_LIMITS_MM, TENSION_LIMITS } from "@/data/units";
+import { parseId } from "@/forms/fields";
 import { createSetupWithReview } from "@/reviews/actions";
+import type { NewSetupErrorFlag } from "@/reviews/setup-form";
 import { SetupFormConstraints } from "./setup-form-constraints";
 import { StringPicker } from "./string-picker";
 import { TensionHint } from "./tension-hint";
 import { TodayButton } from "./today-button";
 import styles from "./page.module.css";
 
-// Prerendered per racquet, like the racquet page, with its list of setups
-// and the string list in the static shell (all cached, refreshed on save).
-// Only the login check and the `?error=` message stream in. An unknown slug
-// renders on request and 404s; `instant = false` for the same reason as on
-// the racquet page.
+// Prerendered per racquet, like the racquet page, with the string list in
+// the static shell (cached, refreshed on save). Only the login check and
+// the `?error=` message stream in. An unknown slug renders on request and
+// 404s; `instant = false` for the same reason as on the racquet page.
 export const instant = false;
 
 export async function generateStaticParams() {
@@ -49,8 +48,9 @@ export async function generateMetadata({
 
 // The codes createSetupWithReview redirects with. Each says what to fix,
 // and that the form was emptied: a failed save reloads the page, so
-// nothing typed survives it.
-const ERRORS: Record<string, string> = {
+// nothing typed survives it (FormStatus adds that, except where a message
+// says it itself).
+const ERRORS: Record<NewSetupErrorFlag, string> = {
   invalid: "Something in the form was missing or not in the right format.",
   unit: "Choose lb or kg for the tensions.",
   tension: `Each tension must be ${TENSION_LIMITS.lb.min}–${TENSION_LIMITS.lb.max} lb or ${TENSION_LIMITS.kg.min}–${TENSION_LIMITS.kg.max} kg, with at most one decimal place.`,
@@ -59,6 +59,8 @@ const ERRORS: Record<string, string> = {
   scores: "Give all five criteria a whole-number score from 1 to 10.",
   "string-exists":
     "A new string you added is already on the list (ignoring capitals). Choose it from the list instead.",
+  "already-reviewed":
+    "You've already reviewed this setup, so nothing was saved. Do you want to update your review instead?",
 };
 
 type Props = PageProps<"/account/racquets/[slug]/new">;
@@ -67,7 +69,7 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const racquet = await getRacquet(slug);
   if (!racquet) notFound();
-  const [setups, strings] = await Promise.all([getRacquetSetups(slug), getStrings()]);
+  const strings = await getStrings();
 
   return (
     <div className={styles.page}>
@@ -78,30 +80,6 @@ export default async function NewSetupPage({ params, searchParams }: Props) {
           For the {racquet.name}: how it was strung, and your review of it.
         </p>
       </div>
-
-      {/* Listed before the form, so nobody enters a setup that's already
-          here: adding a review to it keeps everyone's scores side by side
-          (Product rule 2). */}
-      {setups.length > 0 && (
-        <Panel aria-labelledby="existing-heading">
-          <SectionTitle id="existing-heading" size="lg">
-            Already on this racquet
-          </SectionTitle>
-          <p className={styles.intro}>If you tested one of these, add your review to it instead.</p>
-          <ul className={styles.existing}>
-            {setups.map((setup) => (
-              <li key={setup.id} className={styles.existingItem}>
-                <SetupSummary setup={setup} headingLevel="h3" />
-                <AddReviewButton
-                  setup={setup}
-                  className={styles.existingAction}
-                  whenReviewed={<p className={styles.hint}>You&rsquo;ve reviewed this one.</p>}
-                />
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
 
       <Panel aria-labelledby="form-heading">
         <SectionTitle id="form-heading" size="lg">
@@ -248,12 +226,46 @@ async function FormStatus({ slug, searchParams }: { slug: string } & Pick<Props,
   const reviewer = await getCurrentReviewer();
   if (!reviewer) redirect(loginPath(`/account/racquets/${slug}/new`));
 
-  const { error } = await searchParams;
+  const { error, setup } = await searchParams;
   // Own keys only, so `?error=constructor` can't find Object's.
   if (typeof error !== "string" || !Object.hasOwn(ERRORS, error)) return null;
+  const flag = error as NewSetupErrorFlag;
+
+  // "Already reviewed" already says nothing was saved, and has a way on.
+  if (flag === "already-reviewed") {
+    const reviewedId = await ownReviewedSetupId(slug, reviewer.id, setup);
+    return (
+      <>
+        <FormMessage key={crypto.randomUUID()} tone="error">
+          {ERRORS[flag]}
+        </FormMessage>
+        {reviewedId !== null && (
+          <Button href={`/account/setups/${reviewedId}/review`} variant="primary">
+            Update my review
+          </Button>
+        )}
+      </>
+    );
+  }
+
   return (
     <FormMessage key={crypto.randomUUID()} tone="error">
-      {ERRORS[error]} Nothing was saved, so the form is empty again.
+      {ERRORS[flag]} Nothing was saved, so the form is empty again.
     </FormMessage>
   );
+}
+
+// The `?setup=` id is only a hint from the URL, so it's trusted for the link
+// only if it's a setup of this racquet that this reviewer has reviewed: the
+// link can then only ever open their own review, whatever the URL says.
+async function ownReviewedSetupId(
+  slug: string,
+  reviewerId: number,
+  value: unknown,
+): Promise<number | null> {
+  const id = parseId(value);
+  if (id === null) return null;
+  const found = await getSetup(id);
+  if (found?.racquetSlug !== slug) return null;
+  return found.reviews.some((review) => review.reviewer.id === reviewerId) ? id : null;
 }

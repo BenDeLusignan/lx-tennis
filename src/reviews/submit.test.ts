@@ -177,7 +177,7 @@ test("the same new string on both sides with different types is refused, and not
   assert.ok(!(await stringNames()).includes("Kirschbaum Max Power"));
 });
 
-test("entering an existing setup again points to it instead, even in the other unit", async () => {
+test("entering a setup you haven't reviewed that's already on the site points to its review page, even in the other unit", async () => {
   const strungOn = nextDate();
   const existing = createdId(await submitSetupWithReview(BEN, fullBed({ strungOn })));
   clearRefreshedTags();
@@ -195,6 +195,31 @@ test("entering an existing setup again points to it instead, even in the other u
     (await getSetup(existing))?.reviews.map((review) => review.reviewer.id),
     [BEN.id],
   );
+  assert.deepEqual(refreshedTags, []);
+});
+
+test("entering a setup you've already reviewed goes back to the form with the error and that setup's id, saving nothing", async () => {
+  const strungOn = nextDate();
+  const existing = createdId(await submitSetupWithReview(BEN, fullBed({ strungOn })));
+  clearRefreshedTags();
+
+  // Other scores and the other unit: still the same setup, and Ben's review stays as it was.
+  const again = fullBed({
+    strungOn,
+    tensionUnit: "kg",
+    mainsTension: "24.9",
+    crossesTension: "24",
+    power: "1",
+    body: "Different.",
+  });
+  assert.equal(
+    await submitSetupWithReview(BEN, again),
+    `${FORM_PATH}?error=already-reviewed&setup=${existing}`,
+  );
+  assert.equal((await getRacquetSetups(SLUG)).filter((setup) => setup.strungOn === strungOn).length, 1);
+  const [kept] = (await getSetup(existing))?.reviews ?? [];
+  assert.equal(kept.scores.power, 7);
+  assert.equal(kept.body, "Crisp.");
   assert.deepEqual(refreshedTags, []);
 });
 

@@ -30,8 +30,7 @@ const dateFormat = new Intl.DateTimeFormat("en-GB", {
 /**
  * The top of a setup card (Product rule 3): the string(s) as its heading,
  * full bed or hybrid, date strung, then gauge(s) and tensions. Also used on
- * its own where a setup is shown without its scores: the entry form's list
- * of existing setups, and above the review form.
+ * its own where a setup is shown without its scores: above the review form.
  */
 export function SetupSummary({
   setup,

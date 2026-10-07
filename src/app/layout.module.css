@@ -6,6 +6,16 @@
   padding: var(--space-6) var(--space-4) var(--space-12);
 }
 
+/*
+ * A logged-in reviewer's page stays invisible, in place, until its
+ * reviewer-only parts have arrived, so everything shows in one frame. Set and
+ * lifted by the script in session-gate.tsx, and never for visitors or without
+ * JavaScript.
+ */
+:global(html[data-await-session]) .page {
+  visibility: hidden;
+}
+
 @media (min-width: 48rem) {
   .page {
     padding-inline: var(--space-8);

@@ -31,7 +31,12 @@ export async function submitSetupWithReview(
     case "created":
       return `/racquets/${slug}#setup-${result.setupId}`;
     case "duplicate":
-      return `/account/setups/${result.setupId}/review?existing=1`;
+      // Already on the site. Having reviewed it there's nothing to add, so
+      // offer to update that review (the id says which; never what was typed).
+      // Otherwise the review page, to add theirs to it.
+      return result.reviewedByAuthor
+        ? `${formPath}?error=already-reviewed&setup=${result.setupId}`
+        : `/account/setups/${result.setupId}/review?existing=1`;
     case "unknown-racquet":
       return "/racquets";
     case "string-exists":

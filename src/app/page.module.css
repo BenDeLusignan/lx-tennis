@@ -33,7 +33,12 @@
   text-shadow: var(--glow-pink);
 }
 
-/* One column on a phone, three equal cards from 48rem. */
+/*
+ * One column on a phone, two by two from 48rem. Four equal columns would leave
+ * each card about 10rem wide at 48rem, too narrow for "Search by Racquet" in
+ * the display face; two columns keep the cards readable, and the three live
+ * cards still come first.
+ */
 .entries {
   list-style: none;
   display: grid;
@@ -43,7 +48,7 @@
 /*
  * The surface, hover glow and focus state come from Panel (for the linked
  * card); the unlinked cards get the surface only. `height: 100%` makes the
- * three cards the same height in a row.
+ * cards in a row the same height.
  */
 .card {
   display: flex;
@@ -101,7 +106,7 @@
   }
 
   .entries {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-6);
   }
 
