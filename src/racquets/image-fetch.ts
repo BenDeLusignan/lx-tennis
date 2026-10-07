@@ -35,7 +35,7 @@ import { IMAGE_MAX_BYTES, RACQUET_LIMITS, type RacquetErrorFlag } from "@/racque
 export const MAX_REDIRECTS = 3;
 const CONNECT_TIMEOUT_MS = 5_000;
 const TOTAL_TIMEOUT_MS = 15_000;
-const USER_AGENT = "LXTennis-image-fetch/1.0 (+https://tennis-setups-website.vercel.app/)";
+const USER_AGENT = "LXTennis-image-fetch/1.0 (+https://lx-tennis.vercel.app/)";
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 // --- Which addresses may be connected to ---

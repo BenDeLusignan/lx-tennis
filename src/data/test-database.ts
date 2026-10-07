@@ -38,7 +38,7 @@ mock.module("next/cache", {
   },
 } as MockModuleOptions);
 
-const dir = mkdtempSync(path.join(tmpdir(), "tennis-setups-data-"));
+const dir = mkdtempSync(path.join(tmpdir(), "lx-tennis-data-"));
 process.env.DATABASE_URL = `file:${path.join(dir, "test.db")}`;
 after(() => rmSync(dir, { recursive: true, force: true }));
 

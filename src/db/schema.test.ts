@@ -13,7 +13,7 @@ import { review, setup, string } from "@/db/schema";
 // Every test gets a fresh database file with all of drizzle/ applied, and a
 // client made the way src/db/client.ts makes it, so these run against the
 // real migrations and the app's foreign-key setting, never local.db.
-const dir = mkdtempSync(path.join(tmpdir(), "tennis-setups-schema-"));
+const dir = mkdtempSync(path.join(tmpdir(), "lx-tennis-schema-"));
 let counter = 0;
 let client: Client;
 let db: LibSQLDatabase<typeof schema>;
