@@ -1,0 +1,23 @@
+/* The same readable column as the quiz's questions. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-inline-size: 36rem;
+}
+
+.lead {
+  color: var(--color-text-muted);
+}
+
+/* The answer, as the panel's one heading: no gap under it, the panel's own gap spaces it. */
+.racquet {
+  margin-block-end: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

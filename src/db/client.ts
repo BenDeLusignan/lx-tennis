@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client";
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { databaseConnection } from "@/db/connection";
 import * as schema from "@/db/schema";
@@ -14,6 +14,7 @@ export type Database = LibSQLDatabase<typeof schema>;
  */
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
+let client: Client | undefined;
 let db: Database | undefined;
 
 /**
@@ -26,6 +27,19 @@ let db: Database | undefined;
  * depend on; `src/db/schema.test.ts` fails if that ever stops being true.
  */
 export function getDb(): Database {
-  db ??= drizzle(createClient(databaseConnection()), { schema });
+  if (!db) {
+    client = createClient(databaseConnection());
+    db = drizzle(client, { schema });
+  }
   return db;
+}
+
+/**
+ * Closes the shared client; the next `getDb()` opens a new one. For tests,
+ * which close it before deleting the database file.
+ */
+export function closeDb(): void {
+  client?.close();
+  client = undefined;
+  db = undefined;
 }

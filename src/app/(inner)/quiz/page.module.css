@@ -1,0 +1,99 @@
+/* Under the title, before the questions (same spacing as the other list pages). */
+.intro {
+  margin-block-end: var(--space-6);
+  color: var(--color-text-muted);
+}
+
+/* One readable column, left-aligned like the page's title. */
+.panel {
+  max-inline-size: 36rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.question {
+  min-inline-size: 0;
+  border: 0;
+}
+
+.legend {
+  margin-block-end: var(--space-2);
+  font-weight: 600;
+}
+
+/*
+ * Buttons that wrap: each answer is as wide as its words, and the row breaks
+ * where the phone's width runs out, so "Serve and volley" never gets
+ * squeezed. Every cell is at least 2.75rem (44px) tall, the touch-target size.
+ */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.choice {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+/*
+ * The real radio covers its button, invisible, instead of being moved off
+ * screen: a tap lands on it, and the browser's "please select one" bubble
+ * points at the button (the same technique as the score chips).
+ */
+.radio {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The same look as the secondary Button, so an answer reads as something to tap. */
+.choiceLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-link);
+  font-weight: 600;
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.choice:hover .choiceLabel {
+  border-color: var(--color-link);
+  box-shadow: var(--glow-cyan);
+}
+
+/* The chosen answer is filled: dark text on pink, 6.2:1, as on the primary button. */
+.choice:has(:checked) .choiceLabel {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* The radio is invisible, so the focus ring goes around its button instead. */
+.choice:has(:focus-visible) .choiceLabel {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* After a submit attempt, a question left unanswered is marked in pink. */
+.question:has(:user-invalid) .legend {
+  color: var(--color-accent);
+}
+
+.submit {
+  align-self: flex-start;
+}

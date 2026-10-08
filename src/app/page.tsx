@@ -9,14 +9,10 @@ import styles from "./page.module.css";
 // and the hero lays its top band out like the inner header, so the login state
 // doesn't move when you go between `/` and another page (see page.module.css).
 //
-// It's the hub (Ben's call): four ways in. Add a Review, Search by Racquet and
-// Search by String are built, so those are links; the quiz says "Coming soon"
-// in words (not just a muted look) and isn't a link, so nobody taps into a page
-// that isn't there. Ben's order: Add a Review, Search by Racquet, Search by
-// String, then the quiz, which sits on its own centred row from 48rem. The
-// live cards come first so they sit near the top of a phone screen. When the
-// quiz is built, swap its entry for a `LiveEntry` and add its page to the
-// Rendering notes in docs/vision.md.
+// It's the hub (Ben's call): four ways in, all built, so all four are links.
+// Ben's order: Add a Review, Search by Racquet, Search by String, then the
+// quiz, which sits on its own centred row from 48rem. The first three come
+// first so they sit near the top of a phone screen.
 //
 // The page reads nothing per request, so it stays whole in the static shell.
 // Add a Review is shown to everyone: a visitor who follows it is sent to log
@@ -54,9 +50,15 @@ export default function Home() {
           <LiveEntry id="strings" href="/strings" title="Search by String" cta="Browse strings">
             Pick a string to see every setup it&rsquo;s been in, with everyone&rsquo;s scores.
           </LiveEntry>
-          <ComingSoonEntry id="quiz" title="Tennis Quiz">
+          <LiveEntry
+            id="quiz"
+            href="/quiz"
+            title="Tennis Quiz"
+            cta="Take the quiz"
+            className={styles.quiz}
+          >
             A few questions to help find the racquet that suits you.
-          </ComingSoonEntry>
+          </LiveEntry>
         </ul>
       </main>
     </>
@@ -70,6 +72,8 @@ interface LiveEntryProps {
   title: string;
   /** The call to action, without its arrow. */
   cta: string;
+  /** Placement in the list only (e.g. the quiz's own row), as with Button. */
+  className?: string;
   children: ReactNode;
 }
 
@@ -78,11 +82,11 @@ interface LiveEntryProps {
  * described by its blurb, so a screen reader's link list says "Search by
  * Racquet" rather than a sentence.
  */
-function LiveEntry({ id, href, title, cta, children }: LiveEntryProps) {
+function LiveEntry({ id, href, title, cta, className, children }: LiveEntryProps) {
   const titleId = `entry-${id}-title`;
   const textId = `entry-${id}-text`;
   return (
-    <li>
+    <li className={className}>
       <Panel
         href={href}
         className={`${styles.card} ${styles.live}`}
@@ -98,33 +102,6 @@ function LiveEntry({ id, href, title, cta, children }: LiveEntryProps) {
         <span className={styles.cardCta} aria-hidden="true">
           {cta} &rarr;
         </span>
-      </Panel>
-    </li>
-  );
-}
-
-interface ComingSoonEntryProps {
-  /** Makes the heading's id, which names the section. */
-  id: string;
-  title: string;
-  children: string;
-}
-
-/**
- * A hub entry for something not built yet: a plain block (no link, no hover),
- * with "Coming soon" as visible text right under the heading so it reads
- * before the blurb and isn't conveyed by the muted look alone.
- */
-function ComingSoonEntry({ id, title, children }: ComingSoonEntryProps) {
-  const titleId = `entry-${id}-title`;
-  return (
-    <li className={styles.quiz}>
-      <Panel aria-labelledby={titleId} className={`${styles.card} ${styles.soon}`}>
-        <h2 id={titleId} className={styles.cardTitle}>
-          {title}
-        </h2>
-        <p className={styles.badge}>Coming soon</p>
-        <p className={styles.cardText}>{children}</p>
       </Panel>
     </li>
   );

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, afterEach, beforeEach, test } from "node:test";
@@ -8,6 +8,7 @@ import { asc, eq } from "drizzle-orm";
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import * as schema from "@/db/schema";
+import { removeTestDir } from "@/db/remove-test-dir";
 import { review, setup, string } from "@/db/schema";
 
 // Every test gets a fresh database file with all of drizzle/ applied, and a
@@ -25,7 +26,8 @@ beforeEach(async () => {
 });
 
 afterEach(() => client.close());
-after(() => rmSync(dir, { recursive: true, force: true }));
+// afterEach has closed every client by now; see removeTestDir.
+after(() => removeTestDir(dir));
 
 // Seeded ids on a fresh database: racquets 1–4, reviewers 1–3, strings 1–10
 // in the seed order.

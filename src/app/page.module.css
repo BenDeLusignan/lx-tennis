@@ -69,9 +69,8 @@
 }
 
 /*
- * The surface, hover glow and focus state come from Panel (for the linked
- * card); the unlinked cards get the surface only. `height: 100%` makes the
- * cards in a row the same height.
+ * The surface, hover glow and focus state come from Panel. `height: 100%`
+ * makes the cards in a row the same height.
  */
 .card {
   display: flex;
@@ -96,30 +95,6 @@
   padding-block-start: var(--space-2);
   font-weight: 600;
   color: var(--color-link);
-}
-
-/*
- * Not a link, so it sits flatter: the page background instead of the raised
- * surface, and a muted title. The "Coming soon" pill is text with its own
- * outline, so the state doesn't depend on colour.
- */
-.soon {
-  --panel-background: var(--color-bg);
-}
-
-.soon .cardTitle {
-  color: var(--color-text-muted);
-}
-
-.badge {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text);
 }
 
 @media (min-width: 48rem) {

@@ -14,14 +14,15 @@
  *
  * Needs `--experimental-test-module-mocks`, which `npm test` passes.
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, mock, type MockModuleOptions } from "node:test";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 // getDb reads DATABASE_URL on first use, not at import, so the order is safe.
-import { getDb } from "@/db/client";
+import { closeDb, getDb } from "@/db/client";
+import { removeTestDir } from "@/db/remove-test-dir";
 import { loginAttempt } from "@/db/schema";
 
 export const refreshedTags: string[] = [];
@@ -40,7 +41,12 @@ mock.module("next/cache", {
 
 const dir = mkdtempSync(path.join(tmpdir(), "lx-tennis-data-"));
 process.env.DATABASE_URL = `file:${path.join(dir, "test.db")}`;
-after(() => rmSync(dir, { recursive: true, force: true }));
+// Close the client first: the file stays locked while it's open, and
+// removeTestDir explains why closing alone doesn't free it on Windows.
+after(async () => {
+  closeDb();
+  await removeTestDir(dir);
+});
 
 before(async () => {
   await migrate(getDb(), { migrationsFolder: path.join(process.cwd(), "drizzle") });
